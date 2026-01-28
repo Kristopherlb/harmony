@@ -1,0 +1,55 @@
+# Prompt Engineering Standard (PES)
+
+| Metadata | Value |
+| -------- | ----- |
+| ID | PES-001 |
+| Version | 1.0.0 |
+| Status | DRAFT |
+| Authors | Platform Intelligence Team |
+
+## 1. Introduction
+
+The Prompt Engineering Standard (PES) formalizes the structure, versioning, and testing of LLM prompts. By treating prompts as versioned source code, we ensure that Agent behavior is reproducible and resilient to model updates.
+
+## 2. Prompt Structure (XML Specification)
+
+All Golden Path prompts MUST follow the strict XML-tagging structure to ensure clear instruction-following and prevent "Prompt Injection" from data fields.
+
+**Mandatory Tags:**
+
+- **&lt;system_role&gt;:** Defines the persona and high-level constraints.
+- **&lt;engineering_principles&gt;:** Explicitly lists the standards (OCS/WCS) the agent must follow.
+- **&lt;instructions&gt;:** Step-by-step procedural logic.
+- **&lt;reference_example&gt;:** A "Gold Standard" example of the expected output.
+- **&lt;hitl_protocol&gt;:** Instructions on when and how to ask for help.
+
+## 3. The "Skill" Definition Format
+
+A "Skill" is the unit of deployment for an Agent's capability. Every skill MUST be stored as a .md file in the monorepo.
+
+```md
+# Skill: [Name]
+## 1. Context
+[Role, Input, Output, and Tools]
+## 2. System Prompt
+[The XML-wrapped prompt]
+## 3. Regression Tests (Evals)
+[Reference to eval_suite.yaml]
+```
+
+## 4. Versioning & Regression
+
+**SemVer for Prompts:**
+
+- **MAJOR:** Changes to the core logic or output format.
+- **MINOR:** Refinement of instructions (better adherence).
+- **PATCH:** Typos or metadata updates.
+
+**Testing Requirement:** No prompt version can be merged into main without passing the TCS (Testing & Certification Standard) eval suite using promptfoo or equivalent.
+
+**Minimum Score:** 0.8 Semantic Similarity / Assert Pass Rate.
+
+## 5. Token Optimization
+
+- **Variable Injection:** Use {{variable}} syntax for dynamic data.
+- **Compression:** System prompts MUST be optimized for token count by removing conversational filler while maintaining instructional density.

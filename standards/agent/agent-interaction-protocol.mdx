@@ -1,0 +1,77 @@
+# Agent Interaction Protocol (AIP)
+
+| Metadata | Value |
+| -------- | ----- |
+| ID | AIP-001 |
+| Version | 1.0.0 |
+| Status | DRAFT |
+| Authors | Platform Intelligence Team |
+| Context | LangGraph / Multi-Agent Systems |
+
+## 1. Introduction
+
+The Agent Interaction Protocol (AIP) defines the standard for inter-agent communication and state management. In a multi-agent system (e.g., Builder Agent + Ops Agent), AIP ensures that task handoffs, context sharing, and human intervention are handled through a deterministic, strictly-typed state machine.
+
+## 2. Shared State Schema (The "Common Memory")
+
+All Agents participating in an AIP-compliant graph MUST share a base state schema. This ensures that an Agent receiving a task has the full context of the preceding Agent's work.
+
+```ts
+import { Annotation } from "@langchain/langgraph";
+
+/**
+ * Normative State Schema for Golden Path Multi-Agent Systems
+ */
+export const GoldenPathState = Annotation.Root({
+  /** The high-level user objective */
+  intent: Annotation<string>,
+  /** Currently active task ID */
+  active_task_id: Annotation<string>,
+  /** Map of completed artifacts (OCS code, WCS blueprints) */
+  artifacts: Annotation<Record<string, {
+    content: string;
+    type: 'CAPABILITY' | 'BLUEPRINT' | 'EVAL' | 'TEST';
+    status: 'DRAFT' | 'AUDITED' | 'CERTIFIED';
+  }>>,
+  /** The audit trail of agent reasoning */
+  reasoning_history: Annotation<string[]>,
+  /** Pending HITL Requirements (Clarifications/Approvals) */
+  pending_actions: Annotation<Array<{
+    type: 'CLARIFICATION' | 'OAUTH' | 'SECRET' | 'APPROVAL';
+    message: string;
+    resolved: boolean;
+  }>>,
+  /** OTel Trace Context for cross-agent observability */
+  trace_id: Annotation<string>,
+});
+```
+
+## 3. Task Handoff Pattern
+
+Handoffs MUST be explicit. An Agent completes its node and updates the artifacts status, which triggers the conditional edge to the next specialized Agent.
+
+- **Builder Agent Node:** Generates a DRAFT capability. Updates state.
+- **Conditional Edge:** Checks artifacts['my-cap'].status === 'DRAFT'.
+- **Ops Agent Node:** Receives the state. Audits the draft. Updates status to AUDITED or REJECTED.
+
+## 4. MCP Mapping (Tool Discovery)
+
+Agents MUST interact with each other's capabilities via a shared MCP Registry.
+
+- **Discovery:** When an Agent needs a task it cannot perform, it queries the MCP Registry for a tool with the appropriate semantic description.
+- **Invocation:** Tools called via MCP MUST return a structured response that includes the trace_id for correlation.
+
+## 5. HITL Interruption Protocol
+
+AIP mandates the use of LangGraph Breakpoints for specific scenarios:
+
+- **Constraint Violation:** If an Ops Agent identifies a policy violation.
+- **Missing Context:** If a Builder Agent cannot proceed without a specific parameter.
+- **Restricted Action:** Any tool call with OCS classification RESTRICTED.
+
+**Protocol Step:**
+
+1. Agent sets a pending_action in the state.
+2. The Graph hits a checkpoint and pauses.
+3. A Human provides input/approval.
+4. The Graph is resumed with the updated state.

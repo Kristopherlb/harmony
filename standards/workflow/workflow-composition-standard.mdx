@@ -1,0 +1,143 @@
+Workflow Composition Standard (WCS)MetadataValueIDWCS-001Version1.2.0StatusDRAFTAuthorsPlatform Engineering TeamContextGolden Path Monorepo1. IntroductionThe Workflow Composition Standard (WCS) defines the architectural blueprint for creating higher-order automations within the Golden Path ecosystem. While the Open Capability Standard (OCS) defines atomic units of logic ("Bricks"), the WCS defines the "Blueprints" that orchestrate these units into durable, stateful, and secure processes.Core Philosophy:Self-Securing: Workflows inherit Role-Based Access Control (RBAC) and Identity Propagation automatically.Agent-Native: Every workflow is automatically exposed as a Tool via the Model Context Protocol (MCP), allowing AI Agents to discover and trigger them recursively.Determinism-First: Developers are guarded against non-deterministic code (randomness, system time) via strict framework abstractions.Full Observability: Golden Signals (Latency, Traffic, Errors, Saturation) and Business Metrics are captured without manual instrumentation.2. Normative Requirements2.1. Structure & Determinism (BaseBlueprint)2.1.1 Inheritance: All workflows MUST extend the BaseBlueprint abstract class. Ad-hoc functional workflows are prohibited to ensure governance.2.1.2 Determinism Enforced: Logic MUST utilize the Base Class wrappers for time (this.now()), randomness (this.uuid()), and sleep (this.sleep()). Usage of native Date, Math.random(), or setTimeout is strictly forbidden via linting rules.2.1.3 The "Runner" Pattern: Workflows MUST NOT implement custom Temporal Activities for Capability execution. They MUST use the standard ExecuteCapability Generic Activity provided by the platform.2.2. The MCP "Dual Personality"2.2.1 Auto-Exposure: Every BaseBlueprint implementation MUST allow the build system (Nx) to automatically extract an MCP Tool Definition.Tool Name: Derived from metadata.id.Schema: Derived from inputSchema.Description: Derived from metadata.description.2.2.2 Connectivity: The Golden Path MCP Server dynamically loads these blueprints. Agents triggering these tools interact with the Temporal Client, returning a WorkflowID and StatusURL rather than synchronous results.2.3. Security & Identity2.3.1 Declarative RBAC: Every Blueprint MUST declare a list of requiredRoles (mapped to Keycloak Roles). The platform MUST reject execution attempts if the initiator lacks these roles.2.3.2 Identity Propagation: The InitiatorID (User or Agent) MUST be captured at the entry point and propagated to all Child Workflows and Capability Activities via the runAs context.2.3.3 Client-Side Encryption: If dataClassification is CONFIDENTIAL or higher, the platform MUST automatically employ a custom Data Converter to encrypt payloads before sending them to the Temporal Cluster (Claim Check pattern or Envelope Encryption).2.3.4 mTLS: All Worker connections to the Temporal Service MUST use mutual TLS with certificates rotated at least quarterly.2.4. Namespace & Infrastructure Best Practices2.4.1 Naming Convention: Namespaces MUST follow the pattern <use-case>-<domain>-<environment> (e.g., payments-checkout-prd) and use strictly lowercase alphanumeric characters with hyphens.2.4.2 Environment Isolation: Production workloads MUST run in isolated Namespaces, separate from Dev and Staging.2.4.3 Tagging: All Namespaces MUST be tagged with team, cost-center, and data-sensitivity to facilitate chargeback and auditing.2.5. Performance & Reliability (APS Awareness)2.5.1 Polling Prohibition: Workflows MUST NOT use loops to poll external APIs. They MUST use Signals or long-polling Activities to wait for external events, reducing APS (Actions Per Second) consumption.2.5.2 Batching: High-volume operations MUST use batching APIs where possible inside Activities, rather than iterating inside the Workflow (Fan-Out), to prevent "Thundering Herd" APS spikes.2.5.3 Worker Versioning: All Blueprints MUST utilize Build IDs and Worker Versioning to ensure safe, deterministic code updates without breaking in-flight executions.2.6. Observability & Governance2.6.1 Automatic Instrumentation: The Base Class MUST wrap execution in a Root Span (workflow.execute) and record the four Golden Signals.2.6.2 Cost Center Tagging: Every Blueprint MUST declare a costCenter. The runtime applies this tag to all underlying Dagger containers for Cloud Cost allocation.2.6.3 Saga Pattern: The Blueprint MUST provide a mechanism for registering Compensations (addCompensation). On failure, these MUST execute in LIFO order to rollback state.3. Technical Specification (TypeScript)The following interface is the canonical definition for the BaseBlueprint. All generated code must adhere to this contract.import * as wf from '@temporalio/workflow';
+import { z } from 'zod';
+import { Capability } from '@org/ocs-standard';
+
+/**
+ * Security Context
+ * Injected automatically by the Platform Interceptors.
+ */
+export interface SecurityContext {
+  initiatorId: string;    // e.g., "user:jane.doe" or "agent:builder-01"
+  roles: string[];        // ["hr-admin", "standard-user"]
+  tokenRef: string;       // Reference to the OIDC token in OpenBao
+}
+
+/**
+ * The "Golden Path" Blueprint Contract
+ */
+export abstract class BaseBlueprint<Input, Output, Config> {
+  
+  // --- 1. Identity & Governance (Declarative) ---
+  
+  abstract readonly metadata: {
+    id: string;          // e.g., "workflows.hr.onboard"
+    version: string;     // SemVer
+    name: string;        // Human Readable Name
+    description: string; // LLM-optimized description
+    owner: string;       // Team Email or ID
+    costCenter: string;  // e.g., "CC-1024"
+    tags: string[];
+  };
+
+  /**
+   * Security & Compliance Configuration
+   */
+  abstract readonly security: {
+    /** Keycloak Roles required to START this workflow */
+    requiredRoles: string[]; 
+    /** Data Classification (Defaults to highest level of used capabilities) */
+    classification?: 'PUBLIC' | 'INTERNAL' | 'CONFIDENTIAL' | 'RESTRICTED';
+    /** NIST/OSCAL Controls satisfied by this process logic */
+    oscalControlIds?: string[];
+  };
+
+  /**
+   * Operations & Monitoring Configuration
+   */
+  abstract readonly operations: {
+    /** Service Level Agreement targets */
+    sla: {
+      targetDuration: string; // "5m"
+      maxDuration: string;    // "1h" (Hard Timeout)
+    };
+    /** Alerting Thresholds (Auto-generates Prometheus Rules) */
+    alerting?: {
+      errorRateThreshold: number; // e.g., 0.05 (5%)
+    };
+  };
+
+  // --- 2. Schemas ---
+  abstract readonly inputSchema: z.ZodSchema<Input>;
+  abstract readonly configSchema: z.ZodSchema<Config>;
+
+  // --- 3. The Logic (Abstract) ---
+  protected abstract logic(input: Input, config: Config): Promise<Output>;
+
+
+  // --- 4. The Platform Capabilities (Injected by Base Class) ---
+
+  /**
+   * Access to the Security Context
+   * Used for conditional logic based on who is running the workflow.
+   */
+  protected get securityContext(): SecurityContext {
+    return wf.dependencies.securityContext;
+  }
+
+  /**
+   * Safe, Deterministic Time
+   */
+  protected get now(): number { return wf.workflowInfo().runTime.getTime(); }
+
+  /**
+   * Safe, Deterministic UUID
+   */
+  protected uuid(): string { return wf.uuid4(); }
+
+  /**
+   * Safe Sleep
+   */
+  protected async sleep(ms: number): Promise<void> { return wf.sleep(ms); }
+
+  /**
+   * EXECUTE CAPABILITY (Secured & Monitored)
+   * The primary mechanism for interacting with the outside world.
+   */
+  protected async execute<In, Out>(
+    capability: Capability<In, Out>, 
+    input: In
+  ): Promise<Out> {
+    
+    // 1. RBAC Check (Defense in Depth)
+    this.verifyCapabilityAccess(capability);
+
+    // 2. Cost Tracking & Metric Recording
+    this.recordMetric('capability_invocation', 1, { 
+      cap_id: capability.metadata.id,
+      cost_factor: capability.operations.costFactor 
+    });
+
+    // 3. Execution (Propagating Identity)
+    // Note: Data Converter automatically encrypts inputs if classification > PUBLIC
+    return wf.proxyActivities({ 
+      retry: this.mapRetryPolicy(capability.operations),
+      startToCloseTimeout: this.operations.sla.maxDuration,
+      taskQueue: `worker-${this.metadata.version}` // Enforce Worker Versioning
+    }).executeDaggerCapability({
+      capId: capability.metadata.id,
+      input,
+      secretRefs: capability.schemas.secrets,
+      // Identity Propagation
+      runAs: this.securityContext.initiatorId 
+    });
+  }
+
+  /**
+   * SAGA: Register a compensation function to run on failure.
+   */
+  protected addCompensation(fn: () => Promise<void>): void {
+    // Internal Saga LIFO tracking
+  }
+
+  /**
+   * MAIN ENTRY POINT
+   * (Standardizes Audit, Tracing, and error handling)
+   */
+  public async main(input: Input, config: Config): Promise<Output> {
+    // A. Start Audit Log
+    // B. Start OTel Span
+    // C. Verify OpenFeature Flags
+    // D. Run Logic
+    // E. Catch -> Emit Error Metric -> Execute Compensations -> Rethrow
+  }
+}
