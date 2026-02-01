@@ -147,3 +147,11 @@ Source: `packages/tools/mcp-server/src/mcp/stdio-server.ts`, `packages/tools/mcp
 
 Source: `packages/blueprints/src/worker/execute-dagger-capability.ts`
 
+### Dagger guardrails (ISS-001)
+
+The Dagger runtime namespace must enforce ISS-001 guardrails for isolation and egress control:
+
+- Resource quotas: `k8s/dagger/resourcequota.yaml`
+- Default deny egress: `k8s/dagger/networkpolicy-deny-all.yaml`
+- FQDN allowlist (Cilium): `k8s/dagger/cilium-networkpolicy-allowlist.yaml`
+- Ephemeral volume enforcement: `k8s/dagger/validating-admission-policy.yaml`
