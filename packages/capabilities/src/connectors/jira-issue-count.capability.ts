@@ -52,7 +52,10 @@ function mapHttpStatusToErrorCategory(status: number | undefined): ErrorCategory
 }
 
 function extractStatus(error: unknown): number | undefined {
-  const anyErr = error as any;
+  const anyErr =
+    error && typeof error === 'object'
+      ? (error as { status?: unknown; response?: { status?: unknown }; cause?: { status?: unknown } })
+      : undefined;
   const s1 = anyErr?.status;
   if (typeof s1 === 'number') return s1;
   const s2 = anyErr?.response?.status;
