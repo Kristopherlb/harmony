@@ -261,3 +261,52 @@ Phase timing: Is the 3-week-per-phase cadence realistic for your team?
 
 Comment
 ⌥⌘M
+Based on your roadmap in 
+caps.md
+ and the foundation you've now built, here's my recommended next 20 capabilities prioritized by value and dependency order:
+
+Wave 2: Security & Supply Chain (10 capabilities)
+#	Capability	Category	Why Now
+1	Sigstore	security	OpenSSF graduated, keyless signing builds on your Digital Signing
+2	SLSA Verifier	security	Supply chain verification, pairs with Sigstore
+3	Scorecard	security	Automated OSS security assessment
+4	OSV Scanner	security	Vulnerability DB scanning, complements existing scanners
+5	Grype	security	Container vuln scanning, pairs with Trivy
+6	Gitleaks	security	Secret detection in git history
+7	Syft	sbom	SBOM generation from images/filesystems
+8	Bomctl	sbom	SBOM manipulation (merge, split, diff)
+9	OpenVEX	security	VEX documents for vuln management
+10	Checkov	security	IaC scanning (pairs with Terraform Runner)
+Wave 3: Enterprise Integration (10 capabilities)
+#	Capability	Category	Why Now
+11	Redis	connectors	Caching/pub-sub for workflows
+12	PagerDuty	connectors	Incident management
+13	Kubectl	commanders	K8s operations (pairs with Terraform)
+14	Vault/OpenBao	auth	Extends your secret-broker
+15	Encoding	utilities	Base64/hex/URL transforms
+16	Template Renderer	utilities	Handlebars/Mustache rendering
+17	Diff Generator	utilities	Unified diffs for code review
+18	GUAC	security	Dependency graph queries
+19	Minder	security	Policy-as-code enforcement
+20	Protobom	sbom	SPDX↔CycloneDX conversion
+Quick Priority Matrix
+High Value + Easy          │  High Value + Complex
+───────────────────────────┼───────────────────────────
+- Encoding                 │  • Sigstore
+- Gitleaks                 │  • GUAC
+- OSV Scanner              │  • Minder
+- Scorecard API            │  • SLSA Verifier
+- Syft                     │  
+───────────────────────────┼───────────────────────────
+Lower Value + Easy         │  Lower Value + Complex
+───────────────────────────┼───────────────────────────
+- Diff Generator           │  • TUF Repository
+- Protobom                 │  • Model Signing (unless ML)
+- Template Renderer        │  • Package Analysis
+My top 5 to start immediately:
+
+Sigstore - Unlocks keyless signing, you have the crypto foundation
+Syft - SBOM generation is essential for supply chain
+Gitleaks - Quick win, simple CLI wrapper
+Redis - Enables caching patterns in workflows
+Encoding - Simple utility, fills obvious gap
