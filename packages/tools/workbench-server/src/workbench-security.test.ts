@@ -124,10 +124,10 @@ describe('Workbench proxy hardening', () => {
         body: JSON.stringify({ sessionId, method: 'GET', path: '/ex/jira/cloudid/rest/api/3/myself' }),
       });
       expect(res.status).toBe(200);
-      const body = (await res.json()) as any;
-      expect(body?.status).toBe(200);
-      expect(body?.body?.ok).toBe(true);
-      expect(String(body?.body?.url ?? '')).toContain('api.atlassian.com');
+      const body = (await res.json()) as { status?: number; body?: { ok?: boolean; url?: string } };
+      expect(body.status).toBe(200);
+      expect(body.body?.ok).toBe(true);
+      expect(String(body.body?.url ?? '')).toContain('api.atlassian.com');
     } finally {
       await server.close();
     }

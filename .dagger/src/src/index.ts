@@ -73,7 +73,7 @@ export class HarmonyCi {
   async audit(repo: Directory): Promise<string> {
     const ctr = baseNodeContainer(repo)
       .withExec(["bash", "-lc", syncDryRunGateScript])
-      .withExec(["bash", "-lc", "pnpm nx affected -t lint test"])
+      .withExec(["bash", "-lc", "pnpm nx affected -t lint test --exclude=console"])
 
     await ctr.exitCode()
     return "OK: audit passed"

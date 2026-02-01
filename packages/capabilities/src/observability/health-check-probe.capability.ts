@@ -281,7 +281,7 @@ cat << EOF
   "statusCode": $STATUS_CODE,
   "responseBody": $(echo "$RESPONSE_BODY" | jq -Rs .),
   "dnsRecords": $DNS_RECORDS,
-  "error": $([ -n "$ERROR" ] && echo "\"$ERROR\"" || echo "null"),
+  "error": $([ -n "$ERROR" ] && echo "$ERROR" | jq -Rs . || echo "null"),
   "attempts": $ATTEMPT,
   "checkedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }

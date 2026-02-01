@@ -15,7 +15,10 @@ describe('MathPipelineWorkflow', () => {
   it('computes y = a + b + c using composed capabilities', async () => {
     const w = new MathPipelineWorkflow();
     const calls: Array<{ id: string; input: unknown }> = [];
-    (w as any).executeById = async (id: string, input: unknown) => {
+    (w as unknown as { executeById: (id: string, input: unknown) => Promise<unknown> }).executeById = async (
+      id,
+      input
+    ) => {
       calls.push({ id, input });
       if (id === 'golden.math_add') {
         const x = input as { a: number; b: number };

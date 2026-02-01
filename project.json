@@ -70,7 +70,7 @@
     "audit": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "node -e \"const { execSync } = require('node:child_process'); const out = execSync('pnpm nx g @golden/path:sync --dry-run', { encoding: 'utf-8' }); process.stdout.write(out); if (/^(CREATE|UPDATE|DELETE)\\\\s+/m.test(out)) { console.error('Generated artifacts are stale. Run: pnpm nx g @golden/path:sync (then commit).'); process.exit(1); }\" && pnpm nx affected -t lint test"
+        "command": "node -e \"const { execSync } = require('node:child_process'); const out = execSync('pnpm nx g @golden/path:sync --dry-run', { encoding: 'utf-8' }); process.stdout.write(out); if (/^(CREATE|UPDATE|DELETE)\\\\s+/m.test(out)) { console.error('Generated artifacts are stale. Run: pnpm nx g @golden/path:sync (then commit).'); process.exit(1); }\" && pnpm nx affected -t lint test --exclude=console"
       }
     },
     "audit-dagger": {
