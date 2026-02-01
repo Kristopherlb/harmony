@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { TestWorkflowEnvironment } from '@temporalio/testing';
 import { Worker, bundleWorkflowCode } from '@temporalio/worker';
 import { createToolSurface } from './tool-surface.js';
-import { createTemporalDefaultRunners } from './temporal-default-runners.js';
+import { createTemporalDefaultRunners, type MinimalTemporalWorkflowClient } from './temporal-default-runners.js';
 import { generateToolManifestFromCapabilities } from '../manifest/capabilities.js';
 import { createCapabilityRegistry } from '@golden/capabilities';
 import { createBlueprintRegistry } from '@golden/blueprints';
@@ -67,7 +67,7 @@ describe('Temporal memo propagation (integration)', () => {
     await worker.runUntil(async () => {
       const { capabilityRunner, blueprintRunner } = createTemporalDefaultRunners({
         temporal: {
-          client: testEnv.client as any,
+          client: testEnv.client as unknown as MinimalTemporalWorkflowClient,
           taskQueue,
         },
         blueprints: minimalBlueprints,
@@ -96,7 +96,9 @@ describe('Temporal memo propagation (integration)', () => {
       // BLUEPRINT: start + then verify it actually runs (no missing memo errors).
       const bpRes = await surface.callTool({ name: 'workflows.echo', arguments: { x: 5 } });
       expect(bpRes.isError).toBe(false);
-      const bpWorkflowId = (bpRes.structuredContent as any).result.workflowId as string;
+      const bpStructured = bpRes.structuredContent as Record<string, unknown>;
+      const bpResult = bpStructured.result as { workflowId: string };
+      const bpWorkflowId = bpResult.workflowId;
       expect(bpWorkflowId).toBe('wf-workflows.echo-1');
 
       const bpHandle = testEnv.client.workflow.getHandle(bpWorkflowId);
@@ -106,7 +108,8 @@ describe('Temporal memo propagation (integration)', () => {
       // CAPABILITY: runs via executeCapabilityWorkflow (await behavior).
       const capRes = await surface.callTool({ name: 'golden.echo', arguments: { x: 9 } });
       expect(capRes.isError).toBe(false);
-      expect((capRes.structuredContent as any).result).toEqual({ y: 9 });
+      const capStructured = capRes.structuredContent as Record<string, unknown>;
+      expect(capStructured.result).toEqual({ y: 9 });
     });
 
     await testEnv.teardown();
