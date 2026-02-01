@@ -1,0 +1,12 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: dagger-egress-deny-all
+  namespace: dagger-exec
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: dagger-runtime
+  policyTypes:
+    - Egress
+  egress: []

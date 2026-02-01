@@ -66,7 +66,7 @@ export class HarmonyCi {
   }
 
   /**
-   * Workspace audit: determinism gate + affected lint/test.
+   * Workspace audit: determinism gate + affected lint/test + certification.
    * Mirrors `nx run harmony:audit` for CI reuse.
    */
   @func()
@@ -74,6 +74,7 @@ export class HarmonyCi {
     const ctr = baseNodeContainer(repo)
       .withExec(["bash", "-lc", syncDryRunGateScript])
       .withExec(["bash", "-lc", "pnpm nx affected -t lint test --exclude=console"])
+      .withExec(["bash", "-lc", "pnpm nx run certification:certify"])
 
     await ctr.exitCode()
     return "OK: audit passed"
