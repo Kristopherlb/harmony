@@ -9,76 +9,76 @@ import { z } from '@golden/schema-registry';
 import type { Capability, CapabilityContext } from '@golden/core';
 
 const operationSchema = z.enum([
-    'set-weights',      // Set traffic weight percentages
-    'header-route',     // Configure header-based routing
-    'get-status',       // Get current routing status
-    'reset',            // Reset to 100% stable
+  'set-weights',      // Set traffic weight percentages
+  'header-route',     // Configure header-based routing
+  'get-status',       // Get current routing status
+  'reset',            // Reset to 100% stable
 ]).describe('Mesh router operation');
 
 const meshTypeSchema = z.enum([
-    'istio',
-    'linkerd',
+  'istio',
+  'linkerd',
 ]).describe('Service mesh type');
 
 const weightsSchema = z.object({
-    stable: z.number().min(0).max(100).describe('Percentage to stable subset'),
-    canary: z.number().min(0).max(100).describe('Percentage to canary subset'),
+  stable: z.number().min(0).max(100).describe('Percentage to stable subset'),
+  canary: z.number().min(0).max(100).describe('Percentage to canary subset'),
 }).refine(data => data.stable + data.canary === 100, {
-    message: 'Weights must sum to 100',
+  message: 'Weights must sum to 100',
 });
 
 const headerMatchSchema = z.object({
-    header: z.string().describe('Header name to match'),
-    value: z.string().describe('Header value to match'),
-    matchType: z.enum(['exact', 'prefix', 'regex']).describe('Match type'),
-    subset: z.string().describe('Target subset for matched traffic'),
+  header: z.string().describe('Header name to match'),
+  value: z.string().describe('Header value to match'),
+  matchType: z.enum(['exact', 'prefix', 'regex']).optional().describe('Match type, defaults to exact'),
+  subset: z.string().describe('Target subset for matched traffic'),
 });
 
 const routeStatusSchema = z.object({
-    subset: z.string().describe('Subset name'),
-    weight: z.number().describe('Current weight percentage'),
-    endpoints: z.number().optional().describe('Number of healthy endpoints'),
+  subset: z.string().describe('Subset name'),
+  weight: z.number().describe('Current weight percentage'),
+  endpoints: z.number().optional().describe('Number of healthy endpoints'),
 });
 
 const inputSchema = z
-    .object({
-        operation: operationSchema,
-        service: z.string().describe('Service name'),
-        namespace: z.string().describe('Kubernetes namespace'),
-        meshType: meshTypeSchema.describe('Service mesh type'),
-        weights: weightsSchema.optional().describe('Traffic weights for set-weights operation'),
-        headerMatch: headerMatchSchema.optional().describe('Header match for header-route operation'),
-        virtualServiceName: z.string().optional().describe('VirtualService name (Istio)'),
-        destinationRuleName: z.string().optional().describe('DestinationRule name (Istio)'),
-    })
-    .describe('Mesh Router input');
+  .object({
+    operation: operationSchema,
+    service: z.string().describe('Service name'),
+    namespace: z.string().optional().describe('Kubernetes namespace, defaults to default'),
+    meshType: meshTypeSchema.optional().describe('Service mesh type, defaults to istio'),
+    weights: weightsSchema.optional().describe('Traffic weights for set-weights operation'),
+    headerMatch: headerMatchSchema.optional().describe('Header match for header-route operation'),
+    virtualServiceName: z.string().optional().describe('VirtualService name (Istio)'),
+    destinationRuleName: z.string().optional().describe('DestinationRule name (Istio)'),
+  })
+  .describe('Mesh Router input');
 
 const outputSchema = z
-    .object({
-        success: z.boolean().describe('Whether operation succeeded'),
-        operation: operationSchema.describe('Operation performed'),
-        service: z.string().describe('Service name'),
-        namespace: z.string().describe('Namespace'),
-        meshType: meshTypeSchema.describe('Mesh type'),
-        currentWeights: weightsSchema.optional().describe('Current traffic weights'),
-        routes: z.array(routeStatusSchema).optional().describe('Current route status'),
-        headerRoutes: z.array(headerMatchSchema).optional().describe('Configured header routes'),
-        message: z.string().describe('Human-readable result message'),
-    })
-    .describe('Mesh Router output');
+  .object({
+    success: z.boolean().describe('Whether operation succeeded'),
+    operation: operationSchema.describe('Operation performed'),
+    service: z.string().describe('Service name'),
+    namespace: z.string().describe('Namespace'),
+    meshType: meshTypeSchema.describe('Mesh type'),
+    currentWeights: weightsSchema.optional().describe('Current traffic weights'),
+    routes: z.array(routeStatusSchema).optional().describe('Current route status'),
+    headerRoutes: z.array(headerMatchSchema).optional().describe('Configured header routes'),
+    message: z.string().describe('Human-readable result message'),
+  })
+  .describe('Mesh Router output');
 
 const configSchema = z
-    .object({
-        defaultMeshType: meshTypeSchema.optional().describe('Default service mesh type'),
-        defaultNamespace: z.string().optional().describe('Default Kubernetes namespace'),
-    })
-    .describe('Mesh Router configuration');
+  .object({
+    defaultMeshType: meshTypeSchema.optional().describe('Default service mesh type'),
+    defaultNamespace: z.string().optional().describe('Default Kubernetes namespace'),
+  })
+  .describe('Mesh Router configuration');
 
 const secretsSchema = z
-    .object({
-        kubeconfig: z.string().optional().describe('Base64-encoded kubeconfig'),
-    })
-    .describe('Mesh Router secrets');
+  .object({
+    kubeconfig: z.string().optional().describe('Base64-encoded kubeconfig'),
+  })
+  .describe('Mesh Router secrets');
 
 export type MeshRouterInput = z.infer<typeof inputSchema>;
 export type MeshRouterOutput = z.infer<typeof outputSchema>;
@@ -86,126 +86,126 @@ export type MeshRouterConfig = z.infer<typeof configSchema>;
 export type MeshRouterSecrets = z.infer<typeof secretsSchema>;
 
 export const meshRouterCapability: Capability<
-    MeshRouterInput,
-    MeshRouterOutput,
-    MeshRouterConfig,
-    MeshRouterSecrets
+  MeshRouterInput,
+  MeshRouterOutput,
+  MeshRouterConfig,
+  MeshRouterSecrets
 > = {
-    metadata: {
-        id: 'golden.traffic.mesh-router',
-        version: '1.0.0',
-        name: 'meshRouter',
-        description:
-            'Control Istio/Linkerd traffic routing. Set weights for canary rollout, configure header-based routing for testing and gradual migration.',
-        tags: ['commander', 'traffic', 'service-mesh', 'istio', 'linkerd'],
-        maintainer: 'platform',
+  metadata: {
+    id: 'golden.traffic.mesh-router',
+    version: '1.0.0',
+    name: 'meshRouter',
+    description:
+      'Control Istio/Linkerd traffic routing. Set weights for canary rollout, configure header-based routing for testing and gradual migration.',
+    tags: ['commander', 'traffic', 'service-mesh', 'istio', 'linkerd'],
+    maintainer: 'platform',
+  },
+  schemas: {
+    input: inputSchema,
+    output: outputSchema,
+    config: configSchema,
+    secrets: secretsSchema,
+  },
+  security: {
+    requiredScopes: ['mesh:write'],
+    dataClassification: 'INTERNAL',
+    networkAccess: {
+      allowOutbound: ['kubernetes.default.svc'],
     },
-    schemas: {
-        input: inputSchema,
-        output: outputSchema,
-        config: configSchema,
-        secrets: secretsSchema,
+  },
+  operations: {
+    isIdempotent: true,
+    retryPolicy: { maxAttempts: 3, initialIntervalSeconds: 2, backoffCoefficient: 2 },
+    errorMap: (error: unknown) => {
+      if (error instanceof Error) {
+        if (error.message.includes('connection')) return 'RETRYABLE';
+        if (error.message.includes('timeout')) return 'RETRYABLE';
+        if (error.message.includes('conflict')) return 'RETRYABLE';
+        if (error.message.includes('not found')) return 'FATAL';
+        if (error.message.includes('unauthorized')) return 'FATAL';
+      }
+      return 'FATAL';
     },
-    security: {
-        requiredScopes: ['mesh:write'],
-        dataClassification: 'INTERNAL',
-        networkAccess: {
-            allowOutbound: ['kubernetes.default.svc'],
-        },
+    costFactor: 'LOW',
+  },
+  aiHints: {
+    exampleInput: {
+      operation: 'set-weights',
+      service: 'harmony-mcp',
+      namespace: 'production',
+      meshType: 'istio',
+      weights: { stable: 90, canary: 10 },
     },
-    operations: {
-        isIdempotent: true,
-        retryPolicy: { maxAttempts: 3, initialIntervalSeconds: 2, backoffCoefficient: 2 },
-        errorMap: (error: unknown) => {
-            if (error instanceof Error) {
-                if (error.message.includes('connection')) return 'RETRYABLE';
-                if (error.message.includes('timeout')) return 'RETRYABLE';
-                if (error.message.includes('conflict')) return 'RETRYABLE';
-                if (error.message.includes('not found')) return 'FATAL';
-                if (error.message.includes('unauthorized')) return 'FATAL';
-            }
-            return 'FATAL';
-        },
-        costFactor: 'LOW',
+    exampleOutput: {
+      success: true,
+      operation: 'set-weights',
+      service: 'harmony-mcp',
+      namespace: 'production',
+      meshType: 'istio',
+      currentWeights: { stable: 90, canary: 10 },
+      routes: [
+        { subset: 'stable', weight: 90, endpoints: 3 },
+        { subset: 'canary', weight: 10, endpoints: 1 },
+      ],
+      message: 'Updated traffic weights: 90% stable, 10% canary',
     },
-    aiHints: {
-        exampleInput: {
-            operation: 'set-weights',
-            service: 'harmony-mcp',
-            namespace: 'production',
-            meshType: 'istio',
-            weights: { stable: 90, canary: 10 },
-        },
-        exampleOutput: {
-            success: true,
-            operation: 'set-weights',
-            service: 'harmony-mcp',
-            namespace: 'production',
-            meshType: 'istio',
-            currentWeights: { stable: 90, canary: 10 },
-            routes: [
-                { subset: 'stable', weight: 90, endpoints: 3 },
-                { subset: 'canary', weight: 10, endpoints: 1 },
-            ],
-            message: 'Updated traffic weights: 90% stable, 10% canary',
-        },
-        usageNotes:
-            'Use for progressive rollout - gradually increase canary weight. Header-based routing enables testing specific versions. Reset to 100% stable after promotion or rollback.',
-    },
-    factory: (
-        dag,
-        context: CapabilityContext<MeshRouterConfig, MeshRouterSecrets>,
-        input: MeshRouterInput
-    ) => {
-        type DaggerSecret = unknown;
-        type ContainerBuilder = {
-            from(image: string): ContainerBuilder;
-            withEnvVariable(key: string, value: string): ContainerBuilder;
-            withMountedSecret(path: string, secret: DaggerSecret): ContainerBuilder;
-            withExec(args: string[]): unknown;
-        };
-        type DaggerClient = {
-            container(): ContainerBuilder;
-        };
-        const d = dag as unknown as DaggerClient;
+    usageNotes:
+      'Use for progressive rollout - gradually increase canary weight. Header-based routing enables testing specific versions. Reset to 100% stable after promotion or rollback.',
+  },
+  factory: (
+    dag,
+    context: CapabilityContext<MeshRouterConfig, MeshRouterSecrets>,
+    input: MeshRouterInput
+  ) => {
+    type DaggerSecret = unknown;
+    type ContainerBuilder = {
+      from(image: string): ContainerBuilder;
+      withEnvVariable(key: string, value: string): ContainerBuilder;
+      withMountedSecret(path: string, secret: DaggerSecret): ContainerBuilder;
+      withExec(args: string[]): unknown;
+    };
+    type DaggerClient = {
+      container(): ContainerBuilder;
+    };
+    const d = dag as unknown as DaggerClient;
 
-        const meshType = input.meshType || context.config.defaultMeshType || 'istio';
-        const namespace = input.namespace || context.config.defaultNamespace || 'default';
-        const virtualServiceName = input.virtualServiceName ?? input.service;
-        const destinationRuleName = input.destinationRuleName ?? input.service;
+    const meshType = input.meshType || context.config.defaultMeshType || 'istio';
+    const namespace = input.namespace || context.config.defaultNamespace || 'default';
+    const virtualServiceName = input.virtualServiceName ?? input.service;
+    const destinationRuleName = input.destinationRuleName ?? input.service;
 
-        const payload = {
-            operation: input.operation,
-            service: input.service,
-            namespace,
-            meshType,
-            weights: input.weights,
-            headerMatch: input.headerMatch,
-            virtualServiceName,
-            destinationRuleName,
-        };
+    const payload = {
+      operation: input.operation,
+      service: input.service,
+      namespace,
+      meshType,
+      weights: input.weights,
+      headerMatch: input.headerMatch,
+      virtualServiceName,
+      destinationRuleName,
+    };
 
-        let container = d
-            .container()
-            .from('bitnami/kubectl:latest')
-            .withEnvVariable('INPUT_JSON', JSON.stringify(payload))
-            .withEnvVariable('OPERATION', input.operation)
-            .withEnvVariable('SERVICE', input.service)
-            .withEnvVariable('NAMESPACE', namespace)
-            .withEnvVariable('MESH_TYPE', meshType);
+    let container = d
+      .container()
+      .from('bitnami/kubectl:latest')
+      .withEnvVariable('INPUT_JSON', JSON.stringify(payload))
+      .withEnvVariable('OPERATION', input.operation)
+      .withEnvVariable('SERVICE', input.service)
+      .withEnvVariable('NAMESPACE', namespace)
+      .withEnvVariable('MESH_TYPE', meshType);
 
-        // Mount kubeconfig if provided
-        if (context.secretRefs.kubeconfig) {
-            container = container.withMountedSecret(
-                '/run/secrets/kubeconfig',
-                context.secretRefs.kubeconfig as unknown as DaggerSecret
-            );
-        }
+    // Mount kubeconfig if provided
+    if (context.secretRefs.kubeconfig) {
+      container = container.withMountedSecret(
+        '/run/secrets/kubeconfig',
+        context.secretRefs.kubeconfig as unknown as DaggerSecret
+      );
+    }
 
-        return container.withExec([
-            'sh',
-            '-c',
-            `
+    return container.withExec([
+      'sh',
+      '-c',
+      `
 #!/bin/sh
 set -e
 
@@ -427,6 +427,6 @@ cat <<EOF
 }
 EOF
         `.trim(),
-        ]);
-    },
+    ]);
+  },
 };

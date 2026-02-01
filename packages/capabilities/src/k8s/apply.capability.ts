@@ -9,63 +9,63 @@ import { z } from '@golden/schema-registry';
 import type { Capability, CapabilityContext } from '@golden/core';
 
 const operationSchema = z.enum([
-    'apply',            // Apply manifests to cluster
-    'delete',           // Delete resources from manifests
-    'rollout-restart',  // Restart a deployment
-    'get-status',       // Get deployment status
+  'apply',            // Apply manifests to cluster
+  'delete',           // Delete resources from manifests
+  'rollout-restart',  // Restart a deployment
+  'get-status',       // Get deployment status
 ]).describe('Kubernetes operation type');
 
 const inputSchema = z
-    .object({
-        operation: operationSchema,
-        manifests: z.array(z.string()).optional().describe('YAML manifests to apply (inline)'),
-        manifestPath: z.string().optional().describe('Path to manifest file or directory'),
-        namespace: z.string().describe('Kubernetes namespace'),
-        substitutions: z.record(z.string()).optional().describe('envsubst-style variable replacements'),
-        resourceType: z.string().optional().describe('Resource type for rollout-restart (e.g., deployment)'),
-        resourceName: z.string().optional().describe('Resource name for rollout-restart'),
-        dryRun: z.boolean().optional().describe('Perform dry-run without applying'),
-        wait: z.boolean().optional().describe('Wait for resources to be ready'),
-        timeoutSeconds: z.number().positive().optional().describe('Timeout for wait operations'),
-    })
-    .describe('Kubernetes Apply input');
+  .object({
+    operation: operationSchema,
+    manifests: z.array(z.string()).optional().describe('YAML manifests to apply (inline)'),
+    manifestPath: z.string().optional().describe('Path to manifest file or directory'),
+    namespace: z.string().optional().describe('Kubernetes namespace, defaults to default'),
+    substitutions: z.record(z.string()).optional().describe('envsubst-style variable replacements'),
+    resourceType: z.string().optional().describe('Resource type for rollout-restart (e.g., deployment)'),
+    resourceName: z.string().optional().describe('Resource name for rollout-restart'),
+    dryRun: z.boolean().optional().describe('Perform dry-run without applying'),
+    wait: z.boolean().optional().describe('Wait for resources to be ready'),
+    timeoutSeconds: z.number().positive().optional().describe('Timeout for wait operations'),
+  })
+  .describe('Kubernetes Apply input');
 
 const resourceStatusSchema = z.object({
-    kind: z.string().describe('Resource kind'),
-    name: z.string().describe('Resource name'),
-    namespace: z.string().describe('Resource namespace'),
-    status: z.enum(['ready', 'pending', 'failed', 'unknown']).describe('Resource status'),
-    replicas: z.number().optional().describe('Total replicas'),
-    readyReplicas: z.number().optional().describe('Ready replicas'),
-    message: z.string().optional().describe('Status message'),
+  kind: z.string().describe('Resource kind'),
+  name: z.string().describe('Resource name'),
+  namespace: z.string().describe('Resource namespace'),
+  status: z.enum(['ready', 'pending', 'failed', 'unknown']).describe('Resource status'),
+  replicas: z.number().optional().describe('Total replicas'),
+  readyReplicas: z.number().optional().describe('Ready replicas'),
+  message: z.string().optional().describe('Status message'),
 });
 
 const outputSchema = z
-    .object({
-        success: z.boolean().describe('Whether the operation succeeded'),
-        operation: operationSchema.describe('Operation performed'),
-        namespace: z.string().describe('Namespace used'),
-        resourcesAffected: z.number().describe('Number of resources affected'),
-        resources: z.array(resourceStatusSchema).optional().describe('Status of affected resources'),
-        message: z.string().describe('Human-readable result message'),
-        dryRun: z.boolean().optional().describe('Whether this was a dry run'),
-    })
-    .describe('Kubernetes Apply output');
+  .object({
+    success: z.boolean().describe('Whether the operation succeeded'),
+    operation: operationSchema.describe('Operation performed'),
+    namespace: z.string().describe('Namespace used'),
+    resourcesAffected: z.number().describe('Number of resources affected'),
+    resources: z.array(resourceStatusSchema).optional().describe('Status of affected resources'),
+    message: z.string().describe('Human-readable result message'),
+    dryRun: z.boolean().optional().describe('Whether this was a dry run'),
+  })
+  .describe('Kubernetes Apply output');
 
 const configSchema = z
-    .object({
-        defaultNamespace: z.string().optional().describe('Default namespace if not specified'),
-        kubeconfigPath: z.string().optional().describe('Path to kubeconfig file'),
-        context: z.string().optional().describe('Kubernetes context to use'),
-    })
-    .describe('Kubernetes Apply configuration');
+  .object({
+    defaultNamespace: z.string().optional().describe('Default namespace if not specified'),
+    kubeconfigPath: z.string().optional().describe('Path to kubeconfig file'),
+    context: z.string().optional().describe('Kubernetes context to use'),
+  })
+  .describe('Kubernetes Apply configuration');
 
 const secretsSchema = z
-    .object({
-        kubeconfig: z.string().optional().describe('Base64-encoded kubeconfig'),
-        serviceAccountToken: z.string().optional().describe('Service account token'),
-    })
-    .describe('Kubernetes Apply secrets');
+  .object({
+    kubeconfig: z.string().optional().describe('Base64-encoded kubeconfig'),
+    serviceAccountToken: z.string().optional().describe('Service account token'),
+  })
+  .describe('Kubernetes Apply secrets');
 
 export type K8sApplyInput = z.infer<typeof inputSchema>;
 export type K8sApplyOutput = z.infer<typeof outputSchema>;
@@ -73,136 +73,136 @@ export type K8sApplyConfig = z.infer<typeof configSchema>;
 export type K8sApplySecrets = z.infer<typeof secretsSchema>;
 
 export const k8sApplyCapability: Capability<
-    K8sApplyInput,
-    K8sApplyOutput,
-    K8sApplyConfig,
-    K8sApplySecrets
+  K8sApplyInput,
+  K8sApplyOutput,
+  K8sApplyConfig,
+  K8sApplySecrets
 > = {
-    metadata: {
-        id: 'golden.k8s.apply',
-        version: '1.0.0',
-        name: 'k8sApply',
-        description:
-            'Apply Kubernetes manifests with variable substitution. Supports apply, delete, rollout-restart, and status operations for deployment management.',
-        tags: ['commander', 'kubernetes', 'deployment', 'infrastructure'],
-        maintainer: 'platform',
+  metadata: {
+    id: 'golden.k8s.apply',
+    version: '1.0.0',
+    name: 'k8sApply',
+    description:
+      'Apply Kubernetes manifests with variable substitution. Supports apply, delete, rollout-restart, and status operations for deployment management.',
+    tags: ['commander', 'kubernetes', 'deployment', 'infrastructure'],
+    maintainer: 'platform',
+  },
+  schemas: {
+    input: inputSchema,
+    output: outputSchema,
+    config: configSchema,
+    secrets: secretsSchema,
+  },
+  security: {
+    requiredScopes: ['k8s:write'],
+    dataClassification: 'INTERNAL',
+    networkAccess: {
+      allowOutbound: ['kubernetes.default.svc', '*.eks.amazonaws.com', '*.azmk8s.io', '*.gke.io'],
     },
-    schemas: {
-        input: inputSchema,
-        output: outputSchema,
-        config: configSchema,
-        secrets: secretsSchema,
+  },
+  operations: {
+    isIdempotent: true,
+    retryPolicy: { maxAttempts: 3, initialIntervalSeconds: 2, backoffCoefficient: 2 },
+    errorMap: (error: unknown) => {
+      if (error instanceof Error) {
+        if (error.message.includes('connection refused')) return 'RETRYABLE';
+        if (error.message.includes('timeout')) return 'RETRYABLE';
+        if (error.message.includes('conflict')) return 'RETRYABLE';
+        if (error.message.includes('unauthorized')) return 'FATAL';
+        if (error.message.includes('not found')) return 'FATAL';
+      }
+      return 'FATAL';
     },
-    security: {
-        requiredScopes: ['k8s:write'],
-        dataClassification: 'INTERNAL',
-        networkAccess: {
-            allowOutbound: ['kubernetes.default.svc', '*.eks.amazonaws.com', '*.azmk8s.io', '*.gke.io'],
+    costFactor: 'MEDIUM',
+  },
+  aiHints: {
+    exampleInput: {
+      operation: 'apply',
+      manifestPath: 'deploy/k8s/workers',
+      namespace: 'production',
+      substitutions: { BUILD_ID: 'v2.0.0', IMAGE_TAG: 'v2.0.0' },
+      wait: true,
+    },
+    exampleOutput: {
+      success: true,
+      operation: 'apply',
+      namespace: 'production',
+      resourcesAffected: 3,
+      resources: [
+        {
+          kind: 'Deployment',
+          name: 'harmony-worker',
+          namespace: 'production',
+          status: 'ready',
+          replicas: 3,
+          readyReplicas: 3,
         },
+      ],
+      message: 'Applied 3 resources to production namespace',
     },
-    operations: {
-        isIdempotent: true,
-        retryPolicy: { maxAttempts: 3, initialIntervalSeconds: 2, backoffCoefficient: 2 },
-        errorMap: (error: unknown) => {
-            if (error instanceof Error) {
-                if (error.message.includes('connection refused')) return 'RETRYABLE';
-                if (error.message.includes('timeout')) return 'RETRYABLE';
-                if (error.message.includes('conflict')) return 'RETRYABLE';
-                if (error.message.includes('unauthorized')) return 'FATAL';
-                if (error.message.includes('not found')) return 'FATAL';
-            }
-            return 'FATAL';
-        },
-        costFactor: 'MEDIUM',
-    },
-    aiHints: {
-        exampleInput: {
-            operation: 'apply',
-            manifestPath: 'deploy/k8s/workers',
-            namespace: 'production',
-            substitutions: { BUILD_ID: 'v2.0.0', IMAGE_TAG: 'v2.0.0' },
-            wait: true,
-        },
-        exampleOutput: {
-            success: true,
-            operation: 'apply',
-            namespace: 'production',
-            resourcesAffected: 3,
-            resources: [
-                {
-                    kind: 'Deployment',
-                    name: 'harmony-worker',
-                    namespace: 'production',
-                    status: 'ready',
-                    replicas: 3,
-                    readyReplicas: 3,
-                },
-            ],
-            message: 'Applied 3 resources to production namespace',
-        },
-        usageNotes:
-            'Use substitutions for environment-specific values like BUILD_ID and IMAGE_TAG. Set wait=true for deployments to ensure rollout completes. Use rollout-restart to restart pods without manifest changes.',
-    },
-    factory: (
-        dag,
-        context: CapabilityContext<K8sApplyConfig, K8sApplySecrets>,
-        input: K8sApplyInput
-    ) => {
-        type DaggerSecret = unknown;
-        type ContainerBuilder = {
-            from(image: string): ContainerBuilder;
-            withEnvVariable(key: string, value: string): ContainerBuilder;
-            withMountedSecret(path: string, secret: DaggerSecret): ContainerBuilder;
-            withExec(args: string[]): unknown;
-        };
-        type DaggerClient = {
-            container(): ContainerBuilder;
-            setSecret(name: string, value: string): DaggerSecret;
-        };
-        const d = dag as unknown as DaggerClient;
+    usageNotes:
+      'Use substitutions for environment-specific values like BUILD_ID and IMAGE_TAG. Set wait=true for deployments to ensure rollout completes. Use rollout-restart to restart pods without manifest changes.',
+  },
+  factory: (
+    dag,
+    context: CapabilityContext<K8sApplyConfig, K8sApplySecrets>,
+    input: K8sApplyInput
+  ) => {
+    type DaggerSecret = unknown;
+    type ContainerBuilder = {
+      from(image: string): ContainerBuilder;
+      withEnvVariable(key: string, value: string): ContainerBuilder;
+      withMountedSecret(path: string, secret: DaggerSecret): ContainerBuilder;
+      withExec(args: string[]): unknown;
+    };
+    type DaggerClient = {
+      container(): ContainerBuilder;
+      setSecret(name: string, value: string): DaggerSecret;
+    };
+    const d = dag as unknown as DaggerClient;
 
-        const namespace = input.namespace || context.config.defaultNamespace || 'default';
-        const timeoutSeconds = input.timeoutSeconds ?? 300;
+    const namespace = input.namespace || context.config.defaultNamespace || 'default';
+    const timeoutSeconds = input.timeoutSeconds ?? 300;
 
-        const payload = {
-            operation: input.operation,
-            manifests: input.manifests,
-            manifestPath: input.manifestPath,
-            namespace,
-            substitutions: input.substitutions ?? {},
-            resourceType: input.resourceType ?? 'deployment',
-            resourceName: input.resourceName,
-            dryRun: input.dryRun ?? false,
-            wait: input.wait ?? false,
-            timeoutSeconds,
-            context: context.config.context,
-        };
+    const payload = {
+      operation: input.operation,
+      manifests: input.manifests,
+      manifestPath: input.manifestPath,
+      namespace,
+      substitutions: input.substitutions ?? {},
+      resourceType: input.resourceType ?? 'deployment',
+      resourceName: input.resourceName,
+      dryRun: input.dryRun ?? false,
+      wait: input.wait ?? false,
+      timeoutSeconds,
+      context: context.config.context,
+    };
 
-        let container = d
-            .container()
-            .from('bitnami/kubectl:latest')
-            .withEnvVariable('INPUT_JSON', JSON.stringify(payload))
-            .withEnvVariable('OPERATION', input.operation)
-            .withEnvVariable('NAMESPACE', namespace);
+    let container = d
+      .container()
+      .from('bitnami/kubectl:latest')
+      .withEnvVariable('INPUT_JSON', JSON.stringify(payload))
+      .withEnvVariable('OPERATION', input.operation)
+      .withEnvVariable('NAMESPACE', namespace);
 
-        // Mount kubeconfig if provided (ISS-compliant)
-        if (context.secretRefs.kubeconfig) {
-            container = container.withMountedSecret(
-                '/run/secrets/kubeconfig',
-                context.secretRefs.kubeconfig as unknown as DaggerSecret
-            );
-        }
-        if (context.secretRefs.serviceAccountToken) {
-            container = container.withMountedSecret(
-                '/run/secrets/sa_token',
-                context.secretRefs.serviceAccountToken as unknown as DaggerSecret
-            );
-        }
+    // Mount kubeconfig if provided (ISS-compliant)
+    if (context.secretRefs.kubeconfig) {
+      container = container.withMountedSecret(
+        '/run/secrets/kubeconfig',
+        context.secretRefs.kubeconfig as unknown as DaggerSecret
+      );
+    }
+    if (context.secretRefs.serviceAccountToken) {
+      container = container.withMountedSecret(
+        '/run/secrets/sa_token',
+        context.secretRefs.serviceAccountToken as unknown as DaggerSecret
+      );
+    }
 
-        return container.withExec([
-            'sh',
-            '-c',
-            `
+    return container.withExec([
+      'sh',
+      '-c',
+      `
 #!/bin/sh
 set -e
 
@@ -395,6 +395,6 @@ cat <<EOF
 }
 EOF
         `.trim(),
-        ]);
-    },
+    ]);
+  },
 };

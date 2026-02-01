@@ -9,80 +9,80 @@ import { z } from '@golden/schema-registry';
 import type { Capability, CapabilityContext } from '@golden/core';
 
 const operationSchema = z.enum([
-    'analyze',          // Analyze canary vs baseline metrics
-    'compare-metrics',  // Compare specific metrics
-    'get-decision',     // Get rollout decision based on thresholds
+  'analyze',          // Analyze canary vs baseline metrics
+  'compare-metrics',  // Compare specific metrics
+  'get-decision',     // Get rollout decision based on thresholds
 ]).describe('Canary analyzer operation');
 
 const metricTypeSchema = z.enum([
-    'error_rate',
-    'latency_p50',
-    'latency_p90',
-    'latency_p99',
-    'throughput',
-    'success_rate',
-    'saturation',
+  'error_rate',
+  'latency_p50',
+  'latency_p90',
+  'latency_p99',
+  'throughput',
+  'success_rate',
+  'saturation',
 ]).describe('Metric type to analyze');
 
 const decisionSchema = z.enum([
-    'PROMOTE',    // Canary is healthy, continue rollout
-    'ROLLBACK',   // Canary is degraded, rollback
-    'CONTINUE',   // Need more data, continue observation
+  'PROMOTE',    // Canary is healthy, continue rollout
+  'ROLLBACK',   // Canary is degraded, rollback
+  'CONTINUE',   // Need more data, continue observation
 ]).describe('Canary analysis decision');
 
 const metricResultSchema = z.object({
-    metric: metricTypeSchema.describe('Metric analyzed'),
-    baselineValue: z.number().describe('Baseline version metric value'),
-    canaryValue: z.number().describe('Canary version metric value'),
-    delta: z.number().describe('Difference (canary - baseline)'),
-    deltaPercent: z.number().describe('Percentage change'),
-    threshold: z.number().describe('Configured threshold'),
-    passed: z.boolean().describe('Whether metric is within threshold'),
+  metric: metricTypeSchema.describe('Metric analyzed'),
+  baselineValue: z.number().describe('Baseline version metric value'),
+  canaryValue: z.number().describe('Canary version metric value'),
+  delta: z.number().describe('Difference (canary - baseline)'),
+  deltaPercent: z.number().describe('Percentage change'),
+  threshold: z.number().describe('Configured threshold'),
+  passed: z.boolean().describe('Whether metric is within threshold'),
 });
 
 const inputSchema = z
-    .object({
-        operation: operationSchema,
-        baselineVersion: z.string().describe('Baseline version identifier'),
-        canaryVersion: z.string().describe('Canary version identifier'),
-        prometheusUrl: z.string().describe('Prometheus server URL'),
-        analysisWindowSeconds: z.number().positive().describe('Time window for analysis'),
-        errorRateThreshold: z.number().min(0).max(1).describe('Error rate threshold (0-1)'),
-        latencyThresholdMs: z.number().positive().optional().describe('Latency threshold in ms'),
-        metrics: z.array(metricTypeSchema).describe('Metrics to analyze'),
-        service: z.string().optional().describe('Service name for metric queries'),
-        namespace: z.string().optional().describe('Kubernetes namespace'),
-    })
-    .describe('Canary Analyzer input');
+  .object({
+    operation: operationSchema,
+    baselineVersion: z.string().describe('Baseline version identifier'),
+    canaryVersion: z.string().describe('Canary version identifier'),
+    prometheusUrl: z.string().describe('Prometheus server URL'),
+    analysisWindowSeconds: z.number().positive().optional().describe('Time window for analysis, defaults to 600s'),
+    errorRateThreshold: z.number().min(0).max(1).optional().describe('Error rate threshold (0-1), defaults to 0.05'),
+    latencyThresholdMs: z.number().positive().optional().describe('Latency threshold in ms'),
+    metrics: z.array(metricTypeSchema).optional().describe('Metrics to analyze, defaults to error_rate'),
+    service: z.string().optional().describe('Service name for metric queries'),
+    namespace: z.string().optional().describe('Kubernetes namespace'),
+  })
+  .describe('Canary Analyzer input');
 
 const outputSchema = z
-    .object({
-        decision: decisionSchema.describe('Overall rollout decision'),
-        baselineVersion: z.string().describe('Baseline version analyzed'),
-        canaryVersion: z.string().describe('Canary version analyzed'),
-        baselineMetrics: z.record(z.number()).describe('Baseline metric values'),
-        canaryMetrics: z.record(z.number()).describe('Canary metric values'),
-        deltas: z.record(z.number()).describe('Delta per metric'),
-        metricResults: z.array(metricResultSchema).describe('Detailed metric analysis'),
-        reason: z.string().describe('Human-readable decision reason'),
-        analysisWindowSeconds: z.number().describe('Analysis window used'),
-        analyzedAt: z.string().describe('ISO timestamp of analysis'),
-    })
-    .describe('Canary Analyzer output');
+  .object({
+    decision: decisionSchema.describe('Overall rollout decision'),
+    baselineVersion: z.string().describe('Baseline version analyzed'),
+    canaryVersion: z.string().describe('Canary version analyzed'),
+    baselineMetrics: z.record(z.number()).describe('Baseline metric values'),
+    canaryMetrics: z.record(z.number()).describe('Canary metric values'),
+    deltas: z.record(z.number()).describe('Delta per metric'),
+    metricResults: z.array(metricResultSchema).describe('Detailed metric analysis'),
+    reason: z.string().describe('Human-readable decision reason'),
+    analysisWindowSeconds: z.number().describe('Analysis window used'),
+    analyzedAt: z.string().describe('ISO timestamp of analysis'),
+  })
+  .describe('Canary Analyzer output');
 
 const configSchema = z
-    .object({
-        defaultPrometheusUrl: z.string().optional().describe('Default Prometheus URL'),
-        defaultAnalysisWindow: z.number().positive().optional().describe('Default analysis window'),
-        defaultErrorThreshold: z.number().min(0).max(1).optional().describe('Default error threshold'),
-    })
-    .describe('Canary Analyzer configuration');
+  .object({
+    defaultPrometheusUrl: z.string().optional().describe('Default Prometheus URL'),
+    defaultAnalysisWindow: z.number().positive().optional().describe('Default analysis window'),
+    defaultErrorThreshold: z.number().min(0).max(1).optional().describe('Default error threshold'),
+  })
+  .describe('Canary Analyzer configuration');
 
 const secretsSchema = z
-    .object({
-        prometheusToken: z.string().optional().describe('Prometheus bearer token'),
-    })
-    .describe('Canary Analyzer secrets');
+  .object({
+    prometheusToken: z.string().optional().describe('Prometheus bearer token'),
+  })
+  .describe('Canary Analyzer secrets');
 
 export type CanaryAnalyzerInput = z.infer<typeof inputSchema>;
 export type CanaryAnalyzerOutput = z.infer<typeof outputSchema>;
@@ -90,137 +90,137 @@ export type CanaryAnalyzerConfig = z.infer<typeof configSchema>;
 export type CanaryAnalyzerSecrets = z.infer<typeof secretsSchema>;
 
 export const canaryAnalyzerCapability: Capability<
-    CanaryAnalyzerInput,
-    CanaryAnalyzerOutput,
-    CanaryAnalyzerConfig,
-    CanaryAnalyzerSecrets
+  CanaryAnalyzerInput,
+  CanaryAnalyzerOutput,
+  CanaryAnalyzerConfig,
+  CanaryAnalyzerSecrets
 > = {
-    metadata: {
-        id: 'golden.traffic.canary-analyzer',
-        version: '1.0.0',
-        name: 'canaryAnalyzer',
-        description:
-            'Compare GOS-001 Golden Signals between baseline and canary versions. Returns PROMOTE/ROLLBACK decision based on error rate delta and latency thresholds.',
-        tags: ['guardian', 'traffic', 'observability', 'canary'],
-        maintainer: 'platform',
+  metadata: {
+    id: 'golden.traffic.canary-analyzer',
+    version: '1.0.0',
+    name: 'canaryAnalyzer',
+    description:
+      'Compare GOS-001 Golden Signals between baseline and canary versions. Returns PROMOTE/ROLLBACK decision based on error rate delta and latency thresholds.',
+    tags: ['guardian', 'traffic', 'observability', 'canary'],
+    maintainer: 'platform',
+  },
+  schemas: {
+    input: inputSchema,
+    output: outputSchema,
+    config: configSchema,
+    secrets: secretsSchema,
+  },
+  security: {
+    requiredScopes: ['metrics:read'],
+    dataClassification: 'INTERNAL',
+    networkAccess: {
+      allowOutbound: ['prometheus:9090', '*.prometheus.io'],
     },
-    schemas: {
-        input: inputSchema,
-        output: outputSchema,
-        config: configSchema,
-        secrets: secretsSchema,
+    oscalControlIds: ['SI-4', 'CA-7'], // Info system monitoring, continuous monitoring
+  },
+  operations: {
+    isIdempotent: true,
+    retryPolicy: { maxAttempts: 3, initialIntervalSeconds: 5, backoffCoefficient: 2 },
+    errorMap: (error: unknown) => {
+      if (error instanceof Error) {
+        if (error.message.includes('connection')) return 'RETRYABLE';
+        if (error.message.includes('timeout')) return 'RETRYABLE';
+        if (error.message.includes('no data')) return 'RETRYABLE';
+        if (error.message.includes('unauthorized')) return 'FATAL';
+      }
+      return 'FATAL';
     },
-    security: {
-        requiredScopes: ['metrics:read'],
-        dataClassification: 'INTERNAL',
-        networkAccess: {
-            allowOutbound: ['prometheus:9090', '*.prometheus.io'],
+    costFactor: 'LOW',
+  },
+  aiHints: {
+    exampleInput: {
+      operation: 'analyze',
+      baselineVersion: 'v1.9.0',
+      canaryVersion: 'v2.0.0',
+      prometheusUrl: 'http://prometheus:9090',
+      analysisWindowSeconds: 600,
+      errorRateThreshold: 0.05,
+      metrics: ['error_rate', 'latency_p99'],
+    },
+    exampleOutput: {
+      decision: 'PROMOTE',
+      baselineVersion: 'v1.9.0',
+      canaryVersion: 'v2.0.0',
+      baselineMetrics: { error_rate: 0.01, latency_p99: 150 },
+      canaryMetrics: { error_rate: 0.012, latency_p99: 145 },
+      deltas: { error_rate: 0.002, latency_p99: -5 },
+      metricResults: [
+        {
+          metric: 'error_rate',
+          baselineValue: 0.01,
+          canaryValue: 0.012,
+          delta: 0.002,
+          deltaPercent: 20,
+          threshold: 0.05,
+          passed: true,
         },
-        oscalControlIds: ['SI-4', 'CA-7'], // Info system monitoring, continuous monitoring
+      ],
+      reason: 'Canary error rate (1.2%) within threshold (5%). Latency improved by 3%.',
+      analysisWindowSeconds: 600,
+      analyzedAt: '2024-01-15T10:30:00Z',
     },
-    operations: {
-        isIdempotent: true,
-        retryPolicy: { maxAttempts: 3, initialIntervalSeconds: 5, backoffCoefficient: 2 },
-        errorMap: (error: unknown) => {
-            if (error instanceof Error) {
-                if (error.message.includes('connection')) return 'RETRYABLE';
-                if (error.message.includes('timeout')) return 'RETRYABLE';
-                if (error.message.includes('no data')) return 'RETRYABLE';
-                if (error.message.includes('unauthorized')) return 'FATAL';
-            }
-            return 'FATAL';
-        },
-        costFactor: 'LOW',
-    },
-    aiHints: {
-        exampleInput: {
-            operation: 'analyze',
-            baselineVersion: 'v1.9.0',
-            canaryVersion: 'v2.0.0',
-            prometheusUrl: 'http://prometheus:9090',
-            analysisWindowSeconds: 600,
-            errorRateThreshold: 0.05,
-            metrics: ['error_rate', 'latency_p99'],
-        },
-        exampleOutput: {
-            decision: 'PROMOTE',
-            baselineVersion: 'v1.9.0',
-            canaryVersion: 'v2.0.0',
-            baselineMetrics: { error_rate: 0.01, latency_p99: 150 },
-            canaryMetrics: { error_rate: 0.012, latency_p99: 145 },
-            deltas: { error_rate: 0.002, latency_p99: -5 },
-            metricResults: [
-                {
-                    metric: 'error_rate',
-                    baselineValue: 0.01,
-                    canaryValue: 0.012,
-                    delta: 0.002,
-                    deltaPercent: 20,
-                    threshold: 0.05,
-                    passed: true,
-                },
-            ],
-            reason: 'Canary error rate (1.2%) within threshold (5%). Latency improved by 3%.',
-            analysisWindowSeconds: 600,
-            analyzedAt: '2024-01-15T10:30:00Z',
-        },
-        usageNotes:
-            'Use during progressive rollout to determine if canary should be promoted. Requires Prometheus with GOS-001 compliant metrics. Set appropriate thresholds for your SLOs.',
-    },
-    factory: (
-        dag,
-        context: CapabilityContext<CanaryAnalyzerConfig, CanaryAnalyzerSecrets>,
-        input: CanaryAnalyzerInput
-    ) => {
-        type DaggerSecret = unknown;
-        type ContainerBuilder = {
-            from(image: string): ContainerBuilder;
-            withEnvVariable(key: string, value: string): ContainerBuilder;
-            withMountedSecret(path: string, secret: DaggerSecret): ContainerBuilder;
-            withExec(args: string[]): unknown;
-        };
-        type DaggerClient = {
-            container(): ContainerBuilder;
-        };
-        const d = dag as unknown as DaggerClient;
+    usageNotes:
+      'Use during progressive rollout to determine if canary should be promoted. Requires Prometheus with GOS-001 compliant metrics. Set appropriate thresholds for your SLOs.',
+  },
+  factory: (
+    dag,
+    context: CapabilityContext<CanaryAnalyzerConfig, CanaryAnalyzerSecrets>,
+    input: CanaryAnalyzerInput
+  ) => {
+    type DaggerSecret = unknown;
+    type ContainerBuilder = {
+      from(image: string): ContainerBuilder;
+      withEnvVariable(key: string, value: string): ContainerBuilder;
+      withMountedSecret(path: string, secret: DaggerSecret): ContainerBuilder;
+      withExec(args: string[]): unknown;
+    };
+    type DaggerClient = {
+      container(): ContainerBuilder;
+    };
+    const d = dag as unknown as DaggerClient;
 
-        const prometheusUrl = input.prometheusUrl || context.config.defaultPrometheusUrl || 'http://prometheus:9090';
-        const analysisWindow = input.analysisWindowSeconds || context.config.defaultAnalysisWindow || 600;
-        const errorThreshold = input.errorRateThreshold || context.config.defaultErrorThreshold || 0.05;
-        const metrics = input.metrics || ['error_rate'];
+    const prometheusUrl = input.prometheusUrl || context.config.defaultPrometheusUrl || 'http://prometheus:9090';
+    const analysisWindow = input.analysisWindowSeconds || context.config.defaultAnalysisWindow || 600;
+    const errorThreshold = input.errorRateThreshold || context.config.defaultErrorThreshold || 0.05;
+    const metrics = input.metrics || ['error_rate'];
 
-        const payload = {
-            operation: input.operation,
-            baselineVersion: input.baselineVersion,
-            canaryVersion: input.canaryVersion,
-            prometheusUrl,
-            analysisWindowSeconds: analysisWindow,
-            errorRateThreshold: errorThreshold,
-            latencyThresholdMs: input.latencyThresholdMs,
-            metrics,
-            service: input.service,
-            namespace: input.namespace,
-        };
+    const payload = {
+      operation: input.operation,
+      baselineVersion: input.baselineVersion,
+      canaryVersion: input.canaryVersion,
+      prometheusUrl,
+      analysisWindowSeconds: analysisWindow,
+      errorRateThreshold: errorThreshold,
+      latencyThresholdMs: input.latencyThresholdMs,
+      metrics,
+      service: input.service,
+      namespace: input.namespace,
+    };
 
-        let container = d
-            .container()
-            .from('curlimages/curl:latest')
-            .withEnvVariable('INPUT_JSON', JSON.stringify(payload))
-            .withEnvVariable('OPERATION', input.operation)
-            .withEnvVariable('PROMETHEUS_URL', prometheusUrl);
+    let container = d
+      .container()
+      .from('curlimages/curl:latest')
+      .withEnvVariable('INPUT_JSON', JSON.stringify(payload))
+      .withEnvVariable('OPERATION', input.operation)
+      .withEnvVariable('PROMETHEUS_URL', prometheusUrl);
 
-        // Mount Prometheus token if provided
-        if (context.secretRefs.prometheusToken) {
-            container = container.withMountedSecret(
-                '/run/secrets/prometheus_token',
-                context.secretRefs.prometheusToken as unknown as DaggerSecret
-            );
-        }
+    // Mount Prometheus token if provided
+    if (context.secretRefs.prometheusToken) {
+      container = container.withMountedSecret(
+        '/run/secrets/prometheus_token',
+        context.secretRefs.prometheusToken as unknown as DaggerSecret
+      );
+    }
 
-        return container.withExec([
-            'sh',
-            '-c',
-            `
+    return container.withExec([
+      'sh',
+      '-c',
+      `
 #!/bin/sh
 set -e
 
@@ -288,9 +288,13 @@ analyze_metrics() {
   BASELINE_ERROR=$(query_prometheus "sum(rate(http_requests_total{$BASELINE_SELECTOR,status=~\\"5..\\"}[$WINDOW_RANGE]))/sum(rate(http_requests_total{$BASELINE_SELECTOR}[$WINDOW_RANGE]))")
   CANARY_ERROR=$(query_prometheus "sum(rate(http_requests_total{$CANARY_SELECTOR,status=~\\"5..\\"}[$WINDOW_RANGE]))/sum(rate(http_requests_total{$CANARY_SELECTOR}[$WINDOW_RANGE]))")
   
-  # Handle NaN/empty results
-  BASELINE_ERROR=\${BASELINE_ERROR:-0}
-  CANARY_ERROR=\${CANARY_ERROR:-0}
+  # Handle NaN/empty results (avoid shell parameter expansion patterns in template strings)
+  case "$BASELINE_ERROR" in
+    ""|"NaN"|"null") BASELINE_ERROR=0 ;;
+  esac
+  case "$CANARY_ERROR" in
+    ""|"NaN"|"null") CANARY_ERROR=0 ;;
+  esac
   
   ERROR_DELTA=$(echo "$CANARY_ERROR - $BASELINE_ERROR" | bc -l 2>/dev/null || echo "0")
   ERROR_DELTA_PCT=$(echo "scale=2; $ERROR_DELTA * 100 / ($BASELINE_ERROR + 0.0001)" | bc -l 2>/dev/null || echo "0")
@@ -319,8 +323,12 @@ analyze_metrics() {
   BASELINE_LATENCY=$(query_prometheus "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{$BASELINE_SELECTOR}[$WINDOW_RANGE])) by (le)) * 1000")
   CANARY_LATENCY=$(query_prometheus "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{$CANARY_SELECTOR}[$WINDOW_RANGE])) by (le)) * 1000")
   
-  BASELINE_LATENCY=\${BASELINE_LATENCY:-0}
-  CANARY_LATENCY=\${CANARY_LATENCY:-0}
+  case "$BASELINE_LATENCY" in
+    ""|"NaN"|"null") BASELINE_LATENCY=0 ;;
+  esac
+  case "$CANARY_LATENCY" in
+    ""|"NaN"|"null") CANARY_LATENCY=0 ;;
+  esac
   
   LATENCY_DELTA=$(echo "$CANARY_LATENCY - $BASELINE_LATENCY" | bc -l 2>/dev/null || echo "0")
   
@@ -364,6 +372,6 @@ cat <<EOF
 }
 EOF
         `.trim(),
-        ]);
-    },
+    ]);
+  },
 };

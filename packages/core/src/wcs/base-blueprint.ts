@@ -18,9 +18,41 @@ export const SECURITY_CONTEXT_MEMO_KEY = 'golden.securityContext';
 /** Memo key for GoldenContext (preferred for trace + golden.* attributes). */
 export const GOLDEN_CONTEXT_MEMO_KEY = 'golden.context';
 
+/**
+ * Input for flag evaluation activity.
+ * Used by checkFlag() to evaluate OpenFeature flags deterministically.
+ */
+export interface EvaluateFlagActivityInput {
+  /** Feature flag key to evaluate */
+  flagKey: string;
+  /** Default value if flag cannot be evaluated */
+  defaultValue: boolean;
+  /** Evaluation context for targeting */
+  context?: Record<string, unknown>;
+}
+
+/**
+ * Error thrown when a capability is disabled via feature flag.
+ * Allows callers to handle disabled capabilities gracefully.
+ */
+export class CapabilityDisabledError extends Error {
+  constructor(
+    public readonly capabilityId: string,
+    public readonly flagKey: string
+  ) {
+    super(`Capability '${capabilityId}' is disabled via feature flag '${flagKey}'`);
+    this.name = 'CapabilityDisabledError';
+  }
+}
+
 /** Activity interface for ExecuteCapability; worker implements and registers. */
 export interface ExecuteCapabilityActivity {
   executeDaggerCapability<In, Out>(input: ExecuteCapabilityActivityInput<In>): Promise<Out>;
+}
+
+/** Activity interface for flag evaluation; worker implements and registers. */
+export interface FlagActivity {
+  evaluateFlag(input: EvaluateFlagActivityInput): Promise<boolean>;
 }
 
 /**
@@ -82,12 +114,43 @@ export abstract class BaseBlueprint<Input, Output, Config> {
     return wf.sleep(ms);
   }
 
-  /** Execute a capability by ID via the platform activity (preferred; aligns with Metric 1). */
+  /**
+   * Execute a capability by ID via the platform activity (preferred; aligns with Metric 1).
+   * Checks the cap-{capId}-enabled feature flag before execution unless skipFlagCheck is true.
+   *
+   * @param capId - Capability ID to execute
+   * @param input - Input for the capability
+   * @param options - Optional config, secretRefs, and flag check settings
+   * @throws CapabilityDisabledError if capability is disabled via feature flag
+   */
   protected async executeById<In, Out>(
     capId: string,
     input: In,
-    options?: { config?: unknown; secretRefs?: unknown }
+    options?: {
+      config?: unknown;
+      secretRefs?: unknown;
+      /**
+       * Skip the feature flag check for this capability execution.
+       * Use for flag-related capabilities to avoid circular dependencies,
+       * or when you've already verified the flag state.
+       */
+      skipFlagCheck?: boolean;
+    }
   ): Promise<Out> {
+    // Check capability feature flag unless explicitly skipped
+    // Skip flag check for flag-related capabilities to avoid circular dependencies
+    const isFlagCapability = capId.startsWith('golden.flags.');
+    const shouldCheckFlag = !options?.skipFlagCheck && !isFlagCapability;
+
+    if (shouldCheckFlag) {
+      const flagKey = `cap-${capId}-enabled`;
+      const isEnabled = await this.checkFlag(flagKey, true);
+
+      if (!isEnabled) {
+        throw new CapabilityDisabledError(capId, flagKey);
+      }
+    }
+
     const activities = wf.proxyActivities<ExecuteCapabilityActivity>({
       startToCloseTimeout: this.operations.sla.maxDuration,
     });
@@ -105,6 +168,40 @@ export abstract class BaseBlueprint<Input, Output, Config> {
       ctx,
     };
     return activities.executeDaggerCapability<In, Out>(payload);
+  }
+
+  /**
+   * Evaluate a feature flag via activity to maintain workflow determinism.
+   * Uses OpenFeature evaluation with the current security/golden context.
+   *
+   * @param flagKey - The feature flag key to evaluate
+   * @param defaultValue - Default value if flag cannot be evaluated
+   * @returns The evaluated flag value
+   */
+  protected async checkFlag(flagKey: string, defaultValue: boolean): Promise<boolean> {
+    const flagActivities = wf.proxyActivities<FlagActivity>({
+      startToCloseTimeout: '30s',
+      retry: {
+        maximumAttempts: 3,
+        initialInterval: '1s',
+        backoffCoefficient: 2,
+      },
+    });
+
+    const ctx = this.goldenContext;
+    const secCtx = this.securityContext;
+
+    return flagActivities.evaluateFlag({
+      flagKey,
+      defaultValue,
+      context: {
+        // Include context for flag targeting
+        initiatorId: secCtx.initiatorId,
+        appId: ctx?.app_id,
+        environment: ctx?.environment,
+        workflowId: wf.workflowInfo().workflowId,
+      },
+    });
   }
 
   /** Execute capability via platform activity; no custom activity code (WCS 2.1.3). */

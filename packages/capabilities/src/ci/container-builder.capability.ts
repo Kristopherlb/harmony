@@ -17,7 +17,7 @@ const inputSchema = z
     .object({
         operation: operationSchema,
         context: z.string().describe('Build context path (directory containing Dockerfile)'),
-        dockerfile: z.string().describe('Dockerfile path relative to context'),
+        dockerfile: z.string().optional().describe('Dockerfile path relative to context, defaults to Dockerfile'),
         target: z.string().optional().describe('Multi-stage build target'),
         buildArgs: z.record(z.string()).optional().describe('Build arguments'),
         tags: z.array(z.string()).min(1).describe('Image tags (e.g., ["registry/image:v1.0.0"])'),

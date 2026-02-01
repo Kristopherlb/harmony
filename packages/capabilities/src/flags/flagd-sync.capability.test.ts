@@ -132,13 +132,14 @@ describe('flagdSyncCapability', () => {
             }
         });
 
-        it('has sensible defaults', () => {
+        it('allows optional fields to be omitted', () => {
             const result = flagdSyncCapability.schemas.input.parse({
                 operation: 'sync',
             });
-            expect(result.configPath).toBe('deploy/flagd/flags.json');
-            expect(result.namespace).toBe('default');
-            expect(result.configMapName).toBe('flagd-flags');
+            // These fields are optional - defaults are applied in factory, not schema
+            expect(result.configPath).toBeUndefined();
+            expect(result.namespace).toBeUndefined();
+            expect(result.configMapName).toBeUndefined();
         });
 
         it('accepts dry run option', () => {

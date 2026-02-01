@@ -6,9 +6,11 @@
   "types": "dist/index.d.ts",
   "dependencies": {
     "@dagger.io/dagger": "^0.19.10",
-    "@golden/core": "workspace:*",
     "@golden/capabilities": "workspace:*",
+    "@golden/core": "workspace:*",
     "@golden/schema-registry": "workspace:*",
+    "@openfeature/flagd-provider": "^0.13.3",
+    "@openfeature/server-sdk": "^1.20.1",
     "@temporalio/activity": "^1.14.1",
     "@temporalio/client": "^1.14.1",
     "@temporalio/workflow": "^1.14.1"
