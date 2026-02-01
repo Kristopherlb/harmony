@@ -20,7 +20,7 @@ module.exports = {
           "error",
           {
             selector:
-              "ExportNamedDeclaration ObjectExpression:not(:has(Property[key.name='metadata']))",
+              "ExportNamedDeclaration > VariableDeclaration > VariableDeclarator > ObjectExpression:not(:has(> Property[key.name='metadata']))",
             message:
               "OCS Capabilities must define a 'metadata' block for registry discovery.",
           },

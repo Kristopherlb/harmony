@@ -6,16 +6,26 @@
  */
 export { jwtUtilitiesCapability, type JwtUtilitiesInput, type JwtUtilitiesOutput } from './src/auth/jwt-utilities.capability.js';
 export { oauthProviderCapability, type OAuthProviderInput, type OAuthProviderOutput } from './src/auth/oauth-provider.capability.js';
+export { terraformRunnerCapability, type TerraformRunnerInput, type TerraformRunnerOutput } from './src/commanders/terraform-runner.capability.js';
+export { awsSdkCapability, type AwsSdkInput, type AwsSdkOutput } from './src/connectors/aws-sdk.capability.js';
+export { postgresqlCapability, type PostgresqlInput, type PostgresqlOutput } from './src/connectors/postgresql.capability.js';
+export { slackConnectorCapability, type SlackConnectorInput, type SlackConnectorOutput } from './src/connectors/slack-connector.capability.js';
 export { echoCapability, type EchoInput, type EchoOutput } from './src/demo/echo.capability.js';
+export { openfeatureProviderCapability, type OpenFeatureProviderInput, type OpenFeatureProviderOutput } from './src/flags/openfeature-provider.capability.js';
 export { githubGraphqlQueryCapability, type githubGraphqlQueryInput, type githubGraphqlQueryOutput } from './src/connectors/github-graphql-query.capability.js';
 export { githubRestRequestCapability, type githubRestRequestInput, type githubRestRequestOutput } from './src/connectors/github-rest-request.capability.js';
 export { jiraIssueCountCapability, type JiraIssueCountInput, type JiraIssueCountOutput } from './src/connectors/jira-issue-count.capability.js';
 export { jiraIssueSearchCapability, type JiraIssueSearchInput, type JiraIssueSearchOutput } from './src/connectors/jira-issue-search.capability.js';
 export { mathAddCapability, type MathAddInput, type MathAddOutput } from './src/demo/math-add.capability.js';
+export { healthCheckProbeCapability, type HealthCheckProbeInput, type HealthCheckProbeOutput } from './src/observability/health-check-probe.capability.js';
+export { syftCapability, type SyftInput, type SyftOutput } from './src/sbom/syft.capability.js';
 export { clamavScannerCapability, type ClamavScannerInput, type ClamavScannerOutput } from './src/security/clamav-scanner.capability.js';
+export { gitleaksCapability, type GitleaksInput, type GitleaksOutput } from './src/security/gitleaks.capability.js';
 export { semgrepScannerCapability, type SemgrepScannerInput, type SemgrepScannerOutput } from './src/security/semgrep-scanner.capability.js';
 export { trivyScannerCapability, type TrivyScannerInput, type TrivyScannerOutput } from './src/security/trivy-scanner.capability.js';
 export { compressionCapability, type CompressionInput, type CompressionOutput } from './src/utilities/compression.capability.js';
+export { digitalSigningCapability, type DigitalSigningInput, type DigitalSigningOutput } from './src/utilities/digital-signing.capability.js';
+export { encodingCapability, type EncodingInput, type EncodingOutput } from './src/utilities/encoding.capability.js';
 export { hashingCapability, type HashingInput, type HashingOutput } from './src/utilities/hashing.capability.js';
 export { jsonYamlTransformCapability, type JsonYamlTransformInput, type JsonYamlTransformOutput } from './src/utilities/json-yaml-transform.capability.js';
 export { createCapabilityRegistry, getCapability, type CapabilityRegistry } from './src/registry.js';

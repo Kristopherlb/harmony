@@ -12,6 +12,7 @@
  * - Keep server behavior deterministic and side-effect free in MVP.
  */
 import type { ToolSurface } from './tool-surface.js';
+import type { SignedGoldenCallEnvelope } from './call-envelope.js';
 
 type JsonRpcId = string | number | null;
 
@@ -43,6 +44,14 @@ function isObject(value: unknown): value is Record<string, unknown> {
 function getParam<T>(params: unknown, key: string): T | undefined {
   if (!isObject(params)) return undefined;
   return params[key] as T | undefined;
+}
+
+function getSignedEnvelope(meta: unknown): SignedGoldenCallEnvelope | undefined {
+  if (!isObject(meta)) return undefined;
+  const golden = meta.golden;
+  if (!golden) return undefined;
+  // Envelope is validated cryptographically at the tool-surface boundary.
+  return golden as SignedGoldenCallEnvelope;
 }
 
 function ok(id: JsonRpcId, result: unknown): JsonRpcSuccessResponse {
@@ -103,7 +112,12 @@ export function createMcpJsonRpcHandler(input: {
       const args = getParam<unknown>(req.params, 'arguments');
       const meta = getParam<unknown>(req.params, 'meta');
       if (!name) return err(id, -32602, 'Invalid params: missing name');
-      const result = await input.toolSurface.callTool({ name, arguments: args, meta: meta as any });
+      const golden = getSignedEnvelope(meta);
+      const result = await input.toolSurface.callTool({
+        name,
+        arguments: args,
+        meta: golden ? { golden } : undefined,
+      });
       return ok(id, result);
     }
 

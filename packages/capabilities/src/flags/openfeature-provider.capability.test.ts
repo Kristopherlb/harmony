@@ -3,28 +3,28 @@
  * TCS-001 contract verification for OpenFeature Provider capability.
  */
 import { describe, it, expect } from 'vitest';
-import { openFeatureProviderCapability } from './openfeature-provider.capability.js';
+import { openfeatureProviderCapability } from './openfeature-provider.capability.js';
 
-describe('openFeatureProviderCapability', () => {
+describe('openfeatureProviderCapability', () => {
     describe('TCS-001 contract verification', () => {
         it('validates aiHints examples against input schema', () => {
             expect(() =>
-                openFeatureProviderCapability.schemas.input.parse(openFeatureProviderCapability.aiHints.exampleInput)
+                openfeatureProviderCapability.schemas.input.parse(openfeatureProviderCapability.aiHints.exampleInput)
             ).not.toThrow();
         });
 
         it('validates aiHints examples against output schema', () => {
             expect(() =>
-                openFeatureProviderCapability.schemas.output.parse(openFeatureProviderCapability.aiHints.exampleOutput)
+                openfeatureProviderCapability.schemas.output.parse(openfeatureProviderCapability.aiHints.exampleOutput)
             ).not.toThrow();
         });
 
         it('has required OCS metadata fields', () => {
-            expect(openFeatureProviderCapability.metadata.id).toBe('golden.flags.openfeature-provider');
-            expect(openFeatureProviderCapability.metadata.version).toMatch(/^\d+\.\d+\.\d+$/);
-            expect(openFeatureProviderCapability.metadata.name).toBe('openFeatureProvider');
-            expect(openFeatureProviderCapability.metadata.description).toBeTruthy();
-            expect(openFeatureProviderCapability.metadata.tags).toContain('connector');
+            expect(openfeatureProviderCapability.metadata.id).toBe('golden.flags.openfeature-provider');
+            expect(openfeatureProviderCapability.metadata.version).toMatch(/^\d+\.\d+\.\d+$/);
+            expect(openfeatureProviderCapability.metadata.name).toBe('openFeatureProvider');
+            expect(openfeatureProviderCapability.metadata.description).toBeTruthy();
+            expect(openfeatureProviderCapability.metadata.tags).toContain('connector');
         });
     });
 
@@ -55,7 +55,7 @@ describe('openFeatureProviderCapability', () => {
                 },
             };
 
-            openFeatureProviderCapability.factory(
+            openfeatureProviderCapability.factory(
                 fakeDag,
                 {
                     ctx: { app_id: 'app', environment: 'local', initiator_id: 'user', trace_id: 't' },
@@ -90,7 +90,7 @@ describe('openFeatureProviderCapability', () => {
                 }),
             };
 
-            openFeatureProviderCapability.factory(
+            openfeatureProviderCapability.factory(
                 fakeDag,
                 {
                     ctx: { app_id: 'app', environment: 'local', initiator_id: 'user', trace_id: 't' },
@@ -122,7 +122,7 @@ describe('openFeatureProviderCapability', () => {
 
             for (const operation of operations) {
                 expect(() =>
-                    openFeatureProviderCapability.schemas.input.parse({
+                    openfeatureProviderCapability.schemas.input.parse({
                         operation,
                         flagKey: 'test-flag',
                         defaultValue: operation === 'evaluateBoolean' ? false :
@@ -135,7 +135,7 @@ describe('openFeatureProviderCapability', () => {
 
         it('requires flagKey', () => {
             expect(() =>
-                openFeatureProviderCapability.schemas.input.parse({
+                openfeatureProviderCapability.schemas.input.parse({
                     operation: 'evaluateBoolean',
                     defaultValue: false,
                 })

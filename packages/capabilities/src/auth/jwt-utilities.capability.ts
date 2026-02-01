@@ -138,12 +138,18 @@ export const jwtUtilitiesCapability: Capability<
     context: CapabilityContext<JwtUtilitiesConfig, JwtUtilitiesSecrets>,
     input: JwtUtilitiesInput
   ) => {
+    // ISS-compliant types - includes withMountedSecret for secret mounting
+    type DaggerSecret = unknown;
     type ContainerBuilder = {
       from(image: string): ContainerBuilder;
       withEnvVariable(key: string, value: string): ContainerBuilder;
+      withMountedSecret(path: string, secret: DaggerSecret): ContainerBuilder;
       withExec(args: string[]): unknown;
     };
-    type DaggerClient = { container(): ContainerBuilder };
+    type DaggerClient = {
+      container(): ContainerBuilder;
+      setSecret(name: string, value: string): DaggerSecret;
+    };
     const d = dag as unknown as DaggerClient;
 
     const algorithm = input.algorithm ?? context.config.defaultAlgorithm ?? 'HS256';
@@ -166,16 +172,26 @@ export const jwtUtilitiesCapability: Capability<
       publicKeyRef: context.secretRefs.publicKey,
     };
 
-    return d
+    // Build container with mounted secrets (ISS-compliant)
+    let container = d
       .container()
       .from('node:20-alpine')
       .withEnvVariable('INPUT_JSON', JSON.stringify(payload))
       .withEnvVariable('OPERATION', input.operation)
-      .withEnvVariable('ALGORITHM', algorithm)
-      .withExec([
-        'sh',
-        '-c',
-        `
+      .withEnvVariable('ALGORITHM', algorithm);
+
+    // Mount secrets if refs are provided (platform resolves these to Dagger Secrets)
+    if (context.secretRefs.signingKey && typeof (container as Record<string, unknown>).withMountedSecret === 'function') {
+      container = container.withMountedSecret('/run/secrets/signing_key', context.secretRefs.signingKey as unknown as DaggerSecret);
+    }
+    if (context.secretRefs.publicKey && typeof (container as Record<string, unknown>).withMountedSecret === 'function') {
+      container = container.withMountedSecret('/run/secrets/public_key', context.secretRefs.publicKey as unknown as DaggerSecret);
+    }
+
+    return container.withExec([
+      'sh',
+      '-c',
+      `
 npm install --no-save jsonwebtoken 2>/dev/null && node -e '
 const jwt = require("jsonwebtoken");
 const input = JSON.parse(process.env.INPUT_JSON);
@@ -199,19 +215,18 @@ function decodeWithoutVerify(token) {
 async function run() {
   const fs = require("fs");
   
-  // Read signing key from secret ref - no insecure fallbacks
-  let signingKey;
-  if (input.signingKeyRef && fs.existsSync(input.signingKeyRef)) {
-    signingKey = fs.readFileSync(input.signingKeyRef, "utf8").trim();
-  } else if (process.env.SIGNING_KEY) {
-    signingKey = process.env.SIGNING_KEY;
+  // ISS-compliant: Read secrets from mounted paths only
+  const SIGNING_KEY_PATH = "/run/secrets/signing_key";
+  const PUBLIC_KEY_PATH = "/run/secrets/public_key";
+  
+  let signingKey = null;
+  if (fs.existsSync(SIGNING_KEY_PATH)) {
+    signingKey = fs.readFileSync(SIGNING_KEY_PATH, "utf8").trim();
   }
   
-  let publicKey;
-  if (input.publicKeyRef && fs.existsSync(input.publicKeyRef)) {
-    publicKey = fs.readFileSync(input.publicKeyRef, "utf8").trim();
-  } else if (process.env.PUBLIC_KEY) {
-    publicKey = process.env.PUBLIC_KEY;
+  let publicKey = null;
+  if (fs.existsSync(PUBLIC_KEY_PATH)) {
+    publicKey = fs.readFileSync(PUBLIC_KEY_PATH, "utf8").trim();
   } else {
     publicKey = signingKey; // For symmetric algorithms
   }
@@ -296,6 +311,6 @@ run().catch(err => {
 });
 '
         `.trim(),
-      ]);
+    ]);
   },
 };

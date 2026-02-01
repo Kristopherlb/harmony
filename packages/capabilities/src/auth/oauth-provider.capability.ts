@@ -124,13 +124,18 @@ export const oauthProviderCapability: Capability<
         context: CapabilityContext<OAuthProviderConfig, OAuthProviderSecrets>,
         input: OAuthProviderInput
     ) => {
-        // Dagger client is provided by the worker at runtime
+        // ISS-compliant types - includes withMountedSecret for secret mounting
+        type DaggerSecret = unknown;
         type ContainerBuilder = {
             from(image: string): ContainerBuilder;
             withEnvVariable(key: string, value: string): ContainerBuilder;
+            withMountedSecret(path: string, secret: DaggerSecret): ContainerBuilder;
             withExec(args: string[]): unknown;
         };
-        type DaggerClient = { container(): ContainerBuilder };
+        type DaggerClient = {
+            container(): ContainerBuilder;
+            setSecret(name: string, value: string): DaggerSecret;
+        };
         const d = dag as unknown as DaggerClient;
 
         const payload = {
@@ -144,20 +149,26 @@ export const oauthProviderCapability: Capability<
             scope: input.scope,
             audience: input.audience,
             extraParams: input.extraParams,
-            secretRef: context.secretRefs.clientSecret,
         };
 
-        return d
+        // Build container with mounted secrets (ISS-compliant)
+        let container = d
             .container()
             .from('node:20-alpine')
             .withEnvVariable('INPUT_JSON', JSON.stringify(payload))
             .withEnvVariable('GRANT_TYPE', input.grantType)
             .withEnvVariable('TOKEN_URL', input.tokenUrl)
-            .withEnvVariable('CLIENT_ID', input.clientId)
-            .withExec([
-                'node',
-                '-e',
-                `
+            .withEnvVariable('CLIENT_ID', input.clientId);
+
+        // Mount client secret if provided (platform resolves to Dagger Secret)
+        if (context.secretRefs.clientSecret && typeof (container as Record<string, unknown>).withMountedSecret === 'function') {
+            container = container.withMountedSecret('/run/secrets/client_secret', context.secretRefs.clientSecret as unknown as DaggerSecret);
+        }
+
+        return container.withExec([
+            'node',
+            '-e',
+            `
 const https = require('https');
 const url = require('url');
 const input = JSON.parse(process.env.INPUT_JSON);
@@ -178,9 +189,13 @@ if (input.extraParams) {
   Object.entries(input.extraParams).forEach(([k, v]) => params.set(k, v));
 }
 
-// Client secret would be mounted from secret store in production
-const clientSecret = process.env.CLIENT_SECRET || '';
-if (clientSecret) params.set('client_secret', clientSecret);
+// ISS-compliant: Read client secret from mounted path
+const fs = require('fs');
+const CLIENT_SECRET_PATH = '/run/secrets/client_secret';
+if (fs.existsSync(CLIENT_SECRET_PATH)) {
+  const clientSecret = fs.readFileSync(CLIENT_SECRET_PATH, 'utf8').trim();
+  params.set('client_secret', clientSecret);
+}
 
 const body = params.toString();
 const options = {
@@ -220,6 +235,6 @@ req.on('error', (e) => {
 req.write(body);
 req.end();
         `.trim(),
-            ]);
+        ]);
     },
 };

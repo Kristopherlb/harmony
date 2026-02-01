@@ -61,16 +61,22 @@
         "command": "pnpm nx run mcp-server:build && node packages/tools/mcp-server/dist/src/demo/run-demo.js --local {args}"
       }
     },
+    "dev-bootstrap": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm nx run harmony:dev-up && node -e \"console.log(['Next (in separate terminals):','- pnpm nx run harmony:dev-worker','- pnpm nx run harmony:dev-demo -- --x 7',''].join('\\\\n'));\""
+      }
+    },
     "audit": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "pnpm nx g @golden/path:sync && git diff --exit-code && pnpm nx affected -t lint test"
+        "command": "node -e \"const { execSync } = require('node:child_process'); const out = execSync('pnpm nx g @golden/path:sync --dry-run', { encoding: 'utf-8' }); process.stdout.write(out); if (/^(CREATE|UPDATE|DELETE)\\\\s+/m.test(out)) { console.error('Generated artifacts are stale. Run: pnpm nx g @golden/path:sync (then commit).'); process.exit(1); }\" && pnpm nx affected -t lint test"
       }
     },
     "audit-dagger": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "dagger -m ./.dagger call sync-check"
+        "command": "dagger -m ./.dagger call audit-git --repo-url \"$(git remote get-url origin)\" --ref \"$(git rev-parse HEAD)\""
       }
     }
   }

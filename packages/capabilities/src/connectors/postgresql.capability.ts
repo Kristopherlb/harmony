@@ -93,7 +93,9 @@ export const postgresqlCapability: Capability<
     requiredScopes: ['db:read', 'db:write'],
     dataClassification: 'CONFIDENTIAL',
     networkAccess: {
-      allowOutbound: ['*'], // Database host is configurable
+      // Dynamic: database host provided via config.host
+      // Common patterns: *.rds.amazonaws.com, *.postgres.database.azure.com, *.db.ondigitalocean.com
+      allowOutbound: ['*'],
     },
   },
   operations: {
@@ -138,12 +140,18 @@ export const postgresqlCapability: Capability<
     context: CapabilityContext<PostgresqlConfig, PostgresqlSecrets>,
     input: PostgresqlInput
   ) => {
+    // ISS-compliant types - includes withMountedSecret for secret mounting
+    type DaggerSecret = unknown;
     type ContainerBuilder = {
       from(image: string): ContainerBuilder;
       withEnvVariable(key: string, value: string): ContainerBuilder;
+      withMountedSecret(path: string, secret: DaggerSecret): ContainerBuilder;
       withExec(args: string[]): unknown;
     };
-    type DaggerClient = { container(): ContainerBuilder };
+    type DaggerClient = {
+      container(): ContainerBuilder;
+      setSecret(name: string, value: string): DaggerSecret;
+    };
     const d = dag as unknown as DaggerClient;
 
     const payload = {
@@ -158,30 +166,38 @@ export const postgresqlCapability: Capability<
       user: context.config.user ?? 'postgres',
       ssl: context.config.ssl ?? false,
       poolSize: context.config.poolSize ?? 10,
-      passwordRef: context.secretRefs.password,
     };
 
-    return d
+    // Build container with mounted secrets (ISS-compliant)
+    let container = d
       .container()
       .from('node:20-alpine')
       .withEnvVariable('INPUT_JSON', JSON.stringify(payload))
-      .withEnvVariable('OPERATION', input.operation)
-      .withExec([
-        'sh',
-        '-c',
-        `
+      .withEnvVariable('OPERATION', input.operation);
+
+    // Mount password if provided (platform resolves to Dagger Secret)
+    if (context.secretRefs.password && typeof (container as Record<string, unknown>).withMountedSecret === 'function') {
+      container = container.withMountedSecret('/run/secrets/db_password', context.secretRefs.password as unknown as DaggerSecret);
+    }
+    if (context.secretRefs.sslCert && typeof (container as Record<string, unknown>).withMountedSecret === 'function') {
+      container = container.withMountedSecret('/run/secrets/ssl_cert', context.secretRefs.sslCert as unknown as DaggerSecret);
+    }
+
+    return container.withExec([
+      'sh',
+      '-c',
+      `
 npm install --no-save pg 2>/dev/null && node -e '
 const { Pool } = require("pg");
 const fs = require("fs");
 const input = JSON.parse(process.env.INPUT_JSON);
 
 async function run() {
-  // Read password from secret ref
-  let password;
-  if (input.passwordRef && fs.existsSync(input.passwordRef)) {
-    password = fs.readFileSync(input.passwordRef, "utf8").trim();
-  } else {
-    password = process.env.PGPASSWORD;
+  // ISS-compliant: Read password from mounted path only
+  const PASSWORD_PATH = "/run/secrets/db_password";
+  let password = null;
+  if (fs.existsSync(PASSWORD_PATH)) {
+    password = fs.readFileSync(PASSWORD_PATH, "utf8").trim();
   }
 
   const pool = new Pool({
@@ -270,6 +286,6 @@ run().catch(err => {
 });
 '
         `.trim(),
-      ]);
+    ]);
   },
 };

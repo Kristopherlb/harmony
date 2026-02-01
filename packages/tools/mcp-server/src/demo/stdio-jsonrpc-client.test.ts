@@ -37,12 +37,14 @@ describe('createStdioJsonRpcClient', () => {
 
     const list = await client.request('tools/list', {});
     expect(list).toHaveProperty('tools');
-    const tools = (list as any).tools as Array<{ name: string }>;
-    expect(tools.some((t) => t.name === 'golden.echo')).toBe(true);
+    const tools = (list as Record<string, unknown>).tools;
+    expect(Array.isArray(tools)).toBe(true);
+    expect((tools as Array<{ name?: unknown }>).some((t) => t?.name === 'golden.echo')).toBe(true);
 
     const call = await client.request('tools/call', { name: 'golden.echo', arguments: { x: 3 } });
     expect(call).toHaveProperty('structuredContent');
-    expect((call as any).structuredContent).toMatchObject({
+    const structured = (call as Record<string, unknown>).structuredContent;
+    expect(structured).toMatchObject({
       trace_id: expect.any(String),
       result: { y: 3 },
     });

@@ -20,7 +20,7 @@ vi.mock('@golden/blueprints', () => {
               metadata: { id: 'workflows.DIFFERENT', version: '1.0.0', description: 'mismatch' },
               inputSchema: z.object({}),
               security: { classification: 'INTERNAL' },
-            } as any,
+            } as unknown,
           },
         ],
       ]),
