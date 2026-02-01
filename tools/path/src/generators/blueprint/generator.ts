@@ -179,17 +179,6 @@ function formatImport(symbol: string, modulePath: string): string {
   return `import { ${symbol} } from '${modulePath}';`;
 }
 
-function parseWorkflowIndexExportsByModule(workflowsIndexSource: string): Map<string, string> {
-  const out = new Map<string, string>();
-  const exportRegex = /^export\s+\{\s*([A-Za-z0-9_]+)\s*\}\s+from\s+['"](\.\/[^'"]+)['"];\s*$/gm;
-  for (const match of workflowsIndexSource.matchAll(exportRegex)) {
-    const exportName = match[1] ?? '';
-    const modulePath = match[2] ?? '';
-    if (exportName && modulePath) out.set(modulePath, exportName);
-  }
-  return out;
-}
-
 function updateBlueprintRegistry(tree: Tree, input: {
   outDir: string;
   fileBase: string;
