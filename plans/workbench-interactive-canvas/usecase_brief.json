@@ -1,0 +1,34 @@
+{
+  "id": "usecase.workbench.interactive_canvas_node_inspector",
+  "objective": "Make workflow drafting canvas nodes interactive so users can inspect and configure node requirements via a right-side info pane, launch provider playgrounds (OpenAPI Swagger, GraphQL), and refine queries (JQL) with an agent-assisted configuration loop.",
+  "nonGoals": [
+    "Implement database query playgrounds (SQL, MongoDB, Gremlin) in v1",
+    "Implement embedded (in-pane) Swagger/GraphiQL; v1 uses new-tab launch",
+    "Implement production-grade provider connectivity for all providers beyond Jira PoC (e.g., GitLab) without a spec artifact present in-repo"
+  ],
+  "classification": "INTERNAL",
+  "requiredRoles": [
+    "workbench:launch",
+    "workbench:rest:read",
+    "workbench:graphql:query",
+    "provider:jira"
+  ],
+  "requiredScopes": [],
+  "sla": {
+    "targetDuration": "250ms",
+    "maxDuration": "2s"
+  },
+  "hitl": {
+    "required": true,
+    "points": [
+      "applyAgentProposal",
+      "approveRestrictedTools"
+    ]
+  },
+  "network": {
+    "allowOutbound": [
+      "api.atlassian.com",
+      "*.atlassian.net"
+    ]
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "schema-registry",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "main": "{projectRoot}/index.ts",
+        "tsConfig": "{projectRoot}/tsconfig.json",
+        "outputPath": "{projectRoot}/dist"
+      },
+      "outputs": ["{options.outputPath}"]
+    },
+    "test": {
+      "options": {
+        "configFile": "packages/schema-registry/vitest.config.ts"
+      }
+    },
+    "lint": {
+      "options": {
+        "lintFilePatterns": ["{projectRoot}/**/*.ts", "!{projectRoot}/dist/**"]
+      }
+    }
+  }
+}

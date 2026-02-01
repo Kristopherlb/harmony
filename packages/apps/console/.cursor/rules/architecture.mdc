@@ -1,0 +1,38 @@
+---
+description: Clean Architecture – domain/application import constraints
+globs: server/**/domain/**/*.ts, server/**/application/**/*.ts
+alwaysApply: false
+---
+
+# Architecture: Domain & Application Import Rules
+
+Files under `server/**/domain/**` and `server/**/application/**` must follow the **inward-only** dependency rule.
+
+## Forbidden (runtime imports)
+
+- **express** – HTTP belongs in adapters/http only.
+- **zod** – Validation stays at the edge (HTTP); use plain types or `import type` from schema.
+- **drizzle** (including **drizzle-orm**, **drizzle-kit**) – Persistence belongs in adapters/infrastructure.
+- **pg** – Same as drizzle.
+- **routes** – Do not import from `routes` or `./routes`; depend on use cases/ports instead.
+
+## @shared/schema
+
+- **Allowed:** `import type { X } from "@shared/schema"` or `import { type X } from "@shared/schema"` (type-only; erased at runtime).
+- **Forbidden:** `import { XSchema } from "@shared/schema"` or any value import (pulls Zod/runtime deps).
+
+## Examples
+
+```ts
+// ✅ OK
+import type { Action, ExecuteActionRequest } from "@shared/schema";
+import { type Action } from "@shared/schema";
+
+// ❌ Forbidden
+import { z } from "zod";
+import { ExecuteActionRequestSchema } from "@shared/schema";
+import { db } from "drizzle-orm";
+import express from "express";
+```
+
+Enforced by `pnpm test:architecture` and `server/architecture.test.ts`.

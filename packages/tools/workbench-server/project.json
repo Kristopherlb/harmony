@@ -1,0 +1,49 @@
+{
+  "name": "workbench-server",
+  "targets": {
+    "build-ts": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "main": "{projectRoot}/index.ts",
+        "tsConfig": "{projectRoot}/tsconfig.json",
+        "outputPath": "{projectRoot}/dist"
+      },
+      "outputs": ["{options.outputPath}"]
+    },
+    "build-ui": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "pnpm exec vite build -c vite.ui.config.ts"
+      },
+      "outputs": ["{projectRoot}/dist-ui"]
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "nx run workbench-server:build-ts && nx run workbench-server:build-ui"
+      },
+      "outputs": ["{projectRoot}/dist", "{projectRoot}/dist-ui"]
+    },
+    "test": {
+      "executor": "@nx/vite:test",
+      "options": {
+        "configFile": "{projectRoot}/vitest.config.ts",
+        "passWithNoTests": false
+      },
+      "outputs": ["{options.reportsDirectory}"]
+    },
+    "lint": {
+      "options": {
+        "lintFilePatterns": ["{projectRoot}/**/*.ts", "!{projectRoot}/dist/**"]
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "nx run workbench-server:build-ui && pnpm --filter @golden/workbench-server exec tsx src/cli.ts"
+      }
+    }
+  }
+}
+

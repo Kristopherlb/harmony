@@ -1,0 +1,54 @@
+# Ecosystem Patterns and Primitives
+
+This document defines the core architectural patterns and functional primitives required to build a SOLID, resilient, and agent-ready automation ecosystem.
+
+## 1. The Runtime Tetrad
+
+Every automation unit is composed of four distinct layers:
+
+- **The Orchestrator (Temporal Workflow):** Deterministic Business Logic. Manages sequence, durable state, and retries. _(The "Blueprint")._
+- **The Reasoner (LangGraph Agent):** Probabilistic Logic. Manages ambiguity, planning, and multi-step reasoning cycles. _(The "Agent")._
+- **The Contract (OCS Capability):** Validation Logic. Defines the strict boundary (Zod Schemas) and security requirements. _(The "Interface")._
+- **The Executable (Runtime Module):** Execution Logic. The actual code (Python, Go, Node) running inside the Dagger container. _(The "Implementation")._
+
+## 2. Core Patterns
+
+### Pattern A: The Connector (API Integration)
+
+- **Purpose:** Interaction with external services (SaaS, Internal APIs).
+- **Baselines:** Spec-Driven (OpenAPI/GraphQL), Error Normalization, OWASP Protection.
+
+### Pattern B: The Transformer (Pure Logic)
+
+- **Purpose:** Data mapping, normalization, and filtering.
+- **Baselines:** Functional Purity, Side-effect free, High Performance.
+
+### Pattern C: The Commander (CLI/SDK Wrapper)
+
+- **Purpose:** Interfacing with heavy infrastructure tools (Terraform, Kubectl).
+- **Baselines:** OIDC Identity, Structured OTel Logging.
+
+### Pattern D: The Guardian (Meta-Primitives)
+
+- **Purpose:** Cross-cutting concerns (HITL, Guardrails, Audit).
+
+### Pattern E: The Reasoner (Agentic Workflow)
+
+- **Purpose:** Handling ambiguous requests, dynamic tool selection, and multi-turn user interaction.
+- **Baselines:** LangGraph-based, MCP-integrated, Semantic Memory, Token-Aware.
+
+## 3. Primitives for Dependency Injection
+
+| Primitive           | Role                  | Implementation                                      |
+| ------------------- | --------------------- | --------------------------------------------------- |
+| The Binder          | Interface Mapping     | Maps logical interfaces to concrete OCS/ASS implementations. |
+| Schema Registry     | Contract Centralization | Central repository of Zod schemas to ensure type safety. |
+| Error Normalizer    | Exception Mapping     | Maps native errors to OCS ErrorCategory.            |
+| Secret Broker       | Late-Binding Secrets  | Resolves logical secrets to OpenBao paths at runtime. |
+| Context Injector    | Agent Awareness       | Supplies RAG context or user-specific data to Reasoners. |
+
+## 4. Design Standards
+
+- **Single Responsibility:** Capabilities do one thing; Blueprints orchestrate; Agents reason.
+- **Liskov Substitution:** Reasoners should be swappable (e.g., swapping a "ReAct" agent for a "Plan-and-Execute" agent).
+- **Interface Segregation:** Expose only the necessary tools (via MCP) to a Reasoner to reduce the "hallucination surface."

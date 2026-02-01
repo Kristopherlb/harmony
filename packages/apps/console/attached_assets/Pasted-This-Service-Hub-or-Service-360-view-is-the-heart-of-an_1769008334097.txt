@@ -1,0 +1,86 @@
+This "Service Hub" (or Service 360) view is the heart of any IDP. It bridges the gap between **passive metadata** (Service Catalog) and **active operations** (your Ops Console).
+
+In our **Master-Detail** layout, when you click a service name (e.g., `api-gateway`) in the "Signal Stream," the **Center Workspace** transforms into this **Service 360 Dashboard**.
+
+Here is the architectural breakdown of the widgets and data sources for this view.
+
+### 1. The Header (Identity & Meta)
+
+* **Goal:** Instant context. "What is this and who owns it?"
+* **Data Points:**
+* **Service Name & Tier:** `payment-gateway-v2` (Tier 1 - Critical).
+* **Owner:** Team (e.g., "Checkout Squad") + Tech Lead (Slack handle).
+* **Language/Stack:** Icons for Node.js, TypeScript, AWS Lambda.
+* **VCS Links:** Buttons to open the repo in **Bitbucket** (Commercial) or **GitLab** (FedRAMP).
+* **On-Call:** Who is currently paged for this service (PagerDuty API).
+
+
+
+### 2. Operational Health (Observability)
+
+* **Goal:** "Is it bleeding right now?"
+* **Data Points:**
+* **SLO Status:** "99.98% Availability" (vs 99.9% Target).
+* **Golden Signals:** Sparkline graphs for Latency (p95), Error Rate, and Saturation (CPU/Memory).
+* **Active Incidents:** "0 Critical, 1 Warning" (Linked to PagerDuty).
+
+
+* **Source:** Datadog / Prometheus / New Relic adapters.
+
+### 3. The Build & Artifact Chain (Delivery)
+
+* **Goal:** Traceability from code to container.
+* **Data Points:**
+* **Latest Pipeline:** Status of the last master build (Green/Red) from **CircleCI** or **GitLab CI**.
+* **Deployed Version:** The semantic version running in Prod vs. Staging (e.g., `v1.2.4` vs `v1.3.0-rc`).
+* **Artifact Location:** A copy-pasteable link to the Docker image in **Artifactory** (e.g., `docker.io/corp/payment:sha-24a9c`).
+* **Drift Detection:** "Config matches State" (Terraform/ArgoCD sync status).
+
+
+
+### 4. Security & Compliance (The "Wiz" Widget)
+
+* **Goal:** Shift-left visibility for the service owner.
+* **Data Points:**
+* **Vulnerability Heatmap:** Count of Critical/High CVEs (aggregated from **Wiz** + **Artifactory Xray**).
+* **Compliance Badge:** "FedRAMP High: Compliant" or "FIPS Violation Detected."
+* **Inspector Score:** AWS Inspector risk score.
+
+
+* **Action:** Clicking "Critical" filters the signal stream to show those specific vulnerability alerts.
+
+### 5. FinOps (Cost)
+
+* **Goal:** awareness of resource consumption.
+* **Data Points:**
+* **Monthly Run Rate:** "Est. $450/mo".
+* **Trend:** "+12% vs last month" (Red arrow).
+* **Top Resource:** "RDS db.r5.large".
+
+
+
+### 6. Documentation & SOPs (Knowledge)
+
+* **Goal:** No more hunting for wikis.
+* **Data Points:**
+* **API Specs:** Link to Swagger/OpenAPI UI.
+* **Readme:** Renders the `README.md` from the repo directly in a tab.
+* **SOP Links:** "How to Rotate Keys," "Disaster Recovery Plan."
+
+
+
+---
+
+### The Visual Design (Desktop)
+
+This mockup visualizes how these dense data points come together in the "Context Workspace" of your Ops Console.
+
+### The "Action Rail" Integration (Right Column)
+
+Crucially, because this is an **Ops** dashboard and not just a Wiki, the Right Rail updates to show **Service-Specific Actions** (Phase 3):
+
+* **Provisioning:** "Create Ephemeral Env" (Triggers Terraform).
+* **Remediation:** "Restart Service," "Flush Cache."
+* **Debugging:** "View Live Logs" (streams data), "Profile CPU."
+
+Would you like to detail the **Zod Schemas** for representing this "Service Entity" to ensure it can normalize data from both Bitbucket and GitLab?

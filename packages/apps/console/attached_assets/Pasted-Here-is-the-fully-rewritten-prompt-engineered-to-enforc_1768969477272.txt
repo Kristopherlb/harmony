@@ -1,0 +1,61 @@
+Here is the fully rewritten prompt, engineered to enforce strict TDD, high code coverage, and modular architecture.
+Role: Principal Software Architect
+Objective: Build an extensible "Engineering Operations Dashboard" Slack app using a strict Test-Driven Development (TDD) workflow.
+Project Context:
+We are building an "Engineering Operations Center"—a central dashboard that aggregates signals from human inputs (Slack) and machine inputs (Jira, Bitbucket, GitLab, PagerDuty). The application must be architected using the Repository Pattern and Hexagonal Architecture (Ports & Adapters) to ensure the core logic is decoupled from external tools.
+Tech Stack:
+ * Runtime/Backend: Hono running on Bun.
+ * Frontend: React (Vite), TypeScript, Tailwind CSS, shadcn/ui.
+ * Testing: bun:test or Vitest.
+ * Validation/Schema: Zod (must be used for all domain entity definitions and validation).
+Strict Development Rules (The Guardrails)
+ * TDD Mandate: You must write the test before the implementation for every feature.
+   * Step 1: Write a failing test that asserts the specific business logic.
+   * Step 2: Write the minimal code to pass the test.
+   * Step 3: Refactor.
+ * No "Fake" Tests: Tests must verify actual logic and state changes.
+   * Forbidden: expect(component).toBeDefined(), expect(true).toBe(true), or shallow snapshot tests without logic verification.
+   * Required: Tests must assert that input X results in state Y or specific side-effect Z.
+ * Coverage Requirement: The solution must include a test runner configuration that enforces a minimum 80% code coverage threshold. The build should fail if this drops.
+ * Schema-First Design: All domain entities (Events, Projects, Users) must be defined using Zod schemas first. These schemas will serve as the "Source of Truth" for TypeScript types and runtime validation.
+Architecture & Backend Specification
+1. The Domain Core (Schema & Types)
+Define the following Zod schemas to normalize data across all providers:
+ * EventSchema: The atomic unit of the system. Fields: id, timestamp, source (enum: slack, jira, gitlab, bitbucket, pagerduty), type (enum: log, blocker, decision, release, alert), payload (json), severity (low, medium, high, critical).
+ * ProjectSchema: Fields: id, name, status, repositoryUrl, leadTime (derived metric).
+2. The Repository Layer (Port)
+Define a strict interface IActivityRepository.
+ * Implementation: Create a SeedableMemoryRepository.
+ * Requirement: It must accept an initialData object in its constructor. This allows us to seed the app with mock data for demos and deterministic data for unit tests.
+ * Note: Do not implement a real database (Postgres/SQLite) yet, but structure the code so a PostgresRepository could be swapped in via dependency injection later.
+3. The Adapter Layer (Port)
+Create a SourceAdapter interface that defines how external webhooks are transformed into the internal EventSchema.
+ * SlackAdapter: Fully implement this. It handles slash commands and transforms them into standard Events.
+ * Stubs: Create typed skeleton adapters for GitLabAdapter, BitbucketAdapter, JiraAdapter, and PagerDutyAdapter to demonstrate extensibility.
+4. API Endpoints (Hono)
+ * POST /api/integrations/slack/events: Receives slash commands.
+ * GET /api/activity/stream: Returns the normalized event stream (validated against strict response schemas).
+ * GET /api/metrics/dora: Returns calculated "Lead Time" and "Deployment Frequency" based on the in-memory event history.
+Frontend Specification (The Dashboard)
+1. Visual Language
+ * Theme: "NOC" (Network Operations Center) aesthetic. Dark mode (Slate/Zinc), monospace fonts (JetBrains Mono), high contrast status indicators.
+ * Components: Use shadcn/ui for cards, tables, and dialogs.
+2. Key Features
+ * Activity Heatmap: A GitHub-style contribution graph. Colors must represent source (e.g., Purple = GitLab/Bitbucket, Red = PagerDuty, Blue = Slack).
+ * Unified Stream: A feed component that interleaves human logs from Slack with system events from Git/Jira.
+ * DORA Lite Panel: A metrics row displaying "Deployment Frequency" and "Mean Time to Recovery" (derived from 'Blocker' resolution time).
+Slack Integration Details
+Implement the following slash commands using Block Kit for rich responses:
+ * /ops log <message>: Standard log entry.
+ * /ops blocker <issue>: Logs a High Severity event (triggers Red status on dashboard).
+ * /ops decision <text>: Logs an architectural decision (ADR).
+ * /ops status: Returns a user's personal activity stats for the week.
+Execution Instructions
+Please generate the solution in the following order:
+ * Schemas: Define the Zod schemas for the domain.
+ * Tests (Core): Write failing tests for the SeedableMemoryRepository and DORA metric calculations.
+ * Implementation (Core): Implement the repository and logic to pass tests.
+ * Tests (API): Write integration tests for the Hono endpoints (mocking the repository).
+ * Implementation (API): Build the Hono backend.
+ * Frontend: Scaffold the React components to consume the API.
+Start by showing me the Project Structure, the Zod Schemas, and the First Failing Test for the Repository.

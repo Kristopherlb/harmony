@@ -1,0 +1,29 @@
+{
+  "name": "@golden/blueprints",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "@dagger.io/dagger": "^0.19.10",
+    "@golden/core": "workspace:*",
+    "@golden/capabilities": "workspace:*",
+    "@golden/schema-registry": "workspace:*",
+    "@temporalio/activity": "^1.14.1",
+    "@temporalio/client": "^1.14.1",
+    "@temporalio/workflow": "^1.14.1"
+  },
+  "devDependencies": {
+    "@temporalio/testing": "^1.14.1",
+    "@temporalio/worker": "^1.14.1",
+    "@types/node": "^25.0.10",
+    "tsx": "^4.21.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.2.0"
+  },
+  "scripts": {
+    "bundle-workflows": "npx tsx scripts/bundle-workflows.ts",
+    "e2e": "pnpm run bundle-workflows && npx tsx scripts/run-e2e-propagation.ts",
+    "e2e:dagger": "pnpm run bundle-workflows && ENABLE_DAGGER_E2E=1 npx tsx scripts/run-e2e.ts"
+  }
+}

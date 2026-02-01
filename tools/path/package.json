@@ -1,0 +1,16 @@
+{
+  "name": "@golden/path",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "generators": "./generators.json",
+  "dependencies": {
+    "@nx/devkit": "18.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "vitest": "^1.2.0"
+  }
+}
+

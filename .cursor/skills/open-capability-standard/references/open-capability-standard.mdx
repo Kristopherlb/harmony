@@ -1,0 +1,192 @@
+This document defines the **Open Capability Standard (OCS)** for the Golden Path Generator. All provider components within the monorepo **MUST** adhere to this specification to ensure interoperability, security, and agent-compatibility.
+
+---
+
+# Open Capability Standard (OCS) Specification
+
+**Version:** 1.0.0
+**Status:** DRAFT
+**Context:** Golden Path Monorepo
+
+## 1. Introduction
+
+The Open Capability Standard (OCS) defines the strict contract for "Capabilities"—atomic units of logic (e.g., API interactions, ETL steps) used by the Automation Composer. Adherence to OCS ensures that all components are strictly typed, secure by default, observable, and fully compatible with AI Agents (via MCP) and deterministic execution engines (Dagger/Temporal).
+
+## 2. Terminology
+
+* **Capability:** A self-contained, versioned software package capable of performing a specific task.
+* **Contract:** The combination of JSON Schemas (Input, Output, Config, Secrets) that define the Capability's boundary.
+* **Factory:** A pure function that accepts Inputs/Config and returns a Dagger Container definition without executing it.
+* **Agent Hints:** Metadata specifically designed to aid LLMs (via LangGraph) in reasoning about the Capability.
+
+## 3. Normative Requirements
+
+### 3.1. Schema & Data Contracts
+
+Every Capability **MUST** define its data requirements using **JSON Schema (Draft 2020-12)**.
+
+* **3.1.1 Input Schema:** MUST define all parameters required for execution.
+* Fields MUST use semantic typing (e.g., `format: "email"`, `x-semantic-type: "jira-issue-id"`) to enable automated wiring by the Builder Agent.
+
+
+* **3.1.2 Output Schema:** MUST define the guaranteed structure of the data returned upon success.
+* **3.1.3 Configuration Schema:** MUST define environment-specific variables (e.g., Base URLs, Timeout settings).
+* Default values SHOULD be provided where possible.
+
+
+* **3.1.4 Secret Schema:** MUST define the *keys* of the secrets required (e.g., `api_key`).
+* The schema MUST NOT accept raw secret values. It acts as a template for the Secret Injection mechanism (OpenBao + ESO).
+
+
+
+### 3.2. Execution Model (The "Pure Factory" Pattern)
+
+* **3.2.1 Dagger Purity:** The core logic MUST be implemented as a "Factory Function."
+* Input: `(Input, Config, SecretReferences)`
+* Output: `Dagger.Container`
+* The function MUST NOT perform side effects (HTTP calls, FS writes) during the factory phase. Side effects occur only when the container is run by the Temporal Worker.
+
+
+* **3.2.2 Isolation:** Execution MUST occur within a container. Dependencies MUST NOT be inherited from the host OS.
+* **3.2.3 Idempotency:** The Capability SHOULD accept an optional `idempotency_key` in the Input Schema.
+
+### 3.3. Metadata & Discovery (MCP Integration)
+
+To satisfy the Model Context Protocol (MCP) and Agent requirements:
+
+* **3.3.1 Identity:** MUST possess a unique, namespaced ID (e.g., `atlassian.jira.create_issue`).
+* **3.3.2 Semantic Description:** MUST include a natural language `description` optimized for LLM comprehension (e.g., "Use this tool to create a new ticket...").
+* **3.3.3 Examples:** MUST provide at least one `exampleInput` and `exampleOutput` pair for few-shot prompting.
+
+### 3.4. Security & Compliance (RBAC & OSCAL)
+
+* **3.4.1 Scopes:** MUST declare a list of `requiredScopes` (e.g., `jira:write`). The runtime will verify these against the User/Agent's Keycloak token.
+* **3.4.2 OSCAL Mapping:** MUST allow linking to NIST/OSCAL Control IDs (e.g., `["AC-4", "AU-2"]`) for automated compliance generation.
+* **3.4.3 Network Policy:** MUST explicitly declare outbound network requirements (`allowOutbound: ["*.github.com"]`).
+
+### 3.5. Observability & Operations (OTel & Metrics)
+
+* **3.5.1 Error Mapping:** MUST export an `ErrorMap` translating internal exceptions to standard categories: `Retryable`, `Fatal`, `AuthFailure`, `RateLimit`.
+* **3.5.2 Business Metrics:** MUST define custom OpenTelemetry metrics relevant to business value (e.g., `issues_resolved_count`, `bytes_processed`).
+* **3.5.3 Cost Estimation:** MUST provide an `estimatedCost` factor (`Low`, `Medium`, `High`) to aid the Ops Agent in budget forecasting.
+
+---
+
+## 4. Interface Definition (TypeScript)
+
+The following interface is the **Normative Reference** for the Capability Standard.
+
+```typescript
+import { z } from 'zod';
+import { Container } from '@dagger.io/dagger';
+
+/**
+ * Standard Categories for Error Handling
+ * Used by Temporal to determine Retry Policy.
+ */
+export type ErrorCategory = 'RETRYABLE' | 'FATAL' | 'AUTH_FAILURE' | 'RATE_LIMIT';
+
+/**
+ * Open Capability Standard (OCS) Interface
+ * All Provider Components MUST implement this interface.
+ */
+export interface Capability<Input = any, Output = any, Config = any, Secrets = any> {
+  
+  // --- 1. Identity & Discovery ---
+  metadata: {
+    /** Unique Namespaced ID (e.g., "aws.s3.put_object") */
+    id: string;
+    /** Semantic Version (e.g., "1.2.0") */
+    version: string;
+    /** Human-readable name */
+    name: string;
+    /** LLM-optimized description of purpose and capabilities */
+    description: string;
+    /** Categorical tags for indexing */
+    tags: string[];
+    /** Owner/Maintainer for accountability */
+    maintainer: string;
+  };
+
+  // --- 2. The Contract (Schemas) ---
+  schemas: {
+    /** Input validation schema */
+    input: z.ZodSchema<Input>;
+    /** Output validation schema */
+    output: z.ZodSchema<Output>;
+    /** Environment configuration schema */
+    config: z.ZodSchema<Config>;
+    /** Secret keys requirement schema (Values are never passed here) */
+    secrets: z.ZodSchema<Secrets>;
+  };
+
+  // --- 3. Security & Compliance ---
+  security: {
+    /** Keycloak RBAC Scopes required to execute this */
+    requiredScopes: string[];
+    /** Data Sensitivity Classification */
+    dataClassification: 'PUBLIC' | 'INTERNAL' | 'CONFIDENTIAL' | 'RESTRICTED';
+    /** NIST/OSCAL Control IDs satisfied or involved */
+    oscalControlIds?: string[];
+    /** Network whitelist requirements for the container */
+    networkAccess: {
+      allowOutbound: string[]; // FQDNs or CIDRs
+    };
+  };
+
+  // --- 4. Operations & Observability ---
+  operations: {
+    /** Can this be safely retried without side effects? */
+    isIdempotent: boolean;
+    /** Recommended Temporal Retry Policy */
+    retryPolicy: {
+      maxAttempts: number;
+      initialIntervalSeconds: number;
+      backoffCoefficient: number;
+    };
+    /** Mapping of error strings/codes to standard categories */
+    errorMap: (error: any) => ErrorCategory;
+    /** Custom OTel metrics to track */
+    metrics?: {
+      name: string;
+      type: 'COUNTER' | 'GAUGE' | 'HISTOGRAM';
+      description: string;
+    }[];
+    /** Static cost estimation factor */
+    costFactor: 'LOW' | 'MEDIUM' | 'HIGH';
+  };
+
+  // --- 5. AI & Agent Integration ---
+  aiHints: {
+    /** Few-shot prompting example input */
+    exampleInput: Input;
+    /** Expected output for the example */
+    exampleOutput: Output;
+    /** Reasoning trace or "When to use" guidance */
+    usageNotes?: string;
+  };
+
+  // --- 6. Execution Factory ---
+  /**
+   * Pure Function: Returns a Dagger Container definition.
+   * NO side effects allowed here.
+   */
+  factory: (
+    dag: any, // Dagger Client
+    context: {
+      config: Config;
+      /** References to mounted secrets (paths or env var names) */
+      secretRefs: Record<keyof Secrets, string>; 
+    },
+    input: Input
+  ) => Container;
+}
+```
+
+## 5. Compliance Verification
+
+To ensure adherence to this standard:
+
+1. **Build Time:** The monorepo build pipeline (Nx) MUST fail if any Capability does not strictly implement the `Capability` interface.
+2. **Linting:** A custom linter MUST verify that `description` fields are present and `exampleInput` matches the `input` schema.
+3. **Discovery:** The MCP Server MUST only register Capabilities that pass verification.

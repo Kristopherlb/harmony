@@ -1,0 +1,64 @@
+# Generator & Scaffolding Standard (GSS)
+
+| Metadata | Value |
+| -------- | ----- |
+| ID | GSS-001 |
+| Version | 1.0.0 |
+| Status | DRAFT |
+| Authors | Platform DX Team |
+| Context | Nx / Projen / Monorepo Structure |
+
+## 1. Introduction
+
+The Generator & Scaffolding Standard (GSS) defines the conventions for artifact creation and the structural integrity of the monorepo. It ensures that every new Capability, Blueprint, or Agent is bootstrapped with the correct boilerplate, standard configurations, and dependency mappings required for the "Self-Assembling" platform to function.
+
+## 2. Monorepo Directory Structure
+
+The platform utilizes an Nx-based monorepo. All artifacts MUST reside in the following hierarchy:
+
+```
+/
+├── .nx/
+├── artifacts/              # Compiled/Bundle-ready artifacts
+├── packages/
+│   ├── agents/             # LangGraph Reasoners (ASS-001)
+│   ├── blueprints/         # Temporal Workflows (WCS-001)
+│   ├── capabilities/       # OCS Components (Connectors/Transformers)
+│   ├── core/               # Shared SDKs, Types, and Standards
+│   └── tools/              # MCP Servers and CLI utilities
+├── infra/                  # Global Terraform/K8s manifests
+└── README.md
+```
+
+## 3. Scaffolding Requirements (Nx Generators)
+
+Generators MUST be used for all new artifact creation. Ad-hoc directory creation is prohibited.
+
+### 3.1. Capability Generator (nx g @golden/path:capability)
+
+- **Inputs:** name, pattern (Connector/Transformer/Commander), classification.
+- **Outputs:**
+  - capability.ts (OCS definition).
+  - runtime/ (Pattern-specific implementation directory).
+  - vitest.config.ts pre-configured for Dagger mocking.
+  - project.json with lint, test, and audit targets.
+
+### 3.2. Blueprint Generator (nx g @golden/path:blueprint)
+
+- **Inputs:** name, namespace (hr/fin/ops), security_roles.
+- **Outputs:**
+  - blueprint.ts (WCS definition).
+  - blueprint.test.ts (Temporal test suite).
+  - Automated registration in the local mcp-registry.json.
+
+## 4. Configuration Baselines
+
+All generated project.json files MUST include:
+
+- **Naming:** name must follow the kebab-case convention.
+- **Tags:** Every project MUST be tagged with type:{agent|blueprint|capability} and security:{public|internal|confidential|restricted}.
+- **Boundaries:** Nx module-boundary rules MUST prevent a Capability from importing a Blueprint (preventing circular logic).
+
+## 5. Metadata Sync
+
+The generator MUST automatically update the mcp-config.json at the root to include the new artifact's entry point, ensuring immediate discovery by the local Builder Agent.

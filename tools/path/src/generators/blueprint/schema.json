@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema",
+  "cli": "nx",
+  "title": "Blueprint generator",
+  "type": "object",
+  "properties": {
+    "plan": {
+      "type": "string",
+      "description": "Path to architecture_plan.json (from architect_workflow_logic)"
+    },
+    "outDir": {
+      "type": "string",
+      "description": "Optional output directory (defaults to packages/blueprints/src/workflows)"
+    }
+  },
+  "required": ["plan"],
+  "additionalProperties": false
+}
+

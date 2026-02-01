@@ -1,0 +1,53 @@
+# Local development only. Do not use with production secrets or sensitive data.
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: golden
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: temporal
+    ports:
+      - "5432:5432"
+
+  temporal:
+    image: temporalio/auto-setup:1.22.4
+    environment:
+      - DB=postgresql
+      - DB_PORT=5432
+      - POSTGRES_USER=golden
+      - POSTGRES_PWD=password
+      - POSTGRES_SEEDS=postgres
+    ports:
+      - "7233:7233"
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+  temporal-ui:
+    image: temporalio/ui:2.31.2
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_CORS_ORIGINS: http://localhost:3000,http://localhost:8233
+    ports:
+      - "8233:8080"
+    depends_on:
+      - temporal
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0.0
+    command: start-dev
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    ports:
+      - "8081:8080"
+
+  openbao:
+    image: openbao/openbao:2.0.0
+    ports:
+      - "8200:8200"
+    environment:
+      BAO_DEV_ROOT_TOKEN_ID: "root"
+      BAO_ADDR: "http://0.0.0.0:8200"
+    cap_add:
+      - IPC_LOCK

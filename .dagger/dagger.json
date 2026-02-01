@@ -1,0 +1,7 @@
+{
+  "name": "harmony-ci",
+  "sdk": "typescript",
+  "source": "src",
+  "engineVersion": "v0.18.17"
+}
+

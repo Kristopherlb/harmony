@@ -1,0 +1,122 @@
+{
+  "usecaseId": "usecase.workbench.interactive_canvas_node_inspector",
+  "scenarios": [
+    {
+      "id": "nodeClickOpensInfoPane",
+      "input": {
+        "draft": {
+          "title": "Demo",
+          "summary": "demo",
+          "nodes": [
+            { "id": "n1", "label": "Jira Search", "type": "jira.search_issues", "properties": {} }
+          ],
+          "edges": []
+        },
+        "interaction": { "type": "clickNode", "nodeId": "n1" }
+      },
+      "expected": {
+        "ui": {
+          "infoPaneOpen": true,
+          "selectedNodeId": "n1",
+          "showsSections": ["Overview", "Required", "Playground", "Details"]
+        }
+      }
+    },
+    {
+      "id": "requiredFieldsComputedFromMcpSchema",
+      "input": {
+        "toolCatalog": [
+          {
+            "name": "jira.search_issues",
+            "type": "CAPABILITY",
+            "dataClassification": "INTERNAL",
+            "inputSchema": { "type": "object", "required": ["jql"], "properties": { "jql": { "type": "string" } } }
+          }
+        ],
+        "selectedNode": { "id": "n1", "type": "jira.search_issues", "properties": {} }
+      },
+      "expected": {
+        "ui": {
+          "required": {
+            "missing": ["jql"],
+            "filled": []
+          }
+        }
+      }
+    },
+    {
+      "id": "launchSwaggerForOpenApiProvider",
+      "input": {
+        "provider": "jira",
+        "kind": "openapi",
+        "mode": "launch"
+      },
+      "expected": {
+        "api": {
+          "createsWorkbenchSession": true,
+          "returnsLaunchUrl": true
+        },
+        "ui": {
+          "opensNewTab": true,
+          "showsExpiry": true
+        }
+      }
+    },
+    {
+      "id": "agentAsksForMissingNodeConfigAndAppliesToDraft",
+      "input": {
+        "draft": {
+          "title": "Demo",
+          "summary": "demo",
+          "nodes": [
+            { "id": "n1", "label": "Jira Search", "type": "jira.search_issues", "properties": {} }
+          ],
+          "edges": []
+        },
+        "selectedNodeId": "n1",
+        "missingRequired": ["jql"],
+        "userReply": { "jql": "project = ABC AND status = Blocked" }
+      },
+      "expected": {
+        "agent": {
+          "asksOnlyForMissingFields": true,
+          "returnsUpdatedDraftViaTool": true
+        },
+        "draft": {
+          "nodes": [
+            {
+              "id": "n1",
+              "properties": { "jql": "project = ABC AND status = Blocked" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "restrictedToolRequiresExplicitApproval",
+      "input": {
+        "draftProposal": {
+          "title": "Restricted Demo",
+          "summary": "",
+          "nodes": [
+            { "id": "n1", "label": "Restricted Tool", "type": "provider.restricted_action", "properties": {} }
+          ],
+          "edges": []
+        },
+        "toolCatalog": [
+          {
+            "name": "provider.restricted_action",
+            "type": "CAPABILITY",
+            "dataClassification": "RESTRICTED",
+            "inputSchema": { "type": "object", "properties": {} }
+          }
+        ]
+      },
+      "expected": {
+        "ui": {
+          "blocksApplyUntilApproved": true
+        }
+      }
+    }
+  ]
+}

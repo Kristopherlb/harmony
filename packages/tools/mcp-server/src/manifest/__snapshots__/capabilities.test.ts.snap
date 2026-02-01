@@ -1,0 +1,17 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`generateToolManifestFromCapabilities > includes golden.echo with deterministic json_schema 1`] = `
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "x": {
+      "type": "number",
+    },
+  },
+  "required": [
+    "x",
+  ],
+  "type": "object",
+}
+`;

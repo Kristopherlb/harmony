@@ -1,0 +1,89 @@
+Adapting a dense, three-column "Ops Console" to mobile requires shifting from a **Spatial Layout** (everything visible at once) to a **Temporal Layout** (screens revealed in sequence).
+
+On mobile, the "Ops Console" transforms into a **Stack Navigation flow** with a high focus on **"Thumb-Zone" Safety** for executing runbooks.
+
+### The Mobile Experience: "Feed, Focus, Fire"
+
+Instead of `Left | Center | Right`, the user moves through depth: **List → Detail → Action**.
+
+#### 1. Screen 1: The Signal Feed (Home)
+
+The left column becomes the entire home screen.
+
+* **Visuals:** High-density list rows.
+* **Gestures:**
+* **Swipe Right:** "Acknowledge" (Green background).
+* **Swipe Left:** "Snooze" or "Escalate" (Amber background).
+
+
+* **Header:** Shows aggregated status (e.g., "3 Critical Alerts") rather than a full graph.
+
+#### 2. Screen 2: The Context View (Focus)
+
+Tapping an item slides in a full-screen view.
+
+* **Top Half:** Key metrics and the SOP text (scrollable).
+* **Bottom Bar:** A sticky "Actions" footer. It doesn't show the runbooks yet—just the entry point.
+
+#### 3. The Action Drawer (Fire)
+
+Tapping the "Actions" footer slides up a **Bottom Sheet** (covering 50% of the screen).
+
+* **Safety Mechanism:** Since "fat finger" errors are dangerous here, we replace simple buttons with **Slide-to-Execute** toggles (like the iOS "Power Off" slider) for critical actions like "Restart Pods."
+
+---
+
+### The Responsive Design Implementation
+
+You don't need two separate apps. You can achieve this with CSS Grid and a specific React hook for mobile detection.
+
+**The Desktop Layout (CSS Grid):**
+
+```css
+grid-template-columns: 350px 1fr 300px; /* Feed | Workspace | Actions */
+
+```
+
+**The Mobile Layout (CSS Grid):**
+
+```css
+grid-template-columns: 1fr; /* Single column stack */
+
+```
+
+### The Rewritten Prompt (Adding Mobile Responsiveness)
+
+Here is the section to add to your prompt to ensure the mobile experience is built correctly.
+
+---
+
+**... [Previous Requirements]**
+
+**Mobile Responsiveness Strategy:**
+The application must be fully responsive, adapting the "Master-Detail" layout for mobile devices using Tailwind CSS classes and a "Sheet" pattern.
+
+**Breakpoint Behavior (`<md`):**
+
+1. **The Signal Stream:** Becomes the default full-width view.
+* *Interaction:* Tapping an item does *not* load it side-by-side. It navigates to a specific "Detail Route" (`/ops/signal/:id`).
+
+
+2. **The Context Workspace:** Renders as a full-screen page on mobile.
+3. **The Action Rail:**
+* **Desktop:** Always visible on the right.
+* **Mobile:** Hidden by default. Accessed via a **Sticky Bottom Bar** labeled "Available Runbooks." Clicking this opens a **Slide-Up Drawer (Sheet)** containing the actions.
+
+
+
+**Mobile Specific Components:**
+
+* **Swipeable Rows:** The `SignalFeed` items must support swipe gestures on mobile (Swipe Right to ACK).
+* **Safe-Execution UI:** For "Critical" actions on mobile, do not use simple buttons. Implement a `<SlideToConfirm />` component to prevent accidental execution in a touch interface.
+
+**Deliverable Update:**
+Demonstrate the `Layout` component showing the conditional rendering:
+
+* *Desktop:* `Grid` with 3 columns.
+* *Mobile:* `Switch/Case` router rendering only one view at a time.
+
+---

@@ -1,0 +1,55 @@
+# Testing & Certification Standard (TCS)
+
+| Metadata | Value |
+| -------- | ----- |
+| ID | TCS-001 |
+| Version | 1.0.0 |
+| Status | DRAFT |
+| Authors | Platform QA & Compliance |
+| Context | CI/CD / Vitest / OSCAL |
+
+## 1. Introduction
+
+The Testing & Certification Standard (TCS) defines the "Self-Auditing" requirements for the CI pipeline. It ensures that no artifact is deployed without a mathematical guarantee of contract adherence and security compliance.
+
+## 2. The Self-Auditing Pipeline
+
+Every PR MUST pass the following stages before the "Ops Agent" grants deployment approval:
+
+### 2.1. Contract Verification (Zod)
+
+The CI runner MUST execute a "Contract Test" that:
+
+- Validates the InputSchema and OutputSchema against the aiHints.exampleInput/Output.
+- Verifies the metadata.id is unique across the monorepo.
+- Ensures all required OCS fields are present.
+
+### 2.2. Dagger Mocking & Logic Tests
+
+Unit tests for Capabilities MUST utilize the @golden/test-utils to mock the Dagger engine.
+
+- **Requirement:** Tests MUST verify that the factory function returns a valid Container graph without actually spawning a container.
+- **Coverage:** Minimum 80% statement coverage for the Runtime Module.
+
+### 2.3. Blueprint Acceptance Testing
+
+Workflows MUST be tested using the @temporalio/testing environment.
+
+- **Requirement:** Must mock every ExecuteCapability activity to return deterministic data.
+- **Requirement:** Must verify the Saga Pattern by inducing a failure at each step and asserting that compensations were called.
+
+## 3. OSCAL Artifact Generation
+
+Compliance is handled as "Documentation-as-Code."
+
+- The CI pipeline MUST extract the oscalControlIds from the OCS/WCS metadata.
+- It MUST generate a Component Definition in NIST/OSCAL (JSON/YAML) format.
+- This artifact is attached to the build release, providing an automated "Compliance Bill of Materials" (CBOM).
+
+## 4. Certification Gates
+
+A project is "Certified" if:
+
+- All Vitest suites pass.
+- OTel spans are verified to contain all GOS-001 mandatory attributes.
+- The audit_capability_compliance agent skill returns a PASS.

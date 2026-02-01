@@ -1,0 +1,53 @@
+---
+description: Always use global skills from ~/.cursor/skills/ when relevant to the task
+alwaysApply: true
+---
+
+# Global Skills Usage
+
+Always check and use global skills installed in `~/.cursor/skills/` when they are relevant to the current task. These skills are available across all projects and should be proactively applied.
+
+## Available Global Skills
+
+The following skills are installed globally and should be used when relevant:
+
+1. **architecture-patterns** - Use when architecting complex backend systems or refactoring for maintainability
+2. **clean-architecture** - Use when designing systems, reviewing code structure, or refactoring applications
+3. **design-system-creation** - Use when creating design systems, design tokens, or component libraries
+4. **design-system-patterns** - Use when creating design tokens, implementing themes, or building component libraries
+5. **n8n-workflow-automation** - Use when working with n8n workflows or automation
+6. **n8n-workflow-patterns** - Use when implementing n8n workflow patterns
+7. **shadcn-components** - Use when working with shadcn/ui components
+8. **shadcn-ui** - Use when setting up shadcn/ui, installing components, or building forms
+9. **tailwind-v4-shadcn** - Use when working with Tailwind v4 and shadcn integration
+10. **temporal-io** - Use when working with Temporal.io workflows
+11. **test-driven-development** - Use PROACTIVELY when implementing any feature or bugfix, before writing implementation code
+12. **typescript-advanced-types** - Use when working with advanced TypeScript types
+13. **typescript-best-practices** - Use when writing TypeScript code
+14. **typescript-expert** - Use PROACTIVELY for any TypeScript/JavaScript issues including complex types, build performance, debugging
+15. **ui-ux-pro-max** - Use when designing UI/UX or working on user interfaces
+
+## How to Use
+
+1. **Read the skill** from `~/.cursor/skills/<skill-name>/SKILL.md` when it's relevant to the task
+2. **Apply the skill's guidance** proactively, not just when explicitly asked
+3. **Check skill descriptions** to determine if a skill is relevant to the current task
+4. **Use multiple skills** when appropriate - they can work together
+
+## Priority Skills
+
+These skills should be used PROACTIVELY (read and apply without being asked):
+- **test-driven-development** - Always use TDD for features and bugfixes
+- **typescript-expert** - Use for any TypeScript/JavaScript work
+- **clean-architecture** - Use when working on architecture or code structure
+
+## Skill Discovery
+
+If a task involves:
+- **TypeScript/JavaScript** → Check typescript-expert, typescript-best-practices, typescript-advanced-types
+- **Architecture/Design** → Check clean-architecture, architecture-patterns
+- **UI/Components** → Check shadcn-ui, shadcn-components, tailwind-v4-shadcn, design-system-patterns, ui-ux-pro-max
+- **Testing** → Check test-driven-development
+- **Workflows** → Check temporal-io, n8n-workflow-automation, n8n-workflow-patterns
+
+Always read the skill's SKILL.md file to get the complete guidance before proceeding with the task.

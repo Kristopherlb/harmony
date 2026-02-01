@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NIS legacy ID allowlist",
+  "type": "object",
+  "properties": {
+    "ids": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "legacyId": { "type": "string", "minLength": 1 },
+          "targetId": { "type": "string", "minLength": 1 },
+          "status": { "type": "string", "enum": ["PLANNED", "IN_PROGRESS", "COMPLETED"] }
+        },
+        "required": ["legacyId", "targetId", "status"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["ids"],
+  "additionalProperties": false
+}
+

@@ -1,0 +1,95 @@
+{
+  "usecaseId": "usecase.workbench.interactive_canvas_node_inspector",
+  "steps": [
+    {
+      "id": "ui_select_canvas_node",
+      "pattern": "transformer",
+      "capabilityId": "console.workbench.select_node",
+      "exists": true,
+      "classification": "INTERNAL",
+      "requiredScopes": [],
+      "allowOutbound": []
+    },
+    {
+      "id": "ui_open_info_pane",
+      "pattern": "transformer",
+      "capabilityId": "console.workbench.node_info_pane",
+      "exists": true,
+      "classification": "INTERNAL",
+      "requiredScopes": [],
+      "allowOutbound": []
+    },
+    {
+      "id": "ui_compute_required_fields",
+      "pattern": "guardian",
+      "capabilityId": "console.workbench.schema_required_field_guard",
+      "exists": false,
+      "classification": "INTERNAL",
+      "requiredScopes": [],
+      "allowOutbound": []
+    },
+    {
+      "id": "workbench_create_session_launch",
+      "pattern": "commander",
+      "capabilityId": "workbench.session.create_launch",
+      "exists": false,
+      "classification": "INTERNAL",
+      "requiredScopes": [],
+      "allowOutbound": []
+    },
+    {
+      "id": "workbench_openapi_serve_spec_jira",
+      "pattern": "connector",
+      "capabilityId": "workbench.openapi.serve_spec",
+      "exists": false,
+      "classification": "INTERNAL",
+      "requiredScopes": [],
+      "allowOutbound": []
+    },
+    {
+      "id": "workbench_rest_proxy_jira",
+      "pattern": "connector",
+      "capabilityId": "workbench.rest.proxy",
+      "exists": true,
+      "classification": "INTERNAL",
+      "requiredScopes": [],
+      "allowOutbound": ["api.atlassian.com", "*.atlassian.net"]
+    },
+    {
+      "id": "agent_refine_node_properties",
+      "pattern": "reasoner",
+      "capabilityId": "console.workbench.agent.refine_node",
+      "exists": false,
+      "classification": "INTERNAL",
+      "requiredScopes": [],
+      "allowOutbound": []
+    },
+    {
+      "id": "roadmap_kind_sql",
+      "pattern": "connector",
+      "capabilityId": "workbench.sql.proxy",
+      "exists": false,
+      "classification": "CONFIDENTIAL",
+      "requiredScopes": ["db:read"],
+      "allowOutbound": []
+    },
+    {
+      "id": "roadmap_kind_mongodb",
+      "pattern": "connector",
+      "capabilityId": "workbench.mongodb.proxy",
+      "exists": false,
+      "classification": "CONFIDENTIAL",
+      "requiredScopes": ["db:read"],
+      "allowOutbound": []
+    },
+    {
+      "id": "roadmap_kind_gremlin",
+      "pattern": "connector",
+      "capabilityId": "workbench.gremlin.proxy",
+      "exists": false,
+      "classification": "CONFIDENTIAL",
+      "requiredScopes": ["db:read"],
+      "allowOutbound": []
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+Here is the prompt for Phase 3, transforming the dashboard from a passive "Observer" into an active "Operations Hub."
+This phase introduces Action & Orchestration. It leverages the strict architecture you've already established but adds a "Control Plane" for triggering Temporal workflows (aligning with your preference for durable execution) and safe, audited database interactions.
+Role: Principal Software Architect
+Objective: Phase 3 Expansion - "The Operations Hub" (Self-Service & Remediation).
+Context:
+We have Observability (Phase 1) and Intelligence (Phase 2). Now we introduce Operability. The dashboard will serve as a "Service Catalog" and "Action Center" where engineers can trigger self-service workflows (provisioning, remediation) and execute sensitive tasks (SQL queries) under strict guardrails.
+New Feature Specifications
+1. The Service Catalog (Provisioning & Actions)
+Create a catalog of executable actions backed by a durable workflow engine (Temporal).
+ * Domain: Define ActionSchema.
+   * Fields: id, name, category (Provisioning, Remediation, Data), requiredParams (JSON Schema definition), riskLevel (Low, Medium, Critical).
+ * The Executor: Define IWorkflowEngine interface.
+   * Adapter: TemporalAdapter. This maps a catalog item (e.g., "Provision Dev Env") to a specific Temporal Workflow ID.
+   * TDD: Create a MockWorkflowEngine that captures execution requests and returns a deterministic runId.
+2. SRE Runbooks (Remediation)
+Enable "One-Click" execution of common SRE tasks directly from the dashboard or Slack.
+ * Scope: Restart Pods, Flush Redis Cache, Scale ASG.
+ * Safety: "Critical" actions must trigger a "Human-in-the-Loop" Slack approval flow before execution proceeds.
+3. Controlled Data Operations (The SQL Runner)
+Allow authorized users to run database queries without direct shell access.
+ * Constraint: Never allow arbitrary SQL injection.
+ * Mechanism: "Pre-Approved Templates" or "JIT Ephemeral Access."
+   * User selects: "Query User by Email".
+   * User inputs: email@company.com.
+   * System executes the parameterized query.
+ * Audit: Every execution is logged as an immutable Event in the Phase 1 Activity Stream.
+Updated Technical Constraints
+1. The "Action" Schema & Validation
+We need strict Zod schemas for the inputs of these actions.
+ * ExecuteActionRequest: { actionId: string, params: Record<string, any>, reasoning: string }.
+ * Validation: The system must validate the params against the ActionSchema.requiredParams before even calling the workflow engine.
+2. Security & RBAC (Crucial)
+Since we are now changing state, we need a permission layer.
+ * Define PermissionSchema: { role: 'admin' | 'dev' | 'sre', allowedActions: string[] }.
+ * Middleware: Implement a Hono middleware requiresPermission(actionId) that checks the user's role against the action's risk level.
+3. Frontend Experience
+ * The Catalog UI: A card-based grid of available actions.
+ * The "Run" Modal: A dynamic form generator that reads the Zod schema of the action's parameters and renders the appropriate inputs (Text, Select, Boolean).
+ * The Console Output: A streaming log window (simulated for TDD) showing the progress of the workflow.
+Execution Instructions
+Please proceed with Phase 3 Implementation Plan:
+ * Zod Schemas (Action Domain): Show the definitions for Action, WorkflowExecution, and the Permission model.
+ * The Executor Interface: Show the TypeScript interface for IWorkflowEngine and how strict parameter validation is enforced.
+ * The Safe-SQL Strategy: Demonstrate the code structure for a "Parameterized Query Runner" that prevents injection attacks.
+ * TDD Case: Write a test for the Approval Logic:
+   * Scenario: A user triggers a "Critical" action (Drop Database).
+   * Assert: The system returns a PENDING_APPROVAL status instead of executing immediately.
+Start by presenting the Action Domain Schemas and the Workflow Engine Interface.

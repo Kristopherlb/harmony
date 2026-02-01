@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema",
+  "cli": "nx",
+  "title": "Capability generator",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "kebab-case capability name (e.g., jira-get-issue)"
+    },
+    "pattern": {
+      "type": "string",
+      "description": "Capability pattern",
+      "enum": ["connector", "transformer", "commander"]
+    },
+    "classification": {
+      "type": "string",
+      "description": "OCS data classification",
+      "enum": ["PUBLIC", "INTERNAL", "CONFIDENTIAL", "RESTRICTED"]
+    }
+  },
+  "required": ["name", "pattern", "classification"],
+  "additionalProperties": false
+}
+

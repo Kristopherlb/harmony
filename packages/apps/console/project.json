@@ -1,0 +1,36 @@
+{
+    "name": "console",
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "sourceRoot": "packages/apps/console/client",
+    "projectType": "application",
+    "targets": {
+        "serve": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "pnpm run dev",
+                "cwd": "packages/apps/console"
+            }
+        },
+        "build": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "pnpm run build",
+                "cwd": "packages/apps/console"
+            }
+        },
+        "test": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "pnpm run test",
+                "cwd": "packages/apps/console"
+            }
+        },
+        "lint": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "pnpm run check",
+                "cwd": "packages/apps/console"
+            }
+        }
+    }
+}

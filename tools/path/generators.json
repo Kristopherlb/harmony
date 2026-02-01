@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.schemastore.org/nx-plugin",
+  "name": "@golden/path",
+  "generators": {
+    "capability": {
+      "factory": "./src/generators/capability/factory.js",
+      "schema": "./src/generators/capability/schema.json",
+      "description": "Scaffold an OCS capability and register it."
+    },
+    "blueprint": {
+      "factory": "./src/generators/blueprint/factory.js",
+      "schema": "./src/generators/blueprint/schema.json",
+      "description": "Assemble a WCS blueprint from an architecture plan."
+    },
+    "sync": {
+      "factory": "./src/generators/sync/factory.js",
+      "schema": "./src/generators/sync/schema.json",
+      "description": "Regenerate registries and workflow exports from filesystem discovery."
+    }
+  }
+}
+

@@ -1,0 +1,9 @@
+{
+  "name": "harmony-ci",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@dagger.io/dagger": "^0.18.17"
+  }
+}
+

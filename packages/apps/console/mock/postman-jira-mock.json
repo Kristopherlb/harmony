@@ -1,0 +1,109 @@
+{
+  "info": {
+    "name": "Jira Mock API",
+    "description": "Postman collection for mocking Jira API endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Search Issues",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Basic {{auth_token}}",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{jira_host}}/rest/api/3/search?jql={{jql}}&maxResults={{maxResults}}&fields={{fields}}",
+          "host": ["{{jira_host}}"],
+          "path": ["rest", "api", "3", "search"],
+          "query": [
+            {
+              "key": "jql",
+              "value": "{{jql}}",
+              "description": "JQL query string"
+            },
+            {
+              "key": "maxResults",
+              "value": "{{maxResults}}",
+              "description": "Maximum number of results"
+            },
+            {
+              "key": "fields",
+              "value": "{{fields}}",
+              "description": "Comma-separated list of fields"
+            }
+          ]
+        },
+        "description": "Search for issues using JQL"
+      },
+      "response": [
+        {
+          "name": "Mock Search Response",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Basic dXNlcjp0b2tlbg==",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{jira_host}}/rest/api/3/search?jql=updated%20%3E%3D%20%222024-01-01%22&maxResults=50&fields=summary,priority,status,assignee,updated",
+              "host": ["{{jira_host}}"],
+              "path": ["rest", "api", "3", "search"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"expand\": \"names,schema\",\n  \"startAt\": 0,\n  \"maxResults\": 5,\n  \"total\": 5,\n  \"issues\": [\n    {\n      \"expand\": \"\",\n      \"id\": \"10001\",\n      \"self\": \"https://mock-jira.atlassian.net/rest/api/3/issue/PROJ-1001\",\n      \"key\": \"PROJ-1001\",\n      \"fields\": {\n        \"summary\": \"Stale Issue: In Progress task with High priority\",\n        \"priority\": {\n          \"self\": \"https://mock-jira.atlassian.net/rest/api/3/priority/3\",\n          \"iconUrl\": \"https://mock-jira.atlassian.net/images/icons/priorities/high.svg\",\n          \"name\": \"High\",\n          \"id\": \"3\"\n        },\n        \"status\": {\n          \"self\": \"https://mock-jira.atlassian.net/rest/api/3/status/1\",\n          \"description\": \"In Progress\",\n          \"iconUrl\": \"https://mock-jira.atlassian.net/images/icons/statuses/inprogress.png\",\n          \"name\": \"In Progress\",\n          \"id\": \"1\",\n          \"statusCategory\": {\n            \"self\": \"https://mock-jira.atlassian.net/rest/api/3/statuscategory/4\",\n            \"id\": 4,\n            \"key\": \"indeterminate\",\n            \"colorName\": \"yellow\",\n            \"name\": \"In Progress\"\n          }\n        },\n        \"assignee\": {\n          \"self\": \"https://mock-jira.atlassian.net/rest/api/3/user?accountId=user1\",\n          \"accountId\": \"user1\",\n          \"emailAddress\": \"user1@example.com\",\n          \"avatarUrls\": {\n            \"48x48\": \"https://avatar.example.com/user1.png\",\n            \"24x24\": \"https://avatar.example.com/user1.png\",\n            \"16x16\": \"https://avatar.example.com/user1.png\",\n            \"32x32\": \"https://avatar.example.com/user1.png\"\n          },\n          \"displayName\": \"John Doe\",\n          \"active\": true,\n          \"timeZone\": \"America/New_York\"\n        },\n        \"updated\": \"2024-01-10T10:00:00.000+0000\"\n      }\n    },\n    {\n      \"expand\": \"\",\n      \"id\": \"10002\",\n      \"self\": \"https://mock-jira.atlassian.net/rest/api/3/issue/PROJ-1002\",\n      \"key\": \"PROJ-1002\",\n      \"fields\": {\n        \"summary\": \"Recent Issue: To Do task with Medium priority\",\n        \"priority\": {\n          \"self\": \"https://mock-jira.atlassian.net/rest/api/3/priority/2\",\n          \"iconUrl\": \"https://mock-jira.atlassian.net/images/icons/priorities/medium.svg\",\n          \"name\": \"Medium\",\n          \"id\": \"2\"\n        },\n        \"status\": {\n          \"self\": \"https://mock-jira.atlassian.net/rest/api/3/status/0\",\n          \"description\": \"To Do\",\n          \"iconUrl\": \"https://mock-jira.atlassian.net/images/icons/statuses/todo.png\",\n          \"name\": \"To Do\",\n          \"id\": \"0\",\n          \"statusCategory\": {\n            \"self\": \"https://mock-jira.atlassian.net/rest/api/3/statuscategory/2\",\n            \"id\": 2,\n            \"key\": \"new\",\n            \"colorName\": \"blue\",\n            \"name\": \"To Do\"\n          }\n        },\n        \"assignee\": null,\n        \"updated\": \"2024-01-25T14:30:00.000+0000\"\n      }\n    },\n    {\n      \"expand\": \"\",\n      \"id\": \"10003\",\n      \"self\": \"https://mock-jira.atlassian.net/rest/api/3/issue/DEV-1003\",\n      \"key\": \"DEV-1003\",\n      \"fields\": {\n        \"summary\": \"Stale Issue: In Review task with Low priority\",\n        \"priority\": {\n          \"self\": \"https://mock-jira.atlassian.net/rest/api/3/priority/1\",\n          \"iconUrl\": \"https://mock-jira.atlassian.net/images/icons/priorities/low.svg\",\n          \"name\": \"Low\",\n          \"id\": \"1\"\n        },\n        \"status\": {\n          \"self\": \"https://mock-jira.atlassian.net/rest/api/3/status/2\",\n          \"description\": \"In Review\",\n          \"iconUrl\": \"https://mock-jira.atlassian.net/images/icons/statuses/inreview.png\",\n          \"name\": \"In Review\",\n          \"id\": \"2\",\n          \"statusCategory\": {\n            \"self\": \"https://mock-jira.atlassian.net/rest/api/3/statuscategory/4\",\n            \"id\": 4,\n            \"key\": \"indeterminate\",\n            \"colorName\": \"yellow\",\n            \"name\": \"In Progress\"\n          }\n        },\n        \"assignee\": {\n          \"self\": \"https://mock-jira.atlassian.net/rest/api/3/user?accountId=user3\",\n          \"accountId\": \"user3\",\n          \"emailAddress\": \"user3@example.com\",\n          \"avatarUrls\": {\n            \"48x48\": \"https://avatar.example.com/user3.png\",\n            \"24x24\": \"https://avatar.example.com/user3.png\",\n            \"16x16\": \"https://avatar.example.com/user3.png\",\n            \"32x32\": \"https://avatar.example.com/user3.png\"\n          },\n          \"displayName\": \"Jane Smith\",\n          \"active\": true,\n          \"timeZone\": \"America/Los_Angeles\"\n        },\n        \"updated\": \"2024-01-08T09:15:00.000+0000\"\n      }\n    }\n  ]\n}"
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "jira_host",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "dXNlcjp0b2tlbg==",
+      "type": "string",
+      "description": "Base64 encoded user:token"
+    },
+    {
+      "key": "jql",
+      "value": "updated >= \"2024-01-01\"",
+      "type": "string"
+    },
+    {
+      "key": "maxResults",
+      "value": "50",
+      "type": "string"
+    },
+    {
+      "key": "fields",
+      "value": "summary,priority,status,assignee,updated",
+      "type": "string"
+    }
+  ]
+}

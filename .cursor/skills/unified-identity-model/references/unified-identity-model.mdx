@@ -1,0 +1,43 @@
+# Unified Identity Model (UIM)
+
+| Metadata | Value |
+| -------- | ----- |
+| ID | UIM-001 |
+| Version | 1.0.0 |
+| Status | DRAFT |
+| Authors | Identity & Access Management (IAM) |
+| Context | Keycloak / OIDC / RBAC |
+
+## 1. Introduction
+
+The Unified Identity Model (UIM) defines the mapping between the ecosystem's logical components and the organization's identity provider (Keycloak). It ensures that both human users and AI Agents are governed by the same RBAC/ABAC principles.
+
+## 2. Role Mapping (OCS Scope to Keycloak)
+
+The "Scope" defined in an OCS Capability MUST map 1:1 to a Keycloak Client Role.
+
+### 2.1. Mapping Logic
+
+- **Naming:** golden:{provider}:{action} (e.g., golden:jira:create_issue).
+- **Composite Roles:** A Workflow-specific role (e.g., onboarding-admin) MUST be a composite role containing all individual capability roles required for its execution.
+
+## 3. Agent Service Accounts
+
+Agents (Reasoners) MUST NOT use shared credentials or human user tokens.
+
+- **Identity:** Every Agent instance MUST have a dedicated Service Account in Keycloak.
+- **Naming Convention:** agent-{namespace}-{agentId} (e.g., agent-ops-remediator).
+- **Token Lifecycle:** Agents MUST use Client Credentials flow to obtain short-lived JWTs. The trace_id of the current reasoning cycle MUST be embedded in the token's custom claims for auditability.
+
+## 4. User Attributes & Context
+
+To support the Context Injector primitive, Keycloak MUST provide the following standard attributes in the ID Token:
+
+- **division:** The business unit for cost allocation.
+- **clearance_level:** Mapped to the GOS Data Classification levels.
+- **cost_center:** The default budget code.
+
+## 5. Governance
+
+- **Audit:** All Keycloak login/token events MUST be exported to the central Log Aggregator and tagged with golden.initiator_id.
+- **Just-In-Time (JIT):** High-sensitivity roles (RESTRICTED) SHOULD require a Temporal-based approval workflow before the role is dynamically assigned to the user/agent session.

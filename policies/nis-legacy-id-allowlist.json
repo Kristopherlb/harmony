@@ -1,0 +1,11 @@
+{
+  "$schema": "policies/nis-legacy-id-allowlist.schema.json",
+  "ids": [
+    {
+      "legacyId": "workflows.math_pipeline",
+      "targetId": "workflows.math.pipeline",
+      "status": "PLANNED"
+    }
+  ]
+}
+

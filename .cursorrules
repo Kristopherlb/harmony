@@ -1,0 +1,8 @@
+# Agent Behavior Rules
+
+1. **Rule Discovery**: You MUST read and apply rules from the `.cursor/rules/` directory at the start of every session.
+2. **Skill Discovery**: You MUST check `.cursor/skills/` (project) and `~/.cursor/skills/` (global) for relevant skills before planning any task.
+3. **Architecture Compliance**: Adhere to the patterns defined in `workflow-composition-standard` and `agent-specification-standard` located in `.cursor/skills`.
+
+# Context
+This project uses the Cortex/Harmony architecture. All workflows must be deterministic and follow the `BaseBlueprint` pattern.

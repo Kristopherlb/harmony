@@ -1,0 +1,50 @@
+Here is the follow-up prompt, expanding the scope to "Phase 2" features. It integrates the AI Agent for reporting, the "Deep Dive" links, and the new Security Operations Center (SOC) module, while strictly maintaining the TDD and Architecture constraints.
+Role: Principal Software Architect
+Objective: Phase 2 Expansion of the "Engineering Operations Dashboard" (Slack + Web).
+Context:
+We have established the core Activity Stream (Phase 1). Now we are adding Intelligence (AI Reporting), Interactivity (Deep Dives), and Security Visibility (DevSecOps). The strict TDD and Hexagonal Architecture rules from Phase 1 remain in full effect.
+New Feature Specifications
+1. The "Analyst" Agent (AI Service)
+We need an LLM-backed service to ingest raw activity data and generate human-readable reports.
+ * Interface: Define IAgentService with a method generateReport(context: Event[], style: ReportStyle).
+ * Report Styles (Strategy Pattern):
+   * EXECUTIVE: High-level summary, strictly focusing on "Shipped" and "Blocked" items.
+   * STANDUP: Bulleted list of yesterday's work + today's blockers.
+   * STAKEHOLDER: Narrative format focusing on value delivered and timeline risks.
+ * Implementation:
+   * Create a MockAgentService for TDD (returns deterministic strings).
+   * Design the OpenAIAgentService (or similar) but keep it decoupled.
+ * Slack Integration: Add command /ops report [style] [days].
+2. Interactive "Deep Dives" (Drill-Down)
+The dashboard is a high-level signal aggregator, but users need to jump to the source of truth immediately.
+ * Schema Update: Update EventSchema and ProjectSchema to include a required externalLink field (URL).
+ * Frontend Behavior:
+   * PagerDuty Widgets: Clicking a "Critical" block must open the specific PagerDuty incident URL in a new tab.
+   * CI/CD Widgets: Clicking a build status must open the specific CircleCI pipeline run.
+3. The Security Module (DevSecOps)
+We are adding a dedicated "Security Posture" section to the dashboard.
+ * New Domain: Define SecurityFindingSchema using Zod.
+   * Fields: id, severity (Critical, High, Medium, Low), tool (enum: Wiz, AWS Inspector, Artifactory Xray), cve (optional), asset (e.g., repo name or container ID), status (Open, Resolved, Ignored).
+ * New Adapter: ISecurityAdapter.
+   * Create typed stubs for Wiz, AWS Inspector, and Artifactory Xray.
+   * Normalize their diverse outputs into the single SecurityFindingSchema.
+ * Aggregator: The dashboard must show a "Vulnerability Heatmap" distinct from the "Activity Heatmap."
+Updated Technical Constraints
+1. Zod Schema Evolution
+Update the schemas to support the new domains.
+ * ReportRequestSchema: Validates inputs for the AI agent (time range, style).
+ * SecurityFindingSchema: As defined above.
+2. TDD & Testing (Crucial)
+ * Agent Tests: You cannot test the live LLM. You must test the ReportGenerator logic using the MockAgentService. Assert that the correct "Prompt Template" is selected based on the ReportStyle enum.
+ * Security Tests: Write tests that verify the normalization logic. Example: "Given a raw Wiz payload, assert it converts correctly to a SecurityFinding with 'Critical' severity."
+3. API Expansion
+ * POST /api/agent/generate-report: Triggers the agent summary.
+ * GET /api/security/findings: Returns aggregated vulnerabilities.
+ * POST /api/webhooks/security/:tool: Webhook receiver for Wiz/Xray (stubbed).
+Execution Instructions
+Please proceed with Phase 2 Implementation Plan:
+ * Updated Schemas: Show the Zod definitions for SecurityFinding and the updated Event (with deep links).
+ * The Agent Interface: Show the TypeScript interface for the Agent and the Strategy Pattern for report styles.
+ * The Security Adapter: Show the ISecurityAdapter interface and a specific test case for normalizing a Wiz vulnerability.
+ * Frontend Mockup Code: Show how the React component will render the "Security Section" and handle the "Deep Dive" clicks.
+Start by presenting the Updated Zod Schemas and the Agent Interface design.

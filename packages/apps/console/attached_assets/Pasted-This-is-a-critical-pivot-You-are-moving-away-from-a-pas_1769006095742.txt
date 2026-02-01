@@ -1,0 +1,118 @@
+This is a critical pivot. You are moving away from a passive "Link-Out" dashboard (where you click to leave) to an active **"Context-In" Console** (where you click to work).
+
+The best design pattern for this is the **Master-Detail "Ops Console"** layout, similar to modern IDEs (VS Code) or advanced support tools (Front, Intercom, Retool).
+
+### The Proposed UX: "The Split-Pane Command Center"
+
+Instead of a grid of cards that open modals, imagine a **Three-Column Layout**:
+
+1. **The Signal Stream (Left - 25%):** A high-density feed of incoming signals (PagerDuty, Jira, Bitbucket).
+2. **The Context Workspace (Center - 50%):** The "Active Item." If you click an incident, this pane renders the specific "Incident Response" view.
+3. **The Action Rail (Right - 25%):** Context-aware, executable runbooks and tools specific to the active item.
+
+### How It Works (User Journey)
+
+**Scenario:** A PagerDuty Alert comes in for "High Latency - API Gateway."
+
+1. **Trigger:** You click the red alert card in the **Signal Stream**.
+2. **Context Loading (Center Pane):**
+* The center pane instantly loads the **Incident Detail View**.
+* It pulls the specific error logs (from your aggregation logic).
+* It renders the **Standard Operating Procedure (SOP)** for "High Latency" directly in the view (fetched from Confluence/Markdown).
+
+
+3. **Action Availability (Right Pane):**
+* The system recognizes the tags `service:api-gateway` and `type:latency`.
+* The **Action Rail** automatically populates with relevant **Phase 3 Runbooks**:
+* [Run] *Flush Redis Cache*
+* [Run] *Restart Envoy Pods*
+* [Run] *Scale ASG (+2 Nodes)*
+
+
+
+
+
+### The Information Architecture (IA)
+
+We need to restructure the app to support this "Dynamic Context" switching.
+
+#### 1. The "Signal" Entity (Updated)
+
+We need to enrich the `Event` object so the UI knows *which* tools to load.
+
+* **`contextType`**: `incident` | `support_ticket` | `deployment_failure`
+* **`serviceTags`**: `['redis', 'aws', 'gateway']` (Used to filter available runbooks).
+
+#### 2. The "Workspace" Registry
+
+The frontend needs a mapping system:
+
+* If `contextType === 'incident'`, render `<IncidentWorkspace />`.
+* If `contextType === 'support_ticket'`, render `<TicketResolutionWorkspace />`.
+
+#### 3. The "Action" Resolver
+
+A logic hook that queries your Service Catalog:
+
+* *"Give me all executable Actions where `target_service` matches `activeItem.serviceTags` AND `risk_level` <= `user.permissionLevel`."*
+
+---
+
+### The Rewritten Prompt (Focusing on Dynamic UX)
+
+Here is the prompt to build this specific "Ops Console" UX.
+
+---
+
+**Role:** Principal Product Engineer (Frontend Focus)
+**Objective:** Re-architect the Frontend IA to a "Master-Detail Ops Console" pattern.
+
+**UX Philosophy:** "Context over Navigation." Users should never leave the app to resolve an issue. External tools (PagerDuty, Jira) are data sources, not destinations.
+
+**The Three-Column Layout:**
+
+**Column 1: The Signal Stream (Navigation)**
+
+* **Component:** `SignalFeed`.
+* **Behavior:** A virtualized list of events. Sorted by Severity > Time.
+* **State:** Clicking an item sets it as the `activeSignal` in the global store.
+* **Visuals:** Compact. Status dot, timestamp, 1-line summary.
+
+**Column 2: The Workspace (Context)**
+
+* **Component:** `ContextWorkspace`.
+* **Dynamic Rendering:** Use a switch statement on `activeSignal.type` to render specific sub-components:
+* **Case 'Incident':** Renders `<IncidentView />`. Shows the PagerDuty payload, a live graph (mocked) of the metric, and the *rendered Markdown* of the associated SOP.
+* **Case 'Support':** Renders `<TicketView />`. Shows the customer issue, their tier, and previous conversation history.
+
+
+* **Requirement:** This pane must display the *relevant documentation* (Runbook/SOP) inline. Do not link out.
+
+**Column 3: The Action Rail (Execution)**
+
+* **Component:** `ActionPanel`.
+* **Logic:** A hook `useAvailableActions(activeSignal)` that filters the Phase 3 Service Catalog.
+* **Display:** A list of "Playable" cards (e.g., "Restart Service").
+* **Interaction:** Clicking a card triggers the Phase 3 `ExecuteWorkflow` logic.
+* *Feedback:* The button turns into a progress bar/terminal output view while the Temporal workflow runs.
+
+
+
+**Technical Requirements:**
+
+1. **State Management:** Use a robust store (Zustand or React Context) to manage the `activeSignal` and the `executionState` of the runbooks.
+2. **Mock Data Strategy:** Update the `SeedableMemoryRepository` to include "Smart Tags" on the mock events so we can demonstrate the context-aware filtering.
+* *Example:* An event tagged `redis` must only show Redis-related runbooks in the Action Rail.
+
+
+3. **TDD Focus:**
+* Test the `ActionResolver`: "Given an event with tag 'database', assert that 'Restart Web App' is NOT shown, but 'Vacuum Table' IS shown."
+
+
+
+**Deliverable:**
+Scaffold the React Layout for this Three-Column Console. Show me the `ContextWorkspace` component that dynamically loads the correct view and the `ActionPanel` logic.
+
+Start by showing the **Updated TypeScript Interfaces** for `Signal` and `ContextView`, then the **Component Code**.
+
+---

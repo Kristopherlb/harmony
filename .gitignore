@@ -1,0 +1,15 @@
+node_modules
+.nx
+**/dist
+coverage
+.env
+.env.*
+.envrc
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.sample
+!**/.env.template
+.env.local
+*.local
+.dagger/node_modules

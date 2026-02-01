@@ -1,0 +1,37 @@
+{
+  "name": "blueprints",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "main": "{projectRoot}/index.ts",
+        "tsConfig": "{projectRoot}/tsconfig.json",
+        "outputPath": "{projectRoot}/dist"
+      },
+      "outputs": ["{options.outputPath}"]
+    },
+    "test": {
+      "executor": "@nx/vite:test",
+      "options": {
+        "configFile": "{projectRoot}/vitest.config.ts"
+      }
+    },
+    "lint": {
+      "options": {
+        "lintFilePatterns": ["{projectRoot}/**/*.ts", "!{projectRoot}/dist/**"]
+      }
+    },
+    "e2e": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm --filter @golden/blueprints run e2e"
+      }
+    },
+    "e2e-dagger": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm --filter @golden/blueprints run e2e:dagger"
+      }
+    }
+  }
+}
