@@ -195,8 +195,8 @@ describe('Workbench API (security invariants)', () => {
         body: JSON.stringify({ sessionId, query }),
       });
       expect(res.status).toBe(200);
-      const body = (await res.json()) as any;
-      expect(body?.data?.ok).toBe(true);
+      const body = (await res.json()) as { data?: { ok?: boolean } };
+      expect(body.data?.ok).toBe(true);
     } finally {
       await server.close();
     }
@@ -234,9 +234,9 @@ describe('Workbench API (security invariants)', () => {
         body: JSON.stringify({ sessionId, query: 'query Ping { __typename }' }),
       });
       expect(res.status).toBe(200);
-      const body = (await res.json()) as any;
-      expect(body?.data?.ok).toBe(true);
-      expect(body?.data?.tokenSeen).toBe('test-token');
+      const body = (await res.json()) as { data?: { ok?: boolean; tokenSeen?: string } };
+      expect(body.data?.ok).toBe(true);
+      expect(body.data?.tokenSeen).toBe('test-token');
     } finally {
       await server.close();
       if (prevDev === undefined) delete process.env.WORKBENCH_DEV_AUTH;
@@ -301,9 +301,10 @@ describe('Workbench API (security invariants)', () => {
         body: JSON.stringify({ provider: 'jira', kind: 'openapi', mode: 'launch' }),
       });
       expect(create.status).toBe(200);
-      const json = (await create.json()) as any;
-      expect(typeof json.launchUrl).toBe('string');
-      expect(String(json.launchUrl)).toContain('provider=jira');
+      const json = (await create.json()) as Record<string, unknown>;
+      const launchUrl = json.launchUrl;
+      expect(typeof launchUrl).toBe('string');
+      expect(String(launchUrl)).toContain('provider=jira');
     } finally {
       await server.close();
       if (prevBase === undefined) delete process.env.WORKBENCH_PUBLIC_BASE_URL;

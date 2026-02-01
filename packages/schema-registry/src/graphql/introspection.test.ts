@@ -19,9 +19,10 @@ describe('sdlToIntrospectionResult', () => {
     expect(res.errors).toBeUndefined();
     expect(res.data).toBeTruthy();
 
-    const data = res.data as any;
-    expect(data.__schema).toBeTruthy();
-    expect(Array.isArray(data.__schema.types)).toBe(true);
+    const data = res.data as Record<string, unknown>;
+    const schema = data.__schema as { types?: unknown } | undefined;
+    expect(schema).toBeTruthy();
+    expect(Array.isArray(schema?.types)).toBe(true);
   });
 });
 

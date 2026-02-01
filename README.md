@@ -52,6 +52,14 @@ node packages/tools/mcp-server/dist/src/demo/run-demo.js --temporal --name golde
 
 ### 2) Canonical demo (Temporal-primary)
 
+Single-command bootstrap (recommended):
+
+```bash
+pnpm nx run harmony:dev-bootstrap
+```
+
+This brings up dependencies (Docker) and prints the next two canonical commands (worker + demo).
+
 Terminal 1 (dependencies):
 
 ```bash
@@ -74,6 +82,16 @@ Notes:
 
 - `harmony:dev-worker` uses a **deterministic stub** for `executeDaggerCapability` so this demo does **not** require Dagger.
 - Temporal UI (dashboard) runs at `http://localhost:8233` (from `temporalio/ui`).
+
+## PR / CI checks
+
+Before opening a PR, run:
+
+```bash
+pnpm nx run harmony:audit
+```
+
+This runs a determinism gate (`@golden/path:sync --dry-run`) plus affected lint/test. If it fails due to generated drift, run `pnpm nx g @golden/path:sync` and commit the result.
 
 ### Troubleshooting (high-signal)
 

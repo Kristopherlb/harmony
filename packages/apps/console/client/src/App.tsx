@@ -9,7 +9,7 @@ import OperationsHub from "@/pages/operations-hub";
 import WorkbenchPage from "@/pages/workbench-page";
 import OpsConsole, { SignalDetailPage } from "@/pages/ops-console";
 import ServiceCatalog, { ServiceDetailPage } from "@/pages/service-catalog";
-import { WorkflowListPage, WorkflowDetailPage } from "@golden/workflows";
+import { WorkflowListPage, WorkflowDetailPage } from "@/pages/workflows";
 import { PageLayout } from "@/components/page-layout";
 
 // Placeholder for future lazy loading if needed

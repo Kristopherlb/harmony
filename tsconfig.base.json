@@ -7,6 +7,18 @@
     "skipLibCheck": true,
     "declaration": true,
     "paths": {
+      "@golden/blueprints": [
+        "./packages/blueprints/index.ts"
+      ],
+      "@golden/capabilities": [
+        "./packages/capabilities/index.ts"
+      ],
+      "@golden/core": [
+        "./packages/core/index.ts"
+      ],
+      "@golden/schema-registry": [
+        "./packages/schema-registry/index.ts"
+      ],
       "@golden/workflows": [
         "./packages/domains/workflows/src/index.ts"
       ]

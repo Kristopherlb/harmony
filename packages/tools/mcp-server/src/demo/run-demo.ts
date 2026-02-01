@@ -17,11 +17,18 @@ import { formatAsMarkdownTable } from './format-as-table.js';
 function handleBrokenPipe(): void {
   // If the consumer (e.g., jq) exits early, stdout gets closed and Node will throw EPIPE.
   // Treat this as a normal exit for CLI ergonomics.
-  process.stdout.on('error', (err: any) => {
-    if (err && typeof err === 'object' && (err as any).code === 'EPIPE') {
+  process.stdout.on('error', (err: unknown) => {
+    if (err && typeof err === 'object' && (err as { code?: unknown }).code === 'EPIPE') {
       process.exit(0);
     }
   });
+}
+
+function getStructuredContent(call: unknown): Record<string, unknown> | undefined {
+  if (!call || typeof call !== 'object') return undefined;
+  const sc = (call as Record<string, unknown>).structuredContent;
+  if (!sc || typeof sc !== 'object' || Array.isArray(sc)) return undefined;
+  return sc as Record<string, unknown>;
 }
 
 async function main(): Promise<void> {
@@ -63,7 +70,7 @@ async function main(): Promise<void> {
 
   // Optional pretty output for the last step (human-friendly).
   if (demo.output === 'table') {
-    const sc = (call as any)?.structuredContent as Record<string, unknown> | undefined;
+    const sc = getStructuredContent(call);
     if (sc && typeof sc === 'object') {
       process.stdout.write(formatAsMarkdownTable(sc) + '\n');
     }

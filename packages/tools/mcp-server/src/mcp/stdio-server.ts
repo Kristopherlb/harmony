@@ -49,6 +49,13 @@ function readCapabilityBehavior(): 'await' | 'start' {
   return v === 'start' ? 'start' : 'await';
 }
 
+function readAwaitTimeoutMs(): number {
+  const raw = (process.env.MCP_CAPABILITY_AWAIT_TIMEOUT_MS ?? '5000').trim();
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 0) return 5000;
+  return n;
+}
+
 function readCsvEnv(name: string): string[] {
   const raw = process.env[name];
   if (typeof raw !== 'string' || raw.trim().length === 0) return [];
@@ -63,6 +70,19 @@ function readBoolEnv(name: string, fallback: boolean): boolean {
   if (typeof v !== 'string' || v.trim().length === 0) return fallback;
   return v.trim().toLowerCase() === 'true';
 }
+
+type TemporalStartOptions = {
+  taskQueue: string;
+  workflowId: string;
+  args: unknown[];
+  memo?: Record<string, unknown>;
+};
+
+type MinimalTemporalHandle = {
+  workflowId: string;
+  firstExecutionRunId: string;
+  result?: () => Promise<unknown>;
+};
 
 export async function runMcpStdioServer(options: StdioServerOptions): Promise<void> {
   const stdin = options.stdin ?? process.stdin;
@@ -105,9 +125,12 @@ export async function runMcpStdioServer(options: StdioServerOptions): Promise<vo
         taskQueue,
         client: {
           workflow: {
-            start: async (workflowType, startOptions) => {
+            start: async (workflowType: string, startOptions: TemporalStartOptions): Promise<MinimalTemporalHandle> => {
               const client = await getClient();
-              const handle = await (client as any).workflow.start(workflowType, startOptions);
+              const workflow = client.workflow as unknown as {
+                start: (workflowType: string, startOptions: TemporalStartOptions) => Promise<MinimalTemporalHandle>;
+              };
+              const handle = await workflow.start(workflowType, startOptions);
               // Standardize handle shape for downstream logic.
               return {
                 workflowId: handle.workflowId,
@@ -121,6 +144,7 @@ export async function runMcpStdioServer(options: StdioServerOptions): Promise<vo
       blueprints: minimalBlueprints,
       workflowIdFactory: (toolId) => `${toolId}-${randomUUID()}`,
       capabilityBehavior: readCapabilityBehavior(),
+      capabilityAwaitTimeoutMs: readAwaitTimeoutMs(),
       statusUrlFactory: (workflowId, runId) =>
         `${temporalUiUrl.replace(/\/+$/, '')}/namespaces/${encodeURIComponent(namespace)}/workflows/${encodeURIComponent(
           workflowId
@@ -133,7 +157,8 @@ export async function runMcpStdioServer(options: StdioServerOptions): Promise<vo
         const effAppId = ctx?.appId ?? appId;
         const effEnv = ctx?.environment ?? environment;
         const effCost = ctx?.costCenter ?? costCenter;
-        const effClass = ctx?.dataClassification ?? (dataClassification as any);
+        const effClass =
+          typeof ctx?.dataClassification === 'string' ? ctx.dataClassification : dataClassification ?? undefined;
         return {
           [SECURITY_CONTEXT_MEMO_KEY]: { initiatorId: effInitiatorId, roles: effRoles, tokenRef: effTokenRef, traceId },
           [GOLDEN_CONTEXT_MEMO_KEY]: {
@@ -193,7 +218,7 @@ export async function runMcpStdioServer(options: StdioServerOptions): Promise<vo
       if (res) writeJsonLine(stdout, res);
     } catch (e) {
       // Internal error.
-      const id = (msg as any).id ?? null;
+      const id = msg.id ?? null;
       writeJsonLine(stdout, {
         jsonrpc: '2.0',
         id,

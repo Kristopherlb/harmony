@@ -7,16 +7,26 @@
 import type { Capability } from '@golden/core';
 import { jwtUtilitiesCapability } from './auth/jwt-utilities.capability.js';
 import { oauthProviderCapability } from './auth/oauth-provider.capability.js';
+import { terraformRunnerCapability } from './commanders/terraform-runner.capability.js';
+import { awsSdkCapability } from './connectors/aws-sdk.capability.js';
+import { postgresqlCapability } from './connectors/postgresql.capability.js';
+import { slackConnectorCapability } from './connectors/slack-connector.capability.js';
 import { echoCapability } from './demo/echo.capability.js';
+import { openfeatureProviderCapability } from './flags/openfeature-provider.capability.js';
 import { githubGraphqlQueryCapability } from './connectors/github-graphql-query.capability.js';
 import { githubRestRequestCapability } from './connectors/github-rest-request.capability.js';
 import { jiraIssueCountCapability } from './connectors/jira-issue-count.capability.js';
 import { jiraIssueSearchCapability } from './connectors/jira-issue-search.capability.js';
 import { mathAddCapability } from './demo/math-add.capability.js';
+import { healthCheckProbeCapability } from './observability/health-check-probe.capability.js';
+import { syftCapability } from './sbom/syft.capability.js';
 import { clamavScannerCapability } from './security/clamav-scanner.capability.js';
+import { gitleaksCapability } from './security/gitleaks.capability.js';
 import { semgrepScannerCapability } from './security/semgrep-scanner.capability.js';
 import { trivyScannerCapability } from './security/trivy-scanner.capability.js';
 import { compressionCapability } from './utilities/compression.capability.js';
+import { digitalSigningCapability } from './utilities/digital-signing.capability.js';
+import { encodingCapability } from './utilities/encoding.capability.js';
 import { hashingCapability } from './utilities/hashing.capability.js';
 import { jsonYamlTransformCapability } from './utilities/json-yaml-transform.capability.js';
 
@@ -26,16 +36,26 @@ export function createCapabilityRegistry(): CapabilityRegistry {
   return new Map([
     [jwtUtilitiesCapability.metadata.id, jwtUtilitiesCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [oauthProviderCapability.metadata.id, oauthProviderCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [terraformRunnerCapability.metadata.id, terraformRunnerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [awsSdkCapability.metadata.id, awsSdkCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [postgresqlCapability.metadata.id, postgresqlCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [slackConnectorCapability.metadata.id, slackConnectorCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [echoCapability.metadata.id, echoCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [openfeatureProviderCapability.metadata.id, openfeatureProviderCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [githubGraphqlQueryCapability.metadata.id, githubGraphqlQueryCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [githubRestRequestCapability.metadata.id, githubRestRequestCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [jiraIssueCountCapability.metadata.id, jiraIssueCountCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [jiraIssueSearchCapability.metadata.id, jiraIssueSearchCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [mathAddCapability.metadata.id, mathAddCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [healthCheckProbeCapability.metadata.id, healthCheckProbeCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [syftCapability.metadata.id, syftCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [clamavScannerCapability.metadata.id, clamavScannerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [gitleaksCapability.metadata.id, gitleaksCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [semgrepScannerCapability.metadata.id, semgrepScannerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [trivyScannerCapability.metadata.id, trivyScannerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [compressionCapability.metadata.id, compressionCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [digitalSigningCapability.metadata.id, digitalSigningCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [encodingCapability.metadata.id, encodingCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [hashingCapability.metadata.id, hashingCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [jsonYamlTransformCapability.metadata.id, jsonYamlTransformCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
   ]);

@@ -4,7 +4,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { createCapabilityRegistry } from '@golden/capabilities';
-import { generateToolManifestFromCapabilities } from '../manifest/capabilities.js';
+import { generateToolManifestFromCapabilities, type ToolManifest } from '../manifest/capabilities.js';
 import { createToolSurface } from './tool-surface.js';
 import { signGoldenCallEnvelope } from './call-envelope.js';
 
@@ -68,10 +68,10 @@ describe('createToolSurface', () => {
           },
         },
       ],
-    } as const;
+    } as const satisfies ToolManifest;
 
     const surface = createToolSurface({
-      manifest: capManifest as any,
+      manifest: capManifest,
       traceId: () => 'trace-cap',
       capabilityRunner: async ({ id, args }) => ({
         result: { id, args },
@@ -83,6 +83,43 @@ describe('createToolSurface', () => {
     expect(res.structuredContent).toMatchObject({
       trace_id: 'trace-cap',
       result: { id: 'cap.any', args: { x: 9 } },
+    });
+  });
+
+  it('returns a structured runner error (Temporal-first fail-fast) when runner throws', async () => {
+    const capManifest = {
+      generated_at: '2026-01-28T00:00:00.000Z',
+      version: '1',
+      tools: [
+        {
+          id: 'cap.any',
+          type: 'CAPABILITY',
+          description: 'Any capability',
+          data_classification: 'PUBLIC',
+          json_schema: {
+            $schema: 'https://json-schema.org/draft/2020-12/schema#',
+            type: 'object',
+            properties: { x: { type: 'number' } },
+            required: ['x'],
+          },
+        },
+      ],
+    } as const satisfies ToolManifest;
+
+    const err = Object.assign(new Error('ECONNREFUSED'), { code: 'ECONNREFUSED' });
+    const surface = createToolSurface({
+      manifest: capManifest,
+      traceId: () => 'trace-runner',
+      capabilityRunner: async () => {
+        throw err;
+      },
+    });
+
+    const res = await surface.callTool({ name: 'cap.any', arguments: { x: 9 } });
+    expect(res.isError).toBe(true);
+    expect(res.structuredContent).toMatchObject({
+      trace_id: 'trace-runner',
+      error: 'TEMPORAL_UNAVAILABLE',
     });
   });
 
@@ -125,10 +162,10 @@ describe('createToolSurface', () => {
           },
         },
       ],
-    } as const;
+    } as const satisfies ToolManifest;
 
     const surface = createToolSurface({
-      manifest: restrictedManifest as any,
+      manifest: restrictedManifest,
       traceId: () => 'trace-restricted',
       capabilityRunner: async () => {
         throw new Error('runner should not be invoked');
@@ -166,7 +203,7 @@ describe('createToolSurface', () => {
           },
         },
       ],
-    } as const;
+    } as const satisfies ToolManifest;
 
     const secret = 'test-secret';
     const envelope = signGoldenCallEnvelope(
@@ -184,7 +221,7 @@ describe('createToolSurface', () => {
     );
 
     const surface = createToolSurface({
-      manifest: capManifest as any,
+      manifest: capManifest,
       traceId: () => 'trace-generated',
       envelope: { hmacSecret: secret, require: true },
       capabilityRunner: async ({ traceId, context }) => ({
@@ -230,10 +267,10 @@ describe('createToolSurface', () => {
           },
         },
       ],
-    } as const;
+    } as const satisfies ToolManifest;
 
     const surface = createToolSurface({
-      manifest: capManifest as any,
+      manifest: capManifest,
       traceId: () => 'trace-generated',
       envelope: { hmacSecret: 'test-secret', require: true },
       capabilityRunner: async () => ({ result: {} }),

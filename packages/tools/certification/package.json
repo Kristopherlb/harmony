@@ -1,0 +1,21 @@
+{
+  "name": "@golden/certification",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "golden-certify": "dist/src/cli.js"
+  },
+  "dependencies": {
+    "@golden/blueprints": "workspace:*",
+    "@golden/capabilities": "workspace:*",
+    "@golden/core": "workspace:*",
+    "@golden/schema-registry": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.10",
+    "typescript": "^5.3.0",
+    "vitest": "^1.2.0"
+  }
+}

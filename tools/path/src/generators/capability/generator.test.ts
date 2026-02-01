@@ -35,7 +35,7 @@ describe('@golden/path:capability', () => {
 
     tree.write(
       'packages/capabilities/src/demo/echo.capability.ts',
-      'export const echoCapability = { metadata: { id: \"golden.echo\" } } as any;'
+      'export const echoCapability = { metadata: { id: "golden.echo" } } as any;'
     );
     tree.write('packages/capabilities/src/registry.ts', minimalCapabilitiesRegistrySource());
 
@@ -66,7 +66,7 @@ describe('@golden/path:capability', () => {
 
     tree.write(
       'packages/capabilities/src/demo/echo.capability.ts',
-      'export const echoCapability = { metadata: { id: \"golden.echo\" } } as any;'
+      'export const echoCapability = { metadata: { id: "golden.echo" } } as any;'
     );
     tree.write('packages/capabilities/src/registry.ts', minimalCapabilitiesRegistrySource());
 

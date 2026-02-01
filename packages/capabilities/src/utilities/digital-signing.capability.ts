@@ -9,156 +9,157 @@ import { z } from '@golden/schema-registry';
 import type { Capability, CapabilityContext } from '@golden/core';
 
 const operationSchema = z.enum([
-    'sign',
-    'verify',
-    'generateKeyPair',
+  'sign',
+  'verify',
+  'generateKeyPair',
 ]).describe('Signing operation to perform');
 
 const algorithmSchema = z.enum([
-    'RSA-SHA256',
-    'RSA-SHA384',
-    'RSA-SHA512',
-    'ECDSA-SHA256',
-    'ECDSA-SHA384',
-    'ECDSA-SHA512',
-    'Ed25519',
+  'RSA-SHA256',
+  'RSA-SHA384',
+  'RSA-SHA512',
+  'ECDSA-SHA256',
+  'ECDSA-SHA384',
+  'ECDSA-SHA512',
+  'Ed25519',
 ]).describe('Signing algorithm');
 
 const inputSchema = z
-    .object({
-        operation: operationSchema,
-        data: z.string().optional().describe('Data to sign (base64 encoded)'),
-        signature: z.string().optional().describe('Signature to verify (base64 encoded)'),
-        algorithm: algorithmSchema.describe('Signing algorithm'),
-        keySize: z.number().int().positive().optional().describe('Key size for key generation'),
-        outputFormat: z.enum(['base64', 'hex', 'raw']).optional().default('base64').describe('Output format'),
-    })
-    .describe('Digital Signing input');
+  .object({
+    operation: operationSchema,
+    data: z.string().optional().describe('Data to sign (base64 encoded)'),
+    signature: z.string().optional().describe('Signature to verify (base64 encoded)'),
+    algorithm: algorithmSchema.describe('Signing algorithm'),
+    keySize: z.number().int().positive().optional().describe('Key size for key generation'),
+    outputFormat: z.enum(['base64', 'hex', 'raw']).optional().describe('Output format, defaults to base64'),
+  })
+  .describe('Digital Signing input');
 
 const outputSchema = z
-    .object({
-        operation: operationSchema.describe('Operation performed'),
-        signature: z.string().optional().describe('Generated signature'),
-        valid: z.boolean().optional().describe('Signature validity (for verify)'),
-        publicKey: z.string().optional().describe('Generated public key'),
-        privateKey: z.string().optional().describe('Generated private key'),
-        algorithm: algorithmSchema.describe('Algorithm used'),
-        keyId: z.string().optional().describe('Key identifier'),
-    })
-    .describe('Digital Signing output');
+  .object({
+    operation: operationSchema.describe('Operation performed'),
+    signature: z.string().optional().describe('Generated signature'),
+    valid: z.boolean().optional().describe('Signature validity (for verify)'),
+    publicKey: z.string().optional().describe('Generated public key'),
+    privateKey: z.string().optional().describe('Generated private key'),
+    algorithm: algorithmSchema.describe('Algorithm used'),
+    keyId: z.string().optional().describe('Key identifier'),
+  })
+  .describe('Digital Signing output');
 
 const configSchema = z
-    .object({
-        defaultAlgorithm: algorithmSchema.optional().default('RSA-SHA256').describe('Default algorithm'),
-        defaultKeySize: z.number().int().positive().optional().default(2048).describe('Default key size'),
-    })
-    .describe('Digital Signing configuration');
+  .object({
+    defaultAlgorithm: algorithmSchema.optional().describe('Default algorithm, defaults to RSA-SHA256'),
+    defaultKeySize: z.number().int().positive().optional().describe('Default key size, defaults to 2048'),
+  })
+  .describe('Digital Signing configuration');
 
 const secretsSchema = z
-    .object({
-        privateKey: z.string().optional().describe('Private key for signing'),
-        publicKey: z.string().optional().describe('Public key for verification'),
-        passphrase: z.string().optional().describe('Key passphrase if encrypted'),
-    })
-    .describe('Digital Signing secrets');
+  .object({
+    privateKey: z.string().optional().describe('Private key for signing'),
+    publicKey: z.string().optional().describe('Public key for verification'),
+    passphrase: z.string().optional().describe('Key passphrase if encrypted'),
+  })
+  .describe('Digital Signing secrets');
 
-export type DigitalSigningInput = z.infer<typeof inputSchema>;
-export type DigitalSigningOutput = z.infer<typeof outputSchema>;
-export type DigitalSigningConfig = z.infer<typeof configSchema>;
-export type DigitalSigningSecrets = z.infer<typeof secretsSchema>;
+export type DigitalSigningInput = z.input<typeof inputSchema>;
+export type DigitalSigningOutput = z.output<typeof outputSchema>;
+export type DigitalSigningConfig = z.input<typeof configSchema>;
+export type DigitalSigningSecrets = z.input<typeof secretsSchema>;
 
 export const digitalSigningCapability: Capability<
-    DigitalSigningInput,
-    DigitalSigningOutput,
-    DigitalSigningConfig,
-    DigitalSigningSecrets
+  DigitalSigningInput,
+  DigitalSigningOutput,
+  DigitalSigningConfig,
+  DigitalSigningSecrets
 > = {
-    metadata: {
-        id: 'golden.utilities.digital-signing',
-        version: '1.0.0',
-        name: 'digitalSigning',
-        description:
-            'Cryptographic signing and verification using RSA, ECDSA, and Ed25519. Suitable for artifact signing, code signing, and document integrity.',
-        tags: ['transformer', 'utilities', 'security', 'signing', 'crypto'],
-        maintainer: 'platform',
+  metadata: {
+    id: 'golden.utilities.digital-signing',
+    version: '1.0.0',
+    name: 'digitalSigning',
+    description:
+      'Cryptographic signing and verification using RSA, ECDSA, and Ed25519. Suitable for artifact signing, code signing, and document integrity.',
+    tags: ['transformer', 'utilities', 'security', 'signing', 'crypto'],
+    maintainer: 'platform',
+  },
+  schemas: {
+    input: inputSchema,
+    output: outputSchema,
+    config: configSchema,
+    secrets: secretsSchema,
+  },
+  security: {
+    requiredScopes: ['crypto:sign'],
+    dataClassification: 'CONFIDENTIAL',
+    networkAccess: {
+      allowOutbound: [], // Pure transformer - no network needed
     },
-    schemas: {
-        input: inputSchema,
-        output: outputSchema,
-        config: configSchema,
-        secrets: secretsSchema,
+  },
+  operations: {
+    isIdempotent: true,
+    retryPolicy: { maxAttempts: 1, initialIntervalSeconds: 1, backoffCoefficient: 1 },
+    errorMap: (error: unknown) => {
+      if (error instanceof Error) {
+        if (error.message.includes('key')) return 'FATAL';
+        if (error.message.includes('invalid')) return 'FATAL';
+      }
+      return 'FATAL';
     },
-    security: {
-        requiredScopes: ['crypto:sign'],
-        dataClassification: 'CONFIDENTIAL',
-        networkAccess: {
-            allowOutbound: [], // Pure transformer - no network needed
-        },
+    costFactor: 'LOW',
+  },
+  aiHints: {
+    exampleInput: {
+      operation: 'sign',
+      data: 'SGVsbG8gV29ybGQh',
+      algorithm: 'RSA-SHA256',
+      outputFormat: 'base64',
     },
-    operations: {
-        isIdempotent: true,
-        retryPolicy: { maxAttempts: 1, initialIntervalSeconds: 1, backoffCoefficient: 1 },
-        errorMap: (error: unknown) => {
-            if (error instanceof Error) {
-                if (error.message.includes('key')) return 'FATAL';
-                if (error.message.includes('invalid')) return 'FATAL';
-            }
-            return 'FATAL';
-        },
-        costFactor: 'LOW',
+    exampleOutput: {
+      operation: 'sign',
+      signature: 'dGVzdC1zaWduYXR1cmU=',
+      algorithm: 'RSA-SHA256',
     },
-    aiHints: {
-        exampleInput: {
-            operation: 'sign',
-            data: 'SGVsbG8gV29ybGQh',
-            algorithm: 'RSA-SHA256',
-        },
-        exampleOutput: {
-            operation: 'sign',
-            signature: 'dGVzdC1zaWduYXR1cmU=',
-            algorithm: 'RSA-SHA256',
-        },
-        usageNotes:
-            'Use RSA-SHA256 for compatibility, Ed25519 for performance. Provide private key for signing, public key for verification. Key generation creates ephemeral keys.',
-    },
-    factory: (
-        dag,
-        context: CapabilityContext<DigitalSigningConfig, DigitalSigningSecrets>,
-        input: DigitalSigningInput
-    ) => {
-        type ContainerBuilder = {
-            from(image: string): ContainerBuilder;
-            withEnvVariable(key: string, value: string): ContainerBuilder;
-            withExec(args: string[]): unknown;
-        };
-        type DaggerClient = { container(): ContainerBuilder };
-        const d = dag as unknown as DaggerClient;
+    usageNotes:
+      'Use RSA-SHA256 for compatibility, Ed25519 for performance. Provide private key for signing, public key for verification. Key generation creates ephemeral keys.',
+  },
+  factory: (
+    dag,
+    context: CapabilityContext<DigitalSigningConfig, DigitalSigningSecrets>,
+    input: DigitalSigningInput
+  ) => {
+    type ContainerBuilder = {
+      from(image: string): ContainerBuilder;
+      withEnvVariable(key: string, value: string): ContainerBuilder;
+      withExec(args: string[]): unknown;
+    };
+    type DaggerClient = { container(): ContainerBuilder };
+    const d = dag as unknown as DaggerClient;
 
-        const algorithm = input.algorithm ?? context.config.defaultAlgorithm ?? 'RSA-SHA256';
-        const keySize = input.keySize ?? context.config.defaultKeySize ?? 2048;
+    const algorithm = input.algorithm ?? context.config.defaultAlgorithm ?? 'RSA-SHA256';
+    const keySize = input.keySize ?? context.config.defaultKeySize ?? 2048;
 
-        const payload = {
-            operation: input.operation,
-            data: input.data,
-            signature: input.signature,
-            algorithm,
-            keySize,
-            outputFormat: input.outputFormat ?? 'base64',
-            privateKeyRef: context.secretRefs.privateKey,
-            publicKeyRef: context.secretRefs.publicKey,
-            passphraseRef: context.secretRefs.passphrase,
-        };
+    const payload = {
+      operation: input.operation,
+      data: input.data,
+      signature: input.signature,
+      algorithm,
+      keySize,
+      outputFormat: input.outputFormat ?? 'base64',
+      privateKeyRef: context.secretRefs.privateKey,
+      publicKeyRef: context.secretRefs.publicKey,
+      passphraseRef: context.secretRefs.passphrase,
+    };
 
-        return d
-            .container()
-            .from('node:20-alpine')
-            .withEnvVariable('INPUT_JSON', JSON.stringify(payload))
-            .withEnvVariable('OPERATION', input.operation)
-            .withEnvVariable('ALGORITHM', algorithm)
-            .withExec([
-                'node',
-                '-e',
-                `
+    return d
+      .container()
+      .from('node:20-alpine')
+      .withEnvVariable('INPUT_JSON', JSON.stringify(payload))
+      .withEnvVariable('OPERATION', input.operation)
+      .withEnvVariable('ALGORITHM', algorithm)
+      .withExec([
+        'node',
+        '-e',
+        `
 const crypto = require('crypto');
 const fs = require('fs');
 const input = JSON.parse(process.env.INPUT_JSON);
@@ -281,6 +282,6 @@ run().catch(err => {
   process.exit(1);
 });
         `.trim(),
-            ]);
-    },
+      ]);
+  },
 };
