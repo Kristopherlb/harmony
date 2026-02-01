@@ -27,7 +27,7 @@ const inputSchema = z
         targets: z.array(z.string()).optional().describe('Resource targets'),
         autoApprove: z.boolean().optional().describe('Auto-approve apply/destroy'),
         planFile: z.string().optional().describe('Plan file for apply'),
-        refresh: z.boolean().optional().default(true).describe('Refresh state before plan'),
+        refresh: z.boolean().optional().describe('Refresh state before plan'),
         parallelism: z.number().int().positive().optional().describe('Parallelism limit'),
         stateSubcommand: z.enum(['list', 'show', 'mv', 'rm', 'pull', 'push']).optional().describe('State subcommand'),
         stateArgs: z.array(z.string()).optional().describe('State subcommand arguments'),
@@ -120,8 +120,8 @@ export const terraformRunnerCapability: Capability<
         retryPolicy: { maxAttempts: 2, initialIntervalSeconds: 5, backoffCoefficient: 2 },
         errorMap: (error: unknown) => {
             if (error instanceof Error) {
-                if (error.message.includes('lock')) return 'TRANSIENT';
-                if (error.message.includes('rate')) return 'TRANSIENT';
+                if (error.message.includes('lock')) return 'RETRYABLE';
+                if (error.message.includes('rate')) return 'RETRYABLE';
                 if (error.message.includes('syntax')) return 'FATAL';
             }
             return 'FATAL';

@@ -41,7 +41,7 @@ const configSchema = z
     .object({
         region: z.string().describe('Default AWS region'),
         endpoint: z.string().optional().describe('Custom endpoint (for LocalStack, etc.)'),
-        maxRetries: z.number().int().min(0).optional().default(3).describe('Maximum retry attempts'),
+        maxRetries: z.number().int().min(0).optional().describe('Maximum retry attempts'),
     })
     .describe('AWS SDK configuration');
 
@@ -91,9 +91,9 @@ export const awsSdkCapability: Capability<
         retryPolicy: { maxAttempts: 3, initialIntervalSeconds: 1, backoffCoefficient: 2 },
         errorMap: (error: unknown) => {
             if (error instanceof Error) {
-                if (error.message.includes('throttl')) return 'TRANSIENT';
-                if (error.message.includes('timeout')) return 'TRANSIENT';
-                if (error.message.includes('ServiceUnavailable')) return 'TRANSIENT';
+                if (error.message.includes('throttl')) return 'RETRYABLE';
+                if (error.message.includes('timeout')) return 'RETRYABLE';
+                if (error.message.includes('ServiceUnavailable')) return 'RETRYABLE';
                 if (error.message.includes('AccessDenied')) return 'FATAL';
             }
             return 'FATAL';

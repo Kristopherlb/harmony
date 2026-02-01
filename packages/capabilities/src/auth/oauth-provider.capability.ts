@@ -43,8 +43,8 @@ const outputSchema = z
 
 const configSchema = z
     .object({
-        timeout: z.number().positive().optional().default(30000).describe('Request timeout in milliseconds'),
-        retryOnRateLimit: z.boolean().optional().default(true).describe('Whether to retry on 429 responses'),
+        timeout: z.number().positive().optional().describe('Request timeout in milliseconds'),
+        retryOnRateLimit: z.boolean().optional().describe('Whether to retry on 429 responses'),
     })
     .describe('OAuth Provider configuration');
 
@@ -95,8 +95,8 @@ export const oauthProviderCapability: Capability<
                 if (error.message.includes('invalid_grant')) return 'FATAL';
                 if (error.message.includes('invalid_client')) return 'FATAL';
                 if (error.message.includes('unauthorized_client')) return 'FATAL';
-                if (error.message.includes('rate_limit') || error.message.includes('429')) return 'TRANSIENT';
-                if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) return 'TRANSIENT';
+                if (error.message.includes('rate_limit') || error.message.includes('429')) return 'RETRYABLE';
+                if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) return 'RETRYABLE';
             }
             return 'FATAL';
         },

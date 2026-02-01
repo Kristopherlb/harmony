@@ -29,10 +29,10 @@ const inputSchema = z
         target: z.string().describe('Scan target (image name, path, or repo URL)'),
         scanType: scanTypeSchema,
         severities: z.array(severitySchema).optional().describe('Filter by severity levels'),
-        ignoreUnfixed: z.boolean().optional().default(false).describe('Ignore unfixed vulnerabilities'),
+        ignoreUnfixed: z.boolean().optional().describe('Ignore unfixed vulnerabilities'),
         skipDirs: z.array(z.string()).optional().describe('Directories to skip'),
         skipFiles: z.array(z.string()).optional().describe('Files to skip'),
-        listAllPkgs: z.boolean().optional().default(false).describe('List all packages, not just vulnerable ones'),
+        listAllPkgs: z.boolean().optional().describe('List all packages, not just vulnerable ones'),
         securityChecks: z.array(z.enum(['vuln', 'config', 'secret', 'license'])).optional().describe('Security checks to run'),
         timeout: z.number().positive().optional().describe('Scan timeout in seconds'),
     })
@@ -86,8 +86,8 @@ const outputSchema = z
 const configSchema = z
     .object({
         cacheDir: z.string().optional().describe('Cache directory for vulnerability database'),
-        offlineScan: z.boolean().optional().default(false).describe('Run in offline mode'),
-        skipDbUpdate: z.boolean().optional().default(false).describe('Skip database update'),
+        offlineScan: z.boolean().optional().describe('Run in offline mode'),
+        skipDbUpdate: z.boolean().optional().describe('Skip database update'),
     })
     .describe('Trivy Scanner configuration');
 
@@ -135,9 +135,9 @@ export const trivyScannerCapability: Capability<
         retryPolicy: { maxAttempts: 2, initialIntervalSeconds: 5, backoffCoefficient: 2 },
         errorMap: (error: unknown) => {
             if (error instanceof Error) {
-                if (error.message.includes('timeout')) return 'TRANSIENT';
-                if (error.message.includes('network')) return 'TRANSIENT';
-                if (error.message.includes('pull')) return 'TRANSIENT';
+                if (error.message.includes('timeout')) return 'RETRYABLE';
+                if (error.message.includes('network')) return 'RETRYABLE';
+                if (error.message.includes('pull')) return 'RETRYABLE';
             }
             return 'FATAL';
         },

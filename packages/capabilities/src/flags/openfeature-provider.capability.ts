@@ -58,8 +58,8 @@ const configSchema = z
     .object({
         provider: z.enum(['flagd', 'launchdarkly', 'split', 'configcat', 'unleash', 'env']).describe('Feature flag provider'),
         providerUrl: z.string().optional().describe('Provider endpoint URL'),
-        cacheEnabled: z.boolean().optional().default(true).describe('Enable flag caching'),
-        cacheTtlSeconds: z.number().int().positive().optional().default(60).describe('Cache TTL in seconds'),
+        cacheEnabled: z.boolean().optional().describe('Enable flag caching'),
+        cacheTtlSeconds: z.number().int().positive().optional().describe('Cache TTL in seconds'),
     })
     .describe('OpenFeature Provider configuration');
 
@@ -107,8 +107,8 @@ export const openFeatureProviderCapability: Capability<
         retryPolicy: { maxAttempts: 3, initialIntervalSeconds: 1, backoffCoefficient: 2 },
         errorMap: (error: unknown) => {
             if (error instanceof Error) {
-                if (error.message.includes('connection')) return 'TRANSIENT';
-                if (error.message.includes('timeout')) return 'TRANSIENT';
+                if (error.message.includes('connection')) return 'RETRYABLE';
+                if (error.message.includes('timeout')) return 'RETRYABLE';
                 if (error.message.includes('not found')) return 'FATAL';
             }
             return 'FATAL';

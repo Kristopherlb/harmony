@@ -25,9 +25,9 @@ const inputSchema = z
         expectedStatus: z.number().int().optional().describe('Expected HTTP status code'),
         expectedBody: z.string().optional().describe('Expected string in response body'),
         headers: z.record(z.string()).optional().describe('HTTP headers to send'),
-        timeout: z.number().positive().optional().default(5000).describe('Probe timeout in milliseconds'),
-        retries: z.number().int().min(0).optional().default(0).describe('Number of retries'),
-        retryDelay: z.number().positive().optional().default(1000).describe('Delay between retries in ms'),
+        timeout: z.number().positive().optional().describe('Probe timeout in milliseconds'),
+        retries: z.number().int().min(0).optional().describe('Number of retries'),
+        retryDelay: z.number().positive().optional().describe('Delay between retries in ms'),
         dnsType: z.enum(['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS']).optional().describe('DNS record type'),
         grpcService: z.string().optional().describe('gRPC service name for health check'),
     })
@@ -50,8 +50,8 @@ const outputSchema = z
 
 const configSchema = z
     .object({
-        defaultTimeout: z.number().positive().optional().default(5000).describe('Default timeout'),
-        maxBodySize: z.number().positive().optional().default(1024).describe('Max response body to capture'),
+        defaultTimeout: z.number().positive().optional().describe('Default timeout'),
+        maxBodySize: z.number().positive().optional().describe('Max response body to capture'),
     })
     .describe('Health Check Probe configuration');
 
@@ -99,8 +99,8 @@ export const healthCheckProbeCapability: Capability<
         retryPolicy: { maxAttempts: 3, initialIntervalSeconds: 1, backoffCoefficient: 1 },
         errorMap: (error: unknown) => {
             if (error instanceof Error) {
-                if (error.message.includes('timeout')) return 'TRANSIENT';
-                if (error.message.includes('ECONNREFUSED')) return 'TRANSIENT';
+                if (error.message.includes('timeout')) return 'RETRYABLE';
+                if (error.message.includes('ECONNREFUSED')) return 'RETRYABLE';
             }
             return 'FATAL';
         },

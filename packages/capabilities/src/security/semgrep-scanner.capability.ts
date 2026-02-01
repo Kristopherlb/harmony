@@ -23,9 +23,9 @@ const inputSchema = z
         include: z.array(z.string()).optional().describe('Patterns to include in scan'),
         maxTargetBytes: z.number().positive().optional().describe('Maximum file size to scan'),
         timeout: z.number().positive().optional().describe('Timeout per file in seconds'),
-        verbose: z.boolean().optional().default(false).describe('Enable verbose output'),
-        autofix: z.boolean().optional().default(false).describe('Apply autofixes where available'),
-        dryRun: z.boolean().optional().default(true).describe('Run in dry-run mode (no fixes applied)'),
+        verbose: z.boolean().optional().describe('Enable verbose output'),
+        autofix: z.boolean().optional().describe('Apply autofixes where available'),
+        dryRun: z.boolean().optional().describe('Run in dry-run mode (no fixes applied)'),
     })
     .describe('Semgrep Scanner input');
 
@@ -68,7 +68,7 @@ const outputSchema = z
 
 const configSchema = z
     .object({
-        defaultConfig: z.string().optional().default('auto').describe('Default ruleset to use'),
+        defaultConfig: z.string().optional().describe('Default ruleset to use'),
         maxMemory: z.number().positive().optional().describe('Maximum memory in MB'),
         jobs: z.number().int().positive().optional().describe('Number of parallel jobs'),
     })
@@ -118,7 +118,7 @@ export const semgrepScannerCapability: Capability<
         retryPolicy: { maxAttempts: 2, initialIntervalSeconds: 5, backoffCoefficient: 2 },
         errorMap: (error: unknown) => {
             if (error instanceof Error) {
-                if (error.message.includes('timeout')) return 'TRANSIENT';
+                if (error.message.includes('timeout')) return 'RETRYABLE';
                 if (error.message.includes('memory')) return 'FATAL';
             }
             return 'FATAL';

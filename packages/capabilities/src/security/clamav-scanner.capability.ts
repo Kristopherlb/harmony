@@ -23,9 +23,9 @@ const inputSchema = z
     .object({
         scanType: scanTypeSchema,
         data: z.string().optional().describe('Data to scan (for data scan type)'),
-        dataEncoding: dataEncodingSchema.optional().default('base64').describe('Encoding of data'),
+        dataEncoding: dataEncodingSchema.optional().describe('Encoding of data'),
         path: z.string().optional().describe('File or directory path to scan (for path scan type)'),
-        recursive: z.boolean().optional().default(true).describe('Scan directories recursively'),
+        recursive: z.boolean().optional().describe('Scan directories recursively'),
         maxFileSize: z.number().positive().optional().describe('Maximum file size to scan in bytes'),
         maxScanSize: z.number().positive().optional().describe('Maximum data scanned per file in bytes'),
         excludePatterns: z.array(z.string()).optional().describe('Glob patterns to exclude from scan'),
@@ -54,10 +54,10 @@ const outputSchema = z
 
 const configSchema = z
     .object({
-        updateSignatures: z.boolean().optional().default(false).describe('Update signatures before scan'),
-        maxRecursion: z.number().int().positive().optional().default(16).describe('Maximum archive recursion depth'),
-        alertBrokenExecutables: z.boolean().optional().default(false).describe('Alert on broken executables'),
-        alertEncrypted: z.boolean().optional().default(false).describe('Alert on encrypted archives'),
+        updateSignatures: z.boolean().optional().describe('Update signatures before scan'),
+        maxRecursion: z.number().int().positive().optional().describe('Maximum archive recursion depth'),
+        alertBrokenExecutables: z.boolean().optional().describe('Alert on broken executables'),
+        alertEncrypted: z.boolean().optional().describe('Alert on encrypted archives'),
     })
     .describe('ClamAV Scanner configuration');
 
@@ -101,8 +101,8 @@ export const clamavScannerCapability: Capability<
         retryPolicy: { maxAttempts: 2, initialIntervalSeconds: 5, backoffCoefficient: 2 },
         errorMap: (error: unknown) => {
             if (error instanceof Error) {
-                if (error.message.includes('database')) return 'TRANSIENT';
-                if (error.message.includes('timeout')) return 'TRANSIENT';
+                if (error.message.includes('database')) return 'RETRYABLE';
+                if (error.message.includes('timeout')) return 'RETRYABLE';
                 if (error.message.includes('memory')) return 'FATAL';
             }
             return 'FATAL';

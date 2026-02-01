@@ -8,60 +8,60 @@ import { z } from '@golden/schema-registry';
 import type { Capability, CapabilityContext } from '@golden/core';
 
 const operationSchema = z.enum([
-    'query',
-    'execute',
-    'transaction',
+  'query',
+  'execute',
+  'transaction',
 ]).describe('Database operation type');
 
 const statementSchema = z.object({
-    sql: z.string().describe('SQL statement'),
-    params: z.array(z.unknown()).optional().describe('Query parameters'),
+  sql: z.string().describe('SQL statement'),
+  params: z.array(z.unknown()).optional().describe('Query parameters'),
 });
 
 const inputSchema = z
-    .object({
-        operation: operationSchema,
-        sql: z.string().optional().describe('SQL query or statement'),
-        params: z.array(z.unknown()).optional().describe('Query parameters (for parameterized queries)'),
-        statements: z.array(statementSchema).optional().describe('Statements for transaction'),
-        timeout: z.number().positive().optional().describe('Query timeout in milliseconds'),
-    })
-    .describe('PostgreSQL input');
+  .object({
+    operation: operationSchema,
+    sql: z.string().optional().describe('SQL query or statement'),
+    params: z.array(z.unknown()).optional().describe('Query parameters (for parameterized queries)'),
+    statements: z.array(statementSchema).optional().describe('Statements for transaction'),
+    timeout: z.number().positive().optional().describe('Query timeout in milliseconds'),
+  })
+  .describe('PostgreSQL input');
 
 const outputSchema = z
-    .object({
-        rows: z.array(z.record(z.unknown())).optional().describe('Query result rows'),
-        rowCount: z.number().optional().describe('Number of affected rows'),
-        command: z.string().optional().describe('SQL command executed'),
-        fields: z.array(z.object({
-            name: z.string(),
-            dataTypeID: z.number(),
-        })).optional().describe('Result field metadata'),
-        transactionResults: z.array(z.object({
-            rowCount: z.number().optional(),
-            command: z.string().optional(),
-        })).optional().describe('Results from each transaction statement'),
-        duration: z.number().describe('Execution duration in milliseconds'),
-    })
-    .describe('PostgreSQL output');
+  .object({
+    rows: z.array(z.record(z.unknown())).optional().describe('Query result rows'),
+    rowCount: z.number().optional().describe('Number of affected rows'),
+    command: z.string().optional().describe('SQL command executed'),
+    fields: z.array(z.object({
+      name: z.string(),
+      dataTypeID: z.number(),
+    })).optional().describe('Result field metadata'),
+    transactionResults: z.array(z.object({
+      rowCount: z.number().optional(),
+      command: z.string().optional(),
+    })).optional().describe('Results from each transaction statement'),
+    duration: z.number().describe('Execution duration in milliseconds'),
+  })
+  .describe('PostgreSQL output');
 
 const configSchema = z
-    .object({
-        host: z.string().describe('Database host'),
-        port: z.number().int().positive().default(5432).describe('Database port'),
-        database: z.string().describe('Database name'),
-        user: z.string().optional().default('postgres').describe('Database user'),
-        ssl: z.boolean().optional().default(false).describe('Enable SSL'),
-        poolSize: z.number().int().positive().optional().default(10).describe('Connection pool size'),
-    })
-    .describe('PostgreSQL configuration');
+  .object({
+    host: z.string().describe('Database host'),
+    port: z.number().int().positive().optional().describe('Database port, defaults to 5432'),
+    database: z.string().describe('Database name'),
+    user: z.string().optional().describe('Database user'),
+    ssl: z.boolean().optional().describe('Enable SSL'),
+    poolSize: z.number().int().positive().optional().describe('Connection pool size'),
+  })
+  .describe('PostgreSQL configuration');
 
 const secretsSchema = z
-    .object({
-        password: z.string().describe('Database password'),
-        sslCert: z.string().optional().describe('SSL certificate'),
-    })
-    .describe('PostgreSQL secrets');
+  .object({
+    password: z.string().describe('Database password'),
+    sslCert: z.string().optional().describe('SSL certificate'),
+  })
+  .describe('PostgreSQL secrets');
 
 export type PostgresqlInput = z.infer<typeof inputSchema>;
 export type PostgresqlOutput = z.infer<typeof outputSchema>;
@@ -69,107 +69,107 @@ export type PostgresqlConfig = z.infer<typeof configSchema>;
 export type PostgresqlSecrets = z.infer<typeof secretsSchema>;
 
 export const postgresqlCapability: Capability<
-    PostgresqlInput,
-    PostgresqlOutput,
-    PostgresqlConfig,
-    PostgresqlSecrets
+  PostgresqlInput,
+  PostgresqlOutput,
+  PostgresqlConfig,
+  PostgresqlSecrets
 > = {
-    metadata: {
-        id: 'golden.connectors.postgresql',
-        version: '1.0.0',
-        name: 'postgresql',
-        description:
-            'PostgreSQL database connector for queries, mutations, and transactions. Supports parameterized queries and connection pooling.',
-        tags: ['connector', 'database', 'postgresql', 'sql'],
-        maintainer: 'platform',
+  metadata: {
+    id: 'golden.connectors.postgresql',
+    version: '1.0.0',
+    name: 'postgresql',
+    description:
+      'PostgreSQL database connector for queries, mutations, and transactions. Supports parameterized queries and connection pooling.',
+    tags: ['connector', 'database', 'postgresql', 'sql'],
+    maintainer: 'platform',
+  },
+  schemas: {
+    input: inputSchema,
+    output: outputSchema,
+    config: configSchema,
+    secrets: secretsSchema,
+  },
+  security: {
+    requiredScopes: ['db:read', 'db:write'],
+    dataClassification: 'CONFIDENTIAL',
+    networkAccess: {
+      allowOutbound: ['*'], // Database host is configurable
     },
-    schemas: {
-        input: inputSchema,
-        output: outputSchema,
-        config: configSchema,
-        secrets: secretsSchema,
+  },
+  operations: {
+    isIdempotent: false, // Depends on the SQL
+    retryPolicy: { maxAttempts: 3, initialIntervalSeconds: 1, backoffCoefficient: 2 },
+    errorMap: (error: unknown) => {
+      if (error instanceof Error) {
+        if (error.message.includes('connection')) return 'RETRYABLE';
+        if (error.message.includes('timeout')) return 'RETRYABLE';
+        if (error.message.includes('deadlock')) return 'RETRYABLE';
+        if (error.message.includes('syntax')) return 'FATAL';
+      }
+      return 'FATAL';
     },
-    security: {
-        requiredScopes: ['db:read', 'db:write'],
-        dataClassification: 'CONFIDENTIAL',
-        networkAccess: {
-            allowOutbound: ['*'], // Database host is configurable
-        },
+    costFactor: 'LOW',
+  },
+  aiHints: {
+    exampleInput: {
+      operation: 'query',
+      sql: 'SELECT id, name, email FROM users WHERE status = $1 LIMIT $2',
+      params: ['active', 10],
     },
-    operations: {
-        isIdempotent: false, // Depends on the SQL
-        retryPolicy: { maxAttempts: 3, initialIntervalSeconds: 1, backoffCoefficient: 2 },
-        errorMap: (error: unknown) => {
-            if (error instanceof Error) {
-                if (error.message.includes('connection')) return 'TRANSIENT';
-                if (error.message.includes('timeout')) return 'TRANSIENT';
-                if (error.message.includes('deadlock')) return 'TRANSIENT';
-                if (error.message.includes('syntax')) return 'FATAL';
-            }
-            return 'FATAL';
-        },
-        costFactor: 'LOW',
+    exampleOutput: {
+      rows: [
+        { id: 1, name: 'Alice', email: 'alice@example.com' },
+        { id: 2, name: 'Bob', email: 'bob@example.com' },
+      ],
+      rowCount: 2,
+      command: 'SELECT',
+      fields: [
+        { name: 'id', dataTypeID: 23 },
+        { name: 'name', dataTypeID: 25 },
+        { name: 'email', dataTypeID: 25 },
+      ],
+      duration: 12,
     },
-    aiHints: {
-        exampleInput: {
-            operation: 'query',
-            sql: 'SELECT id, name, email FROM users WHERE status = $1 LIMIT $2',
-            params: ['active', 10],
-        },
-        exampleOutput: {
-            rows: [
-                { id: 1, name: 'Alice', email: 'alice@example.com' },
-                { id: 2, name: 'Bob', email: 'bob@example.com' },
-            ],
-            rowCount: 2,
-            command: 'SELECT',
-            fields: [
-                { name: 'id', dataTypeID: 23 },
-                { name: 'name', dataTypeID: 25 },
-                { name: 'email', dataTypeID: 25 },
-            ],
-            duration: 12,
-        },
-        usageNotes:
-            'Use parameterized queries ($1, $2, etc.) to prevent SQL injection. Use transactions for multi-statement atomic operations. Query for SELECT, execute for INSERT/UPDATE/DELETE.',
-    },
-    factory: (
-        dag,
-        context: CapabilityContext<PostgresqlConfig, PostgresqlSecrets>,
-        input: PostgresqlInput
-    ) => {
-        type ContainerBuilder = {
-            from(image: string): ContainerBuilder;
-            withEnvVariable(key: string, value: string): ContainerBuilder;
-            withExec(args: string[]): unknown;
-        };
-        type DaggerClient = { container(): ContainerBuilder };
-        const d = dag as unknown as DaggerClient;
+    usageNotes:
+      'Use parameterized queries ($1, $2, etc.) to prevent SQL injection. Use transactions for multi-statement atomic operations. Query for SELECT, execute for INSERT/UPDATE/DELETE.',
+  },
+  factory: (
+    dag,
+    context: CapabilityContext<PostgresqlConfig, PostgresqlSecrets>,
+    input: PostgresqlInput
+  ) => {
+    type ContainerBuilder = {
+      from(image: string): ContainerBuilder;
+      withEnvVariable(key: string, value: string): ContainerBuilder;
+      withExec(args: string[]): unknown;
+    };
+    type DaggerClient = { container(): ContainerBuilder };
+    const d = dag as unknown as DaggerClient;
 
-        const payload = {
-            operation: input.operation,
-            sql: input.sql,
-            params: input.params,
-            statements: input.statements,
-            timeout: input.timeout,
-            host: context.config.host,
-            port: context.config.port ?? 5432,
-            database: context.config.database,
-            user: context.config.user ?? 'postgres',
-            ssl: context.config.ssl ?? false,
-            poolSize: context.config.poolSize ?? 10,
-            passwordRef: context.secretRefs.password,
-        };
+    const payload = {
+      operation: input.operation,
+      sql: input.sql,
+      params: input.params,
+      statements: input.statements,
+      timeout: input.timeout,
+      host: context.config.host,
+      port: context.config.port ?? 5432,
+      database: context.config.database,
+      user: context.config.user ?? 'postgres',
+      ssl: context.config.ssl ?? false,
+      poolSize: context.config.poolSize ?? 10,
+      passwordRef: context.secretRefs.password,
+    };
 
-        return d
-            .container()
-            .from('node:20-alpine')
-            .withEnvVariable('INPUT_JSON', JSON.stringify(payload))
-            .withEnvVariable('OPERATION', input.operation)
-            .withExec([
-                'sh',
-                '-c',
-                `
+    return d
+      .container()
+      .from('node:20-alpine')
+      .withEnvVariable('INPUT_JSON', JSON.stringify(payload))
+      .withEnvVariable('OPERATION', input.operation)
+      .withExec([
+        'sh',
+        '-c',
+        `
 npm install --no-save pg 2>/dev/null && node -e '
 const { Pool } = require("pg");
 const fs = require("fs");
@@ -270,6 +270,6 @@ run().catch(err => {
 });
 '
         `.trim(),
-            ]);
-    },
+      ]);
+  },
 };

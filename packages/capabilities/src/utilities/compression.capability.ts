@@ -31,8 +31,8 @@ const inputSchema = z
         operation: operationSchema,
         format: formatSchema,
         data: z.string().describe('Data to compress/decompress'),
-        inputEncoding: encodingSchema.optional().default('utf8').describe('Encoding of input data'),
-        outputEncoding: encodingSchema.optional().default('base64').describe('Encoding for output data'),
+        inputEncoding: encodingSchema.optional().describe('Encoding of input data'),
+        outputEncoding: encodingSchema.optional().describe('Encoding for output data'),
         level: z.number().int().min(1).max(11).optional().describe('Compression level (1-9 for gzip/deflate, 1-11 for brotli)'),
     })
     .describe('Compression input');
@@ -50,8 +50,8 @@ const outputSchema = z
 
 const configSchema = z
     .object({
-        defaultFormat: formatSchema.optional().default('gzip').describe('Default compression format'),
-        defaultLevel: z.number().int().min(1).max(11).optional().default(6).describe('Default compression level'),
+        defaultFormat: formatSchema.optional().describe('Default compression format'),
+        defaultLevel: z.number().int().min(1).max(11).optional().describe('Default compression level'),
     })
     .describe('Compression configuration');
 

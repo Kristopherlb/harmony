@@ -26,10 +26,12 @@ export interface Capability<
   };
 
   schemas: {
-    input: z.ZodSchema<Input>;
-    output: z.ZodSchema<Output>;
-    config: z.ZodSchema<Config>;
-    secrets: z.ZodSchema<Secrets>;
+    // Use ZodType<T, any, any> to allow input type to differ from output type
+    // This is necessary for schemas using .optional().default() patterns
+    input: z.ZodType<Input>;
+    output: z.ZodType<Output>;
+    config: z.ZodType<Config>;
+    secrets: z.ZodType<Secrets>;
   };
 
   security: {

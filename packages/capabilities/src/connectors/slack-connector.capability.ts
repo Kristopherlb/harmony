@@ -52,7 +52,7 @@ const outputSchema = z
 const configSchema = z
     .object({
         defaultChannel: z.string().optional().describe('Default channel for messages'),
-        rateLimitRetry: z.boolean().optional().default(true).describe('Auto-retry on rate limit'),
+        rateLimitRetry: z.boolean().optional().describe('Auto-retry on rate limit'),
     })
     .describe('Slack Connector configuration');
 
@@ -100,7 +100,7 @@ export const slackConnectorCapability: Capability<
         retryPolicy: { maxAttempts: 3, initialIntervalSeconds: 1, backoffCoefficient: 2 },
         errorMap: (error: unknown) => {
             if (error instanceof Error) {
-                if (error.message.includes('rate_limited')) return 'TRANSIENT';
+                if (error.message.includes('rate_limited')) return 'RETRYABLE';
                 if (error.message.includes('channel_not_found')) return 'FATAL';
                 if (error.message.includes('invalid_auth')) return 'FATAL';
             }

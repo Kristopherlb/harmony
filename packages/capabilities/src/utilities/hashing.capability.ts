@@ -38,8 +38,8 @@ const inputSchema = z
     .object({
         algorithm: algorithmSchema,
         data: z.string().describe('Data to hash (string or encoded bytes)'),
-        inputEncoding: inputEncodingSchema.optional().default('utf8').describe('Encoding of input data'),
-        outputEncoding: encodingSchema.optional().default('hex').describe('Encoding for output hash'),
+        inputEncoding: inputEncodingSchema.optional().describe('Encoding of input data'),
+        outputEncoding: encodingSchema.optional().describe('Encoding for output hash'),
         hmacKey: z.string().optional().describe('Key for HMAC (if provided, generates HMAC instead of plain hash)'),
     })
     .describe('Hashing input');
@@ -56,8 +56,8 @@ const outputSchema = z
 
 const configSchema = z
     .object({
-        defaultAlgorithm: algorithmSchema.optional().default('sha256').describe('Default hash algorithm'),
-        defaultOutputEncoding: encodingSchema.optional().default('hex').describe('Default output encoding'),
+        defaultAlgorithm: algorithmSchema.optional().describe('Default hash algorithm'),
+        defaultOutputEncoding: encodingSchema.optional().describe('Default output encoding'),
     })
     .describe('Hashing configuration');
 
