@@ -29,6 +29,20 @@ import { digitalSigningCapability } from './utilities/digital-signing.capability
 import { encodingCapability } from './utilities/encoding.capability.js';
 import { hashingCapability } from './utilities/hashing.capability.js';
 import { jsonYamlTransformCapability } from './utilities/json-yaml-transform.capability.js';
+// Phase 7: Deployment capabilities
+import { temporalVersionManagerCapability } from './temporal/version-manager.capability.js';
+import { k8sApplyCapability } from './k8s/apply.capability.js';
+import { containerBuilderCapability } from './ci/container-builder.capability.js';
+// Phase 7: Compliance capabilities
+import { certifyCapability } from './ci/certify.capability.js';
+import { oscalGeneratorCapability } from './ci/oscal-generator.capability.js';
+import { releaseManifestCapability } from './ci/release-manifest.capability.js';
+// Phase 7: Flag capabilities
+import { autoFeatureFlagCapability } from './flags/auto-feature-flag.capability.js';
+import { flagdSyncCapability } from './flags/flagd-sync.capability.js';
+// Phase 7: Traffic capabilities
+import { canaryAnalyzerCapability } from './traffic/canary-analyzer.capability.js';
+import { meshRouterCapability } from './traffic/mesh-router.capability.js';
 
 export type CapabilityRegistry = Map<string, Capability<unknown, unknown, unknown, unknown>>;
 
@@ -58,6 +72,20 @@ export function createCapabilityRegistry(): CapabilityRegistry {
     [encodingCapability.metadata.id, encodingCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [hashingCapability.metadata.id, hashingCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [jsonYamlTransformCapability.metadata.id, jsonYamlTransformCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    // Phase 7: Deployment capabilities
+    [temporalVersionManagerCapability.metadata.id, temporalVersionManagerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [k8sApplyCapability.metadata.id, k8sApplyCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [containerBuilderCapability.metadata.id, containerBuilderCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    // Phase 7: Compliance capabilities
+    [certifyCapability.metadata.id, certifyCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [oscalGeneratorCapability.metadata.id, oscalGeneratorCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [releaseManifestCapability.metadata.id, releaseManifestCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    // Phase 7: Flag capabilities
+    [autoFeatureFlagCapability.metadata.id, autoFeatureFlagCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [flagdSyncCapability.metadata.id, flagdSyncCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    // Phase 7: Traffic capabilities
+    [canaryAnalyzerCapability.metadata.id, canaryAnalyzerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [meshRouterCapability.metadata.id, meshRouterCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
   ]);
 }
 
