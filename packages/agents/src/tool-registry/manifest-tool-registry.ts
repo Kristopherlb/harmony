@@ -27,8 +27,8 @@ export function createManifestToolRegistry(input: {
   for (const id of enabled) {
     fnById.set(id, async (args: unknown) => {
       const res = await surface.callTool({ name: id, arguments: args });
-      const structured = res.structuredContent as any;
-      const trace_id = structured?.trace_id as string | undefined;
+      const structured = res.structuredContent as Record<string, unknown> | undefined;
+      const trace_id = structured && typeof structured.trace_id === 'string' ? structured.trace_id : undefined;
       return { result: structured ?? res, trace_id };
     });
   }

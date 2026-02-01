@@ -26,8 +26,8 @@ async function _executeDaggerCapability<In, Out>(
   const cap = getCapability(registry, input.capId);
 
   const parsedIn = cap.schemas.input.parse(input.input) as unknown as In;
-  const config = cap.schemas.config.parse((input as any).config ?? {}) as unknown;
-  const secretRefs = cap.schemas.secrets.parse((input as any).secretRefs ?? {}) as unknown;
+  const config = cap.schemas.config.parse((input as { config?: unknown }).config ?? {}) as unknown;
+  const secretRefs = cap.schemas.secrets.parse((input as { secretRefs?: unknown }).secretRefs ?? {}) as unknown;
 
   // Dynamic import keeps this file compatible with NodeNext/CJS compilation.
   const { connection, dag } = await import('@dagger.io/dagger');

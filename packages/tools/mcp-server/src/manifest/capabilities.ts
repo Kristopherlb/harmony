@@ -5,7 +5,6 @@
 import type { CapabilityRegistry } from '@golden/capabilities';
 import { createBlueprintRegistry } from '@golden/blueprints';
 import { zodToJsonSchema } from 'zod-to-json-schema';
-import type { ZodTypeAny } from 'zod';
 
 export interface ToolManifestEntry {
   id: string;
@@ -21,6 +20,14 @@ export interface ToolManifest {
   tools: ToolManifestEntry[];
 }
 
+type ZodToJsonSchemaFn = (schema: unknown, options: {
+  target: string;
+  $refStrategy: 'none';
+  nameStrategy: 'title';
+}) => Record<string, unknown>;
+
+const toJsonSchema = zodToJsonSchema as unknown as ZodToJsonSchemaFn;
+
 function normalizeDataClassification(value: unknown): ToolManifestEntry['data_classification'] {
   const v = typeof value === 'string' ? value.toUpperCase() : '';
   if (v === 'PUBLIC' || v === 'INTERNAL' || v === 'CONFIDENTIAL' || v === 'RESTRICTED') return v;
@@ -35,7 +42,7 @@ export function generateToolManifestFromCapabilities(input: {
 }): ToolManifest {
   const tools: ToolManifestEntry[] = [];
   for (const cap of input.registry.values()) {
-    const jsonSchema = zodToJsonSchema(cap.schemas.input as unknown as ZodTypeAny, {
+    const jsonSchema = toJsonSchema(cap.schemas.input, {
       target: 'jsonSchema2019-09',
       $refStrategy: 'none',
       nameStrategy: 'title',
@@ -58,7 +65,7 @@ export function generateToolManifestFromCapabilities(input: {
     for (const entry of registry.values()) {
       const d = entry.descriptor as unknown as {
         metadata?: { id?: string; description: string };
-        inputSchema: ZodTypeAny;
+        inputSchema: unknown;
         security?: { classification?: string };
       };
       if (entry.blueprintId !== d.metadata?.id) {
@@ -68,7 +75,7 @@ export function generateToolManifestFromCapabilities(input: {
           )}`
         );
       }
-      const jsonSchema = zodToJsonSchema(d.inputSchema, {
+      const jsonSchema = toJsonSchema(d.inputSchema, {
         target: 'jsonSchema2019-09',
         $refStrategy: 'none',
         nameStrategy: 'title',
