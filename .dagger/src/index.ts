@@ -52,10 +52,10 @@ export class HarmonyCi {
       .withExec(['bash', '-lc', 'pnpm install --frozen-lockfile'])
       .withExec(['bash', '-lc', 'pnpm nx g @golden/path:sync'])
       .withExec(['bash', '-lc', 'git diff --exit-code'])
-      .withExec(['bash', '-lc', 'pnpm nx affected -t lint test']);
+      .withExec(['bash', '-lc', 'pnpm nx affected -t lint test'])
+      .withExec(['bash', '-lc', 'pnpm nx run certification:certify']);
 
     await ctr.exitCode();
     return 'OK: audit passed';
   }
 }
-

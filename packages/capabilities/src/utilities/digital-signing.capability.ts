@@ -62,10 +62,10 @@ const secretsSchema = z
     })
     .describe('Digital Signing secrets');
 
-export type DigitalSigningInput = z.infer<typeof inputSchema>;
-export type DigitalSigningOutput = z.infer<typeof outputSchema>;
-export type DigitalSigningConfig = z.infer<typeof configSchema>;
-export type DigitalSigningSecrets = z.infer<typeof secretsSchema>;
+export type DigitalSigningInput = z.input<typeof inputSchema>;
+export type DigitalSigningOutput = z.output<typeof outputSchema>;
+export type DigitalSigningConfig = z.input<typeof configSchema>;
+export type DigitalSigningSecrets = z.input<typeof secretsSchema>;
 
 export const digitalSigningCapability: Capability<
     DigitalSigningInput,

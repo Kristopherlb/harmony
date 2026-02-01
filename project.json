@@ -64,7 +64,7 @@
     "audit": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "pnpm nx g @golden/path:sync && git diff --exit-code && pnpm nx affected -t lint test"
+        "command": "pnpm nx g @golden/path:sync && git diff --exit-code && pnpm nx affected -t lint test && pnpm nx run certification:certify"
       }
     },
     "audit-dagger": {
@@ -75,4 +75,3 @@
     }
   }
 }
-

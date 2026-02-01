@@ -23,6 +23,14 @@ The CI runner MUST execute a "Contract Test" that:
 - Validates the InputSchema and OutputSchema against the aiHints.exampleInput/Output.
 - Verifies that the metadata.id is unique across the monorepo.
 - Ensures all required OCS fields are present.
+- Reference implementation: `@golden/certification` (CLI: `golden-certify check`) executes contract checks and emits failures with capability IDs.
+
+### 2.1.1 Schema Drift Detection
+
+The CI runner MUST compare proposed Input/Output schemas against the schema baseline to detect breaking changes.
+
+- Baseline file: `packages/tools/certification/schema-baselines/capabilities.json` (generated via `golden-certify write-baseline`).
+- Drift detection: `golden-certify check` fails the pipeline if any capability input/output or blueprint input schema changes are detected.
 
 ### 2.2. Dagger Mocking & Logic Tests
 
@@ -45,6 +53,7 @@ Compliance is handled as "Documentation-as-Code."
 - The CI pipeline MUST extract the oscalControlIds from the OCS/WCS metadata.
 - It MUST generate a Component Definition in NIST/OSCAL (JSON/YAML) format.
 - This artifact is attached to the build release, providing an automated "Compliance Bill of Materials" (CBOM).
+- Reference implementation: `golden-certify oscal` writes `dist/certification/oscal-component-definition.json`.
 
 ## 4. Certification Gates
 

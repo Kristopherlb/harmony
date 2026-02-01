@@ -1,0 +1,31 @@
+{
+  "name": "certification",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "main": "{projectRoot}/index.ts",
+        "tsConfig": "{projectRoot}/tsconfig.json",
+        "outputPath": "{projectRoot}/dist"
+      },
+      "outputs": ["{options.outputPath}"]
+    },
+    "test": {
+      "executor": "@nx/vite:test",
+      "options": {
+        "configFile": "{projectRoot}/vitest.config.ts"
+      }
+    },
+    "lint": {
+      "options": {
+        "lintFilePatterns": ["{projectRoot}/**/*.ts", "!{projectRoot}/dist/**"]
+      }
+    },
+    "certify": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm nx run certification:build && node packages/tools/certification/dist/src/cli.js check"
+      }
+    }
+  }
+}
