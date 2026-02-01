@@ -1,0 +1,33 @@
+{
+  "id": "usecase.platform.day2-operations-lifecycle",
+  "objective": "Automate observability, cost transparency, and offboarding for certified blueprints.",
+  "nonGoals": [
+    "Replacing Grafana authorization model",
+    "Real-time billing reconciliation"
+  ],
+  "classification": "INTERNAL",
+  "requiredRoles": [
+    "platform-ops"
+  ],
+  "requiredScopes": [
+    "grafana:write",
+    "finops:read",
+    "blueprints:write"
+  ],
+  "sla": {
+    "targetDuration": "15m",
+    "maxDuration": "1h"
+  },
+  "hitl": {
+    "required": true,
+    "points": [
+      "decommissionApproval"
+    ]
+  },
+  "network": {
+    "allowOutbound": [
+      "grafana.internal",
+      "finops.internal"
+    ]
+  }
+}

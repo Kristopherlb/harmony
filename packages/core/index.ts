@@ -48,6 +48,16 @@ export {
 } from './src/observability/golden-span.js';
 export { wrapExecuteDaggerCapability } from './src/observability/execute-capability-instrumentation.js';
 
+// FinOps (Phase 6 Day 2)
+export {
+  calculateRunCost,
+  type ComputeUsage,
+  type IntelligenceUsage,
+  type RunCostBreakdown,
+  type RunCostInput,
+  type RunCostResult,
+} from './src/finops/cost-analyzer.js';
+
 // WCS
 export {
   BaseBlueprint,

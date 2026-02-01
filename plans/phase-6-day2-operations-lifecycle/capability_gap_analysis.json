@@ -1,0 +1,53 @@
+{
+  "usecaseId": "usecase.platform.day2-operations-lifecycle",
+  "steps": [
+    {
+      "id": "fetchBlueprintMetadata",
+      "pattern": "connector",
+      "capabilityId": "registry.blueprint.get",
+      "exists": false,
+      "classification": "INTERNAL",
+      "requiredScopes": [
+        "blueprints:read"
+      ],
+      "allowOutbound": []
+    },
+    {
+      "id": "provisionGrafanaDashboard",
+      "pattern": "connector",
+      "capabilityId": "grafana.dashboard.provision",
+      "exists": false,
+      "classification": "INTERNAL",
+      "requiredScopes": [
+        "grafana:write"
+      ],
+      "allowOutbound": [
+        "grafana.internal"
+      ]
+    },
+    {
+      "id": "calculateRunCost",
+      "pattern": "transformer",
+      "capabilityId": "finops.cost.analyze",
+      "exists": false,
+      "classification": "INTERNAL",
+      "requiredScopes": [
+        "finops:read"
+      ],
+      "allowOutbound": []
+    },
+    {
+      "id": "executeOffboarding",
+      "pattern": "commander",
+      "capabilityId": "lifecycle.offboard.execute",
+      "exists": false,
+      "classification": "INTERNAL",
+      "requiredScopes": [
+        "blueprints:write"
+      ],
+      "allowOutbound": [
+        "cloud-provider.internal"
+      ]
+    }
+  ]
+}

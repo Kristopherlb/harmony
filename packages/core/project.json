@@ -11,6 +11,7 @@
       "outputs": ["{options.outputPath}"]
     },
     "test": {
+      "dependsOn": ["^build"],
       "executor": "@nx/vite:test",
       "options": {
         "configFile": "{projectRoot}/vitest.config.ts",
