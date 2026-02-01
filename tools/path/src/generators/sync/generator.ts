@@ -384,6 +384,7 @@ ${lines.join('\n')}
 }
 
 export default async function syncGenerator(tree: Tree, _options: SyncGeneratorSchema) {
+  void _options;
   const caps = discoverCapabilities(tree);
   regenerateCapabilityRegistry(tree, caps);
   regenerateCapabilitiesIndex(tree, caps);
