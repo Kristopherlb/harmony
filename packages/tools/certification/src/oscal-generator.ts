@@ -114,7 +114,7 @@ function collectOscalEntries(): OscalComponentEntry[] {
 
   const blueprintRegistry = createBlueprintRegistry();
   for (const entry of blueprintRegistry.values()) {
-    const descriptor = entry.descriptor as any;
+    const descriptor = entry.descriptor as { metadata?: { id?: string; description?: string }; security?: { oscalControlIds?: string[] } };
     entries.push({
       id: entry.blueprintId,
       title: descriptor.metadata?.id ?? entry.blueprintId,

@@ -133,7 +133,8 @@ export function detectSchemaDrift(
 }
 
 function schemaSignature(schema: z.ZodTypeAny): unknown {
-  const def: any = (schema as any)._def;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Zod internal `_def` is untyped
+  const def = (schema as { _def: Record<string, unknown> })._def as Record<string, unknown>;
   const typeName = def?.typeName ?? 'unknown';
 
   switch (typeName) {
