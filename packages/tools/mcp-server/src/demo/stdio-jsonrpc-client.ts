@@ -24,7 +24,7 @@ function parseResponse(line: string): JsonRpcResponse | undefined {
   if (!isObject(msg)) return undefined;
   if (msg.jsonrpc !== '2.0') return undefined;
   if (!('id' in msg)) return undefined;
-  const id = (msg as any).id as unknown;
+  const id = (msg as Record<string, unknown>).id;
   if (id !== null && typeof id !== 'number') return undefined;
   if ('result' in msg) return msg as JsonRpcResponse;
   if ('error' in msg) return msg as JsonRpcResponse;
@@ -64,7 +64,7 @@ export function createStdioJsonRpcClient(input: { stdin: Writable; stdout: Reada
 
     if ('error' in parsed) {
       const e = new Error(`JSON_RPC_ERROR ${parsed.error.code}: ${parsed.error.message}`);
-      (e as any).data = parsed.error.data;
+      (e as Error & { data?: unknown }).data = parsed.error.data;
       waiter.reject(e);
       return;
     }

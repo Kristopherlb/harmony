@@ -5,6 +5,7 @@
 import type { CapabilityRegistry } from '@golden/capabilities';
 import { createBlueprintRegistry } from '@golden/blueprints';
 import { zodToJsonSchema } from 'zod-to-json-schema';
+import type { ZodTypeAny } from 'zod';
 
 export interface ToolManifestEntry {
   id: string;
@@ -20,6 +21,12 @@ export interface ToolManifest {
   tools: ToolManifestEntry[];
 }
 
+function normalizeDataClassification(value: unknown): ToolManifestEntry['data_classification'] {
+  const v = typeof value === 'string' ? value.toUpperCase() : '';
+  if (v === 'PUBLIC' || v === 'INTERNAL' || v === 'CONFIDENTIAL' || v === 'RESTRICTED') return v;
+  return 'INTERNAL';
+}
+
 export function generateToolManifestFromCapabilities(input: {
   registry: CapabilityRegistry;
   generated_at: string;
@@ -28,11 +35,11 @@ export function generateToolManifestFromCapabilities(input: {
 }): ToolManifest {
   const tools: ToolManifestEntry[] = [];
   for (const cap of input.registry.values()) {
-    const jsonSchema = zodToJsonSchema(cap.schemas.input as any, {
+    const jsonSchema = zodToJsonSchema(cap.schemas.input as unknown as ZodTypeAny, {
       target: 'jsonSchema2019-09',
       $refStrategy: 'none',
       nameStrategy: 'title',
-    }) as any;
+    }) as Record<string, unknown>;
 
     // Ajv2020 expects 2020-12 meta-schema; the produced schema is compatible for our subset.
     jsonSchema.$schema = 'https://json-schema.org/draft/2020-12/schema#';
@@ -49,7 +56,11 @@ export function generateToolManifestFromCapabilities(input: {
   if (input.includeBlueprints === true) {
     const registry = createBlueprintRegistry();
     for (const entry of registry.values()) {
-      const d = entry.descriptor as any;
+      const d = entry.descriptor as unknown as {
+        metadata?: { id?: string; description: string };
+        inputSchema: ZodTypeAny;
+        security?: { classification?: string };
+      };
       if (entry.blueprintId !== d.metadata?.id) {
         throw new Error(
           `Blueprint registry blueprintId does not match workflow metadata.id: ${String(entry.blueprintId)} != ${String(
@@ -57,18 +68,18 @@ export function generateToolManifestFromCapabilities(input: {
           )}`
         );
       }
-      const jsonSchema = zodToJsonSchema(d.inputSchema as any, {
+      const jsonSchema = zodToJsonSchema(d.inputSchema, {
         target: 'jsonSchema2019-09',
         $refStrategy: 'none',
         nameStrategy: 'title',
-      }) as any;
+      }) as Record<string, unknown>;
       jsonSchema.$schema = 'https://json-schema.org/draft/2020-12/schema#';
 
       tools.push({
         id: entry.blueprintId,
         type: 'BLUEPRINT',
-        description: d.metadata.description,
-        data_classification: ((d.security?.classification as string | undefined) ?? 'INTERNAL') as any,
+        description: d.metadata?.description ?? '',
+        data_classification: normalizeDataClassification(d.security?.classification),
         json_schema: jsonSchema,
       });
     }

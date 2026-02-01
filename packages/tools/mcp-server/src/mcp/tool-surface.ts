@@ -9,6 +9,7 @@
  */
 import Ajv2020 from 'ajv/dist/2020';
 import type { ValidateFunction } from 'ajv';
+import type { AnySchema } from 'ajv';
 import type { ToolManifest } from '../manifest/capabilities.js';
 import type { GoldenCallerContext, SignedGoldenCallEnvelope } from './call-envelope.js';
 import { verifyGoldenCallEnvelope } from './call-envelope.js';
@@ -60,6 +61,43 @@ function safeJsonStringify(value: unknown): string {
   }
 }
 
+type RunnerErrorLike = {
+  message?: unknown;
+  code?: unknown;
+  meta?: unknown;
+};
+
+function classifyRunnerError(err: unknown): { code: string; details?: unknown } {
+  const anyErr: RunnerErrorLike | undefined =
+    err && typeof err === 'object' ? (err as RunnerErrorLike) : undefined;
+  const msg = typeof anyErr?.message === 'string' ? anyErr.message : '';
+  const code = typeof anyErr?.code === 'string' ? anyErr.code : '';
+
+  // Temporal connectivity / transport failures (fail-fast; no silent fallback).
+  if (
+    code === 'ECONNREFUSED' ||
+    code === 'ETIMEDOUT' ||
+    msg.toLowerCase().includes('connection refused') ||
+    msg.toLowerCase().includes('connect error') ||
+    msg.toLowerCase().includes('failed to connect') ||
+    msg.toLowerCase().includes('transport error')
+  ) {
+    return {
+      code: 'TEMPORAL_UNAVAILABLE',
+      details: { message: msg || undefined, code: code || undefined },
+    };
+  }
+
+  if (code === 'WORKER_NOT_RUNNING' || msg.includes('WORKER_NOT_RUNNING')) {
+    return {
+      code: 'WORKER_NOT_RUNNING',
+      details: anyErr?.meta ? { meta: anyErr.meta } : { message: msg || undefined },
+    };
+  }
+
+  return { code: 'RUNNER_ERROR', details: { message: msg || undefined, code: code || undefined } };
+}
+
 export function createToolSurface(input: {
   manifest: ToolManifest;
   traceId?: () => string;
@@ -89,7 +127,7 @@ export function createToolSurface(input: {
     if (existing) return existing;
     const schema = schemaByName.get(name);
     if (!schema) return undefined;
-    const v = ajv.compile(schema as any);
+    const v = ajv.compile(schema as AnySchema);
     validateByName.set(name, v);
     return v;
   }
@@ -187,7 +225,7 @@ export function createToolSurface(input: {
       const runner = input.capabilityRunner;
       if (!runner) {
         if (params.name === 'golden.echo') {
-          const x = (args as any).x as number;
+          const x = (args as { x: number }).x;
           const result = { y: x };
           const out = { result, trace_id };
           return {
@@ -204,13 +242,36 @@ export function createToolSurface(input: {
         };
       }
 
-      const runOut = await runner({ id: params.name, args, traceId: trace_id, context: callerContext });
-      const out = runOut.meta ? { result: runOut.result, trace_id, meta: runOut.meta } : { result: runOut.result, trace_id };
-      return {
-        isError: false,
-        content: [{ type: 'text', text: safeJsonStringify(out) }],
-        structuredContent: out,
-      };
+      try {
+        const runOut = await runner({ id: params.name, args, traceId: trace_id, context: callerContext });
+        const out = runOut.meta
+          ? { result: runOut.result, trace_id, meta: runOut.meta }
+          : { result: runOut.result, trace_id };
+        return {
+          isError: false,
+          content: [{ type: 'text', text: safeJsonStringify(out) }],
+          structuredContent: out,
+        };
+      } catch (e) {
+        const classified = classifyRunnerError(e);
+        const out = {
+          error: classified.code,
+          tool: params.name,
+          trace_id,
+          details: classified.details,
+          hint:
+            classified.code === 'TEMPORAL_UNAVAILABLE'
+              ? 'Start Temporal + worker: pnpm nx run harmony:dev-up && pnpm nx run harmony:dev-worker. Check TEMPORAL_ADDRESS, TEMPORAL_NAMESPACE, TEMPORAL_TASK_QUEUE.'
+              : classified.code === 'WORKER_NOT_RUNNING'
+                ? 'Start worker: pnpm nx run harmony:dev-worker'
+                : undefined,
+        };
+        return {
+          isError: true,
+          content: [{ type: 'text', text: safeJsonStringify(out) }],
+          structuredContent: out,
+        };
+      }
     }
 
     if (entry.type === 'BLUEPRINT') {
@@ -223,13 +284,36 @@ export function createToolSurface(input: {
           structuredContent: out,
         };
       }
-      const runOut = await runner({ id: params.name, args, traceId: trace_id, context: callerContext });
-      const out = runOut.meta ? { result: runOut.result, trace_id, meta: runOut.meta } : { result: runOut.result, trace_id };
-      return {
-        isError: false,
-        content: [{ type: 'text', text: safeJsonStringify(out) }],
-        structuredContent: out,
-      };
+      try {
+        const runOut = await runner({ id: params.name, args, traceId: trace_id, context: callerContext });
+        const out = runOut.meta
+          ? { result: runOut.result, trace_id, meta: runOut.meta }
+          : { result: runOut.result, trace_id };
+        return {
+          isError: false,
+          content: [{ type: 'text', text: safeJsonStringify(out) }],
+          structuredContent: out,
+        };
+      } catch (e) {
+        const classified = classifyRunnerError(e);
+        const out = {
+          error: classified.code,
+          tool: params.name,
+          trace_id,
+          details: classified.details,
+          hint:
+            classified.code === 'TEMPORAL_UNAVAILABLE'
+              ? 'Start Temporal + worker: pnpm nx run harmony:dev-up && pnpm nx run harmony:dev-worker. Check TEMPORAL_ADDRESS, TEMPORAL_NAMESPACE, TEMPORAL_TASK_QUEUE.'
+              : classified.code === 'WORKER_NOT_RUNNING'
+                ? 'Start worker: pnpm nx run harmony:dev-worker'
+                : undefined,
+        };
+        return {
+          isError: true,
+          content: [{ type: 'text', text: safeJsonStringify(out) }],
+          structuredContent: out,
+        };
+      }
     }
 
     const out = { error: 'NOT_IMPLEMENTED', tool: params.name, trace_id };

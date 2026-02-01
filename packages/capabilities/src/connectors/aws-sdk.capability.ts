@@ -11,47 +11,47 @@ import type { Capability, CapabilityContext } from '@golden/core';
 const serviceSchema = z.string().describe('AWS service name (e.g., s3, sts, lambda)');
 
 const inputSchema = z
-    .object({
-        service: serviceSchema,
-        operation: z.string().describe('SDK operation name (e.g., getObject, putItem)'),
-        params: z.record(z.unknown()).describe('Operation parameters'),
-        region: z.string().optional().describe('Override region for this operation'),
-    })
-    .describe('AWS SDK input');
+  .object({
+    service: serviceSchema,
+    operation: z.string().describe('SDK operation name (e.g., getObject, putItem)'),
+    params: z.record(z.unknown()).describe('Operation parameters'),
+    region: z.string().optional().describe('Override region for this operation'),
+  })
+  .describe('AWS SDK input');
 
 const outputSchema = z
-    .object({
-        success: z.boolean().describe('Whether operation succeeded'),
-        data: z.unknown().describe('Operation response data'),
-        metadata: z.object({
-            requestId: z.string().optional(),
-            httpStatusCode: z.number().optional(),
-            attempts: z.number().optional(),
-        }).optional().describe('Response metadata'),
-        error: z.object({
-            name: z.string(),
-            message: z.string(),
-            code: z.string().optional(),
-        }).optional().describe('Error details if failed'),
-        duration: z.number().describe('Operation duration in milliseconds'),
-    })
-    .describe('AWS SDK output');
+  .object({
+    success: z.boolean().describe('Whether operation succeeded'),
+    data: z.unknown().describe('Operation response data'),
+    metadata: z.object({
+      requestId: z.string().optional(),
+      httpStatusCode: z.number().optional(),
+      attempts: z.number().optional(),
+    }).optional().describe('Response metadata'),
+    error: z.object({
+      name: z.string(),
+      message: z.string(),
+      code: z.string().optional(),
+    }).optional().describe('Error details if failed'),
+    duration: z.number().describe('Operation duration in milliseconds'),
+  })
+  .describe('AWS SDK output');
 
 const configSchema = z
-    .object({
-        region: z.string().describe('Default AWS region'),
-        endpoint: z.string().optional().describe('Custom endpoint (for LocalStack, etc.)'),
-        maxRetries: z.number().int().min(0).optional().describe('Maximum retry attempts'),
-    })
-    .describe('AWS SDK configuration');
+  .object({
+    region: z.string().describe('Default AWS region'),
+    endpoint: z.string().optional().describe('Custom endpoint (for LocalStack, etc.)'),
+    maxRetries: z.number().int().min(0).optional().describe('Maximum retry attempts'),
+  })
+  .describe('AWS SDK configuration');
 
 const secretsSchema = z
-    .object({
-        accessKeyId: z.string().optional().describe('AWS access key ID'),
-        secretAccessKey: z.string().optional().describe('AWS secret access key'),
-        sessionToken: z.string().optional().describe('AWS session token'),
-    })
-    .describe('AWS SDK secrets');
+  .object({
+    accessKeyId: z.string().optional().describe('AWS access key ID'),
+    secretAccessKey: z.string().optional().describe('AWS secret access key'),
+    sessionToken: z.string().optional().describe('AWS session token'),
+  })
+  .describe('AWS SDK secrets');
 
 export type AwsSdkInput = z.infer<typeof inputSchema>;
 export type AwsSdkOutput = z.infer<typeof outputSchema>;
@@ -59,107 +59,123 @@ export type AwsSdkConfig = z.infer<typeof configSchema>;
 export type AwsSdkSecrets = z.infer<typeof secretsSchema>;
 
 export const awsSdkCapability: Capability<
-    AwsSdkInput,
-    AwsSdkOutput,
-    AwsSdkConfig,
-    AwsSdkSecrets
+  AwsSdkInput,
+  AwsSdkOutput,
+  AwsSdkConfig,
+  AwsSdkSecrets
 > = {
-    metadata: {
-        id: 'golden.connectors.aws-sdk',
-        version: '1.0.0',
-        name: 'awsSdk',
-        description:
-            'AWS SDK v3 connector for cloud operations. Supports S3, STS, Lambda, DynamoDB, SQS, SNS, Secrets Manager, and all AWS services.',
-        tags: ['connector', 'aws', 'cloud', 's3', 'lambda'],
-        maintainer: 'platform',
+  metadata: {
+    id: 'golden.connectors.aws-sdk',
+    version: '1.0.0',
+    name: 'awsSdk',
+    description:
+      'AWS SDK v3 connector for cloud operations. Supports S3, STS, Lambda, DynamoDB, SQS, SNS, Secrets Manager, and all AWS services.',
+    tags: ['connector', 'aws', 'cloud', 's3', 'lambda'],
+    maintainer: 'platform',
+  },
+  schemas: {
+    input: inputSchema,
+    output: outputSchema,
+    config: configSchema,
+    secrets: secretsSchema,
+  },
+  security: {
+    requiredScopes: ['aws:read', 'aws:write'],
+    dataClassification: 'CONFIDENTIAL',
+    networkAccess: {
+      allowOutbound: ['*.amazonaws.com', '*.aws.amazon.com'],
     },
-    schemas: {
-        input: inputSchema,
-        output: outputSchema,
-        config: configSchema,
-        secrets: secretsSchema,
+  },
+  operations: {
+    isIdempotent: false, // Depends on operation
+    retryPolicy: { maxAttempts: 3, initialIntervalSeconds: 1, backoffCoefficient: 2 },
+    errorMap: (error: unknown) => {
+      if (error instanceof Error) {
+        if (error.message.includes('throttl')) return 'RETRYABLE';
+        if (error.message.includes('timeout')) return 'RETRYABLE';
+        if (error.message.includes('ServiceUnavailable')) return 'RETRYABLE';
+        if (error.message.includes('AccessDenied')) return 'FATAL';
+      }
+      return 'FATAL';
     },
-    security: {
-        requiredScopes: ['aws:read', 'aws:write'],
-        dataClassification: 'CONFIDENTIAL',
-        networkAccess: {
-            allowOutbound: ['*.amazonaws.com', '*.aws.amazon.com'],
-        },
+    costFactor: 'LOW',
+  },
+  aiHints: {
+    exampleInput: {
+      service: 's3',
+      operation: 'listObjects',
+      params: { Bucket: 'my-bucket', Prefix: 'logs/' },
     },
-    operations: {
-        isIdempotent: false, // Depends on operation
-        retryPolicy: { maxAttempts: 3, initialIntervalSeconds: 1, backoffCoefficient: 2 },
-        errorMap: (error: unknown) => {
-            if (error instanceof Error) {
-                if (error.message.includes('throttl')) return 'RETRYABLE';
-                if (error.message.includes('timeout')) return 'RETRYABLE';
-                if (error.message.includes('ServiceUnavailable')) return 'RETRYABLE';
-                if (error.message.includes('AccessDenied')) return 'FATAL';
-            }
-            return 'FATAL';
-        },
-        costFactor: 'LOW',
+    exampleOutput: {
+      success: true,
+      data: {
+        Contents: [
+          { Key: 'logs/app.log', Size: 1234 },
+          { Key: 'logs/error.log', Size: 567 },
+        ],
+        IsTruncated: false,
+      },
+      metadata: {
+        requestId: 'abc123',
+        httpStatusCode: 200,
+      },
+      duration: 245,
     },
-    aiHints: {
-        exampleInput: {
-            service: 's3',
-            operation: 'listObjects',
-            params: { Bucket: 'my-bucket', Prefix: 'logs/' },
-        },
-        exampleOutput: {
-            success: true,
-            data: {
-                Contents: [
-                    { Key: 'logs/app.log', Size: 1234 },
-                    { Key: 'logs/error.log', Size: 567 },
-                ],
-                IsTruncated: false,
-            },
-            metadata: {
-                requestId: 'abc123',
-                httpStatusCode: 200,
-            },
-            duration: 245,
-        },
-        usageNotes:
-            'Use service name in lowercase (s3, sts, lambda). Operation names match SDK method names (getObject, putItem). Provide credentials via secretRefs or use IAM roles.',
-    },
-    factory: (
-        dag,
-        context: CapabilityContext<AwsSdkConfig, AwsSdkSecrets>,
-        input: AwsSdkInput
-    ) => {
-        type ContainerBuilder = {
-            from(image: string): ContainerBuilder;
-            withEnvVariable(key: string, value: string): ContainerBuilder;
-            withExec(args: string[]): unknown;
-        };
-        type DaggerClient = { container(): ContainerBuilder };
-        const d = dag as unknown as DaggerClient;
+    usageNotes:
+      'Use service name in lowercase (s3, sts, lambda). Operation names match SDK method names (getObject, putItem). Provide credentials via secretRefs or use IAM roles.',
+  },
+  factory: (
+    dag,
+    context: CapabilityContext<AwsSdkConfig, AwsSdkSecrets>,
+    input: AwsSdkInput
+  ) => {
+    // ISS-compliant types - includes withMountedSecret for secret mounting
+    type DaggerSecret = unknown;
+    type ContainerBuilder = {
+      from(image: string): ContainerBuilder;
+      withEnvVariable(key: string, value: string): ContainerBuilder;
+      withMountedSecret(path: string, secret: DaggerSecret): ContainerBuilder;
+      withExec(args: string[]): unknown;
+    };
+    type DaggerClient = {
+      container(): ContainerBuilder;
+      setSecret(name: string, value: string): DaggerSecret;
+    };
+    const d = dag as unknown as DaggerClient;
 
-        const payload = {
-            service: input.service,
-            operation: input.operation,
-            params: input.params,
-            region: input.region ?? context.config.region,
-            endpoint: context.config.endpoint,
-            maxRetries: context.config.maxRetries ?? 3,
-            accessKeyIdRef: context.secretRefs.accessKeyId,
-            secretAccessKeyRef: context.secretRefs.secretAccessKey,
-            sessionTokenRef: context.secretRefs.sessionToken,
-        };
+    const payload = {
+      service: input.service,
+      operation: input.operation,
+      params: input.params,
+      region: input.region ?? context.config.region,
+      endpoint: context.config.endpoint,
+      maxRetries: context.config.maxRetries ?? 3,
+    };
 
-        return d
-            .container()
-            .from('node:20-alpine')
-            .withEnvVariable('INPUT_JSON', JSON.stringify(payload))
-            .withEnvVariable('AWS_SERVICE', input.service)
-            .withEnvVariable('AWS_OPERATION', input.operation)
-            .withEnvVariable('AWS_REGION', input.region ?? context.config.region)
-            .withExec([
-                'sh',
-                '-c',
-                `
+    // Build container with mounted secrets (ISS-compliant)
+    let container = d
+      .container()
+      .from('node:20-alpine')
+      .withEnvVariable('INPUT_JSON', JSON.stringify(payload))
+      .withEnvVariable('AWS_SERVICE', input.service)
+      .withEnvVariable('AWS_OPERATION', input.operation)
+      .withEnvVariable('AWS_REGION', input.region ?? context.config.region);
+
+    // Mount AWS credentials if provided (platform resolves to Dagger Secrets)
+    if (context.secretRefs.accessKeyId && typeof (container as Record<string, unknown>).withMountedSecret === 'function') {
+      container = container.withMountedSecret('/run/secrets/aws_access_key_id', context.secretRefs.accessKeyId as unknown as DaggerSecret);
+    }
+    if (context.secretRefs.secretAccessKey && typeof (container as Record<string, unknown>).withMountedSecret === 'function') {
+      container = container.withMountedSecret('/run/secrets/aws_secret_access_key', context.secretRefs.secretAccessKey as unknown as DaggerSecret);
+    }
+    if (context.secretRefs.sessionToken && typeof (container as Record<string, unknown>).withMountedSecret === 'function') {
+      container = container.withMountedSecret('/run/secrets/aws_session_token', context.secretRefs.sessionToken as unknown as DaggerSecret);
+    }
+
+    return container.withExec([
+      'sh',
+      '-c',
+      `
 npm install --no-save @aws-sdk/client-s3 @aws-sdk/client-sts @aws-sdk/client-lambda @aws-sdk/client-dynamodb @aws-sdk/client-sqs @aws-sdk/client-sns @aws-sdk/client-secrets-manager 2>/dev/null && node -e '
 const fs = require("fs");
 const input = JSON.parse(process.env.INPUT_JSON);
@@ -167,21 +183,20 @@ const input = JSON.parse(process.env.INPUT_JSON);
 async function run() {
   const startTime = Date.now();
 
-  // Read credentials from secret refs
-  let credentials;
-  const accessKeyIdRef = input.accessKeyIdRef;
-  const secretAccessKeyRef = input.secretAccessKeyRef;
+  // ISS-compliant: Read credentials from mounted paths only
+  const ACCESS_KEY_PATH = "/run/secrets/aws_access_key_id";
+  const SECRET_KEY_PATH = "/run/secrets/aws_secret_access_key";
+  const SESSION_TOKEN_PATH = "/run/secrets/aws_session_token";
   
-  if (accessKeyIdRef && fs.existsSync(accessKeyIdRef)) {
-    const accessKeyId = fs.readFileSync(accessKeyIdRef, "utf8").trim();
-    const secretAccessKey = secretAccessKeyRef && fs.existsSync(secretAccessKeyRef)
-      ? fs.readFileSync(secretAccessKeyRef, "utf8").trim()
-      : process.env.AWS_SECRET_ACCESS_KEY;
+  let credentials = undefined;
+  if (fs.existsSync(ACCESS_KEY_PATH) && fs.existsSync(SECRET_KEY_PATH)) {
+    credentials = {
+      accessKeyId: fs.readFileSync(ACCESS_KEY_PATH, "utf8").trim(),
+      secretAccessKey: fs.readFileSync(SECRET_KEY_PATH, "utf8").trim(),
+    };
     
-    credentials = { accessKeyId, secretAccessKey };
-    
-    if (input.sessionTokenRef && fs.existsSync(input.sessionTokenRef)) {
-      credentials.sessionToken = fs.readFileSync(input.sessionTokenRef, "utf8").trim();
+    if (fs.existsSync(SESSION_TOKEN_PATH)) {
+      credentials.sessionToken = fs.readFileSync(SESSION_TOKEN_PATH, "utf8").trim();
     }
   }
 
@@ -264,6 +279,6 @@ run().catch(err => {
 });
 '
         `.trim(),
-            ]);
-    },
+    ]);
+  },
 };

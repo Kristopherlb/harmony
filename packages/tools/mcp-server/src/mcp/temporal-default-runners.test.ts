@@ -3,15 +3,16 @@
  * TDD: Temporal-backed default runners for CAPABILITY and BLUEPRINT tools.
  */
 import { describe, it, expect } from 'vitest';
-import { createTemporalDefaultRunners } from './temporal-default-runners.js';
+import { createTemporalDefaultRunners, type MinimalTemporalWorkflowClient } from './temporal-default-runners.js';
 
 describe('createTemporalDefaultRunners', () => {
   it('starts blueprint workflow by registry workflowType and returns handle ids', async () => {
+    type StartOpts = { workflowId: string; taskQueue: string; args: unknown[] };
     const started: Array<{ workflowType: string; args: unknown[]; taskQueue: string; workflowId: string }> = [];
 
-    const fakeClient = {
+    const fakeClient: MinimalTemporalWorkflowClient = {
       workflow: {
-        start: async (workflowType: string, opts: any) => {
+        start: async (workflowType: string, opts: StartOpts) => {
           started.push({ workflowType, args: opts.args, taskQueue: opts.taskQueue, workflowId: opts.workflowId });
           return { workflowId: opts.workflowId, firstExecutionRunId: 'run-1' };
         },
@@ -19,7 +20,7 @@ describe('createTemporalDefaultRunners', () => {
     };
 
     const { blueprintRunner } = createTemporalDefaultRunners({
-      temporal: { client: fakeClient as any, taskQueue: 'golden-tools' },
+      temporal: { client: fakeClient, taskQueue: 'golden-tools' },
       blueprints: new Map([
         ['workflows.echo', { blueprintId: 'workflows.echo', workflowType: 'echoWorkflow' }],
       ]),
@@ -41,11 +42,12 @@ describe('createTemporalDefaultRunners', () => {
   });
 
   it('starts executeCapabilityWorkflow for capabilities (start behavior)', async () => {
+    type StartOpts = { workflowId: string; taskQueue: string; args: unknown[] };
     const started: Array<{ workflowType: string; args: unknown[] }> = [];
 
-    const fakeClient = {
+    const fakeClient: MinimalTemporalWorkflowClient = {
       workflow: {
-        start: async (workflowType: string, opts: any) => {
+        start: async (workflowType: string, opts: StartOpts) => {
           started.push({ workflowType, args: opts.args });
           return { workflowId: opts.workflowId, firstExecutionRunId: 'run-cap-1' };
         },
@@ -53,7 +55,7 @@ describe('createTemporalDefaultRunners', () => {
     };
 
     const { capabilityRunner } = createTemporalDefaultRunners({
-      temporal: { client: fakeClient as any, taskQueue: 'golden-tools' },
+      temporal: { client: fakeClient, taskQueue: 'golden-tools' },
       blueprints: new Map(),
       workflowIdFactory: () => 'wf-cap-1',
       capabilityBehavior: 'start',
@@ -66,6 +68,36 @@ describe('createTemporalDefaultRunners', () => {
     expect(started[0]).toMatchObject({
       workflowType: 'executeCapabilityWorkflow',
       args: [{ capId: 'golden.echo', args: { x: 7 } }],
+    });
+  });
+
+  it('fails fast in await mode when result does not resolve within timeout', async () => {
+    type StartOpts = { workflowId: string; taskQueue: string; args: unknown[] };
+    const fakeClient: MinimalTemporalWorkflowClient = {
+      workflow: {
+        start: async (_workflowType: string, opts: StartOpts) => {
+          return {
+            workflowId: opts.workflowId,
+            firstExecutionRunId: 'run-slow-1',
+            result: async () => await new Promise(() => {}),
+          };
+        },
+      },
+    };
+
+    const { capabilityRunner } = createTemporalDefaultRunners({
+      temporal: { client: fakeClient, taskQueue: 'golden-tools' },
+      blueprints: new Map(),
+      workflowIdFactory: () => 'wf-cap-slow',
+      capabilityBehavior: 'await',
+      capabilityAwaitTimeoutMs: 10,
+      memoFactory: () => ({ golden: 'memo' }),
+      statusUrlFactory: (workflowId, runId) => `http://ui.local/wf/${workflowId}/${runId}`,
+    });
+
+    await expect(capabilityRunner({ id: 'golden.echo', args: { x: 7 }, traceId: 't3' })).rejects.toMatchObject({
+      message: expect.stringMatching(/WORKER_NOT_RUNNING/i),
+      code: 'WORKER_NOT_RUNNING',
     });
   });
 });

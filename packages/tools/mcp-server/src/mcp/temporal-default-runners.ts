@@ -21,11 +21,21 @@ export interface MinimalBlueprintRegistryEntry {
   workflowType: string;
 }
 
+function timeoutAfter(ms: number): Promise<never> {
+  return new Promise((_, reject) => {
+    const t = setTimeout(() => {
+      clearTimeout(t);
+      reject(Object.assign(new Error('WORKER_NOT_RUNNING'), { code: 'WORKER_NOT_RUNNING' }));
+    }, ms);
+  });
+}
+
 export function createTemporalDefaultRunners(input: {
   temporal: { client: MinimalTemporalWorkflowClient; taskQueue: string };
   blueprints: Map<string, MinimalBlueprintRegistryEntry>;
   workflowIdFactory: (toolId: string) => string;
   capabilityBehavior: CapabilityBehavior;
+  capabilityAwaitTimeoutMs?: number;
   memoFactory: (input: { toolId: string; traceId: string; context?: GoldenCallerContext }) => Record<string, unknown>;
   statusUrlFactory?: (workflowId: string, runId: string) => string;
 }): { capabilityRunner: CapabilityRunner; blueprintRunner: BlueprintRunner } {
@@ -57,12 +67,26 @@ export function createTemporalDefaultRunners(input: {
       if (typeof handle.result !== 'function') {
         throw new Error('Temporal handle missing result() in await mode');
       }
-      const out = await handle.result();
       const statusUrl =
         typeof input.statusUrlFactory === 'function'
           ? input.statusUrlFactory(handle.workflowId, handle.firstExecutionRunId)
           : undefined;
-      return { result: out, meta: { workflowId: handle.workflowId, runId: handle.firstExecutionRunId, statusUrl } as any };
+      const timeoutMs = typeof input.capabilityAwaitTimeoutMs === 'number' ? input.capabilityAwaitTimeoutMs : 5_000;
+      try {
+        const out = await Promise.race([handle.result(), timeoutAfter(timeoutMs)]);
+        return {
+          result: out,
+          meta: { workflowId: handle.workflowId, runId: handle.firstExecutionRunId, statusUrl },
+        };
+      } catch (e) {
+        if (e && typeof e === 'object') {
+          const err = e as { code?: unknown; meta?: unknown };
+          if (err.code === 'WORKER_NOT_RUNNING') {
+            err.meta = { workflowId: handle.workflowId, runId: handle.firstExecutionRunId, statusUrl };
+          }
+        }
+        throw e;
+      }
     }
 
     const statusUrl =

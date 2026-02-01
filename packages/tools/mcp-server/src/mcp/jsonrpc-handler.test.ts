@@ -41,7 +41,9 @@ describe('createMcpJsonRpcHandler', () => {
         },
       },
     });
-    const echo = (res as any).result.tools.find((t: any) => t.name === 'golden.echo');
+    expect(res && typeof res === 'object' && 'result' in res).toBe(true);
+    const result = (res as { result: { tools: Array<{ name?: unknown }> } }).result;
+    const echo = result.tools.find((t) => t.name === 'golden.echo');
     expect(echo).toBeDefined();
   });
 });
