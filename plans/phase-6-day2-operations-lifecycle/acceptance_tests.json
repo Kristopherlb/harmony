@@ -1,0 +1,41 @@
+{
+  "usecaseId": "usecase.platform.day2-operations-lifecycle",
+  "scenarios": [
+    {
+      "id": "dashboardProvisioning",
+      "input": {
+        "blueprintId": "workflows.order.fulfillment",
+        "namespace": "commerce-prod"
+      },
+      "expected": {
+        "status": "COMPLETED",
+        "grafanaFolder": "commerce-prod",
+        "dashboardUrl": "https://grafana.internal/d/abc123"
+      }
+    },
+    {
+      "id": "tcoEstimation",
+      "input": {
+        "temporalActions": 120,
+        "computeSeconds": 45,
+        "inputTokens": 2500,
+        "outputTokens": 600
+      },
+      "expected": {
+        "status": "COMPLETED",
+        "tcoTotal": 0.0
+      }
+    },
+    {
+      "id": "offboardingCleanup",
+      "input": {
+        "blueprintId": "workflows.order.fulfillment",
+        "registrySnapshotId": "rr-2024-09-01"
+      },
+      "expected": {
+        "status": "COMPLETED",
+        "resourcesRemoved": true
+      }
+    }
+  ]
+}
