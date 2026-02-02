@@ -2361,6 +2361,10 @@
             "type": "string",
             "description": "Path to local flag configuration, defaults to deploy/flagd/flags.json"
           },
+          "configJson": {
+            "type": "string",
+            "description": "Inline flagd config JSON (overrides configPath; useful for runtime smoke without repo mounts)"
+          },
           "namespace": {
             "type": "string",
             "description": "Kubernetes namespace, defaults to default"

@@ -6,7 +6,6 @@
  */
 import * as wf from '@temporalio/workflow';
 import type { z } from '@golden/schema-registry';
-import type { Duration } from '@temporalio/common';
 import type { Capability } from '../ocs/capability.js';
 import type { GoldenContext } from '../context/golden-context.js';
 import type { CompensationFn } from '../types.js';
@@ -117,7 +116,8 @@ export abstract class BaseBlueprint<Input, Output, Config> {
   };
 
   abstract readonly operations: {
-    sla: { targetDuration: Duration; maxDuration: Duration };
+    /** Human-readable durations (e.g. '15m', '1h'). Passed to Temporal activity timeouts. */
+    sla: { targetDuration: string; maxDuration: string };
     alerting?: { errorRateThreshold: number };
   };
 
@@ -191,7 +191,8 @@ export abstract class BaseBlueprint<Input, Output, Config> {
     }
 
     const activities = wf.proxyActivities<ExecuteCapabilityActivity>({
-      startToCloseTimeout: this.operations.sla.maxDuration,
+      // Temporal accepts string for activity timeouts (e.g. '5m', '1h')
+      startToCloseTimeout: this.operations.sla.maxDuration as Parameters<typeof wf.proxyActivities>[0]['startToCloseTimeout'],
     });
     const ctx = this.goldenContext;
     if (!ctx) {

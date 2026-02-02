@@ -1,0 +1,21 @@
+{
+  "id": "daily-standup",
+  "name": "Daily Standup",
+  "description": "Gather updates from Slack and optionally post summary.",
+  "domain": "operations",
+  "subdomain": "collaboration",
+  "tags": ["standup", "slack", "gather"],
+  "author": "Platform",
+  "version": "1.0.0",
+  "title": "Daily Standup",
+  "summary": "Collect standup updates from Slack and post summary.",
+  "nodes": [
+    { "id": "n1", "label": "Schedule trigger", "type": "trigger" },
+    { "id": "n2", "label": "Gather Slack updates", "type": "action", "description": "Collect replies from standup thread" },
+    { "id": "n3", "label": "Post summary", "type": "action", "description": "Post summary to channel" }
+  ],
+  "edges": [
+    { "source": "n1", "target": "n2" },
+    { "source": "n2", "target": "n3" }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "id": "incident-response-basic",
+  "name": "Incident Response (Basic)",
+  "description": "Slack alert plus Jira ticket creation for incident triage.",
+  "domain": "operations",
+  "subdomain": "incidents",
+  "tags": ["incident", "slack", "jira", "alert"],
+  "author": "Platform",
+  "version": "1.0.0",
+  "title": "Incident Response (Basic)",
+  "summary": "Receive alert, create Jira ticket, notify in Slack.",
+  "nodes": [
+    { "id": "n1", "label": "Slack alert received", "type": "trigger" },
+    { "id": "n2", "label": "Create Jira ticket", "type": "action", "description": "Create incident ticket in Jira" },
+    { "id": "n3", "label": "Post to Slack channel", "type": "action", "description": "Notify channel with ticket link" }
+  ],
+  "edges": [
+    { "source": "n1", "target": "n2" },
+    { "source": "n2", "target": "n3" }
+  ]
+}

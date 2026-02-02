@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "templateIds": [
+    "incident-response-basic",
+    "daily-standup",
+    "release-notification",
+    "compliance-scan",
+    "service-health-check"
+  ]
+}

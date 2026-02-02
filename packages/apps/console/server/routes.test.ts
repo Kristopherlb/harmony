@@ -726,4 +726,19 @@ describe("API Routes", () => {
       expect(Date.parse(afterTs)).toBeGreaterThan(Date.parse(beforeTs));
     });
   });
+
+  describe("GET /api/templates (workflow library)", () => {
+    it("returns template manifest with version and templates array", async () => {
+      const response = await api().get("/api/templates").expect(200);
+      expect(response.body).toHaveProperty("templates");
+      expect(Array.isArray(response.body.templates)).toBe(true);
+      expect(response.body).toMatchObject({ version: expect.any(String) });
+      for (const t of response.body.templates) {
+        expect(t).toHaveProperty("id");
+        expect(t).toHaveProperty("title");
+        expect(t).toHaveProperty("nodes");
+        expect(t).toHaveProperty("edges");
+      }
+    });
+  });
 });

@@ -44,12 +44,12 @@ export interface Capability<
   };
 
   schemas: {
-    // Use ZodType<T, any, any> to allow input type to differ from output type
-    // This is necessary for schemas using .optional().default() patterns
-    input: z.ZodType<Input>;
-    output: z.ZodType<Output>;
-    config: z.ZodType<Config>;
-    secrets: z.ZodType<Secrets>;
+    // Use ZodType<Output, Def, Input> with Input=unknown so schemas using .default()
+    // (optional input fields) are accepted; only the parsed output must match Input.
+    input: z.ZodType<Input, z.ZodTypeDef, unknown>;
+    output: z.ZodType<Output, z.ZodTypeDef, unknown>;
+    config: z.ZodType<Config, z.ZodTypeDef, unknown>;
+    secrets: z.ZodType<Secrets, z.ZodTypeDef, unknown>;
   };
 
   security: {

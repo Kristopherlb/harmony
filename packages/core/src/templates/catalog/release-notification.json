@@ -1,0 +1,21 @@
+{
+  "id": "release-notification",
+  "name": "Release Notification",
+  "description": "GitHub release event triggers Slack and optional email notification.",
+  "domain": "ci",
+  "subdomain": "release",
+  "tags": ["release", "github", "slack", "notification"],
+  "author": "Platform",
+  "version": "1.0.0",
+  "title": "Release Notification",
+  "summary": "On GitHub release, post to Slack and send email.",
+  "nodes": [
+    { "id": "n1", "label": "GitHub release event", "type": "trigger" },
+    { "id": "n2", "label": "Post to Slack", "type": "action", "description": "Post release notes to Slack channel" },
+    { "id": "n3", "label": "Send email", "type": "action", "description": "Optional email to stakeholders" }
+  ],
+  "edges": [
+    { "source": "n1", "target": "n2" },
+    { "source": "n2", "target": "n3" }
+  ]
+}

@@ -1,4 +1,6 @@
+import type { Request, Response } from "express";
 import { Router } from "express";
+import { appendApprovalLog, listApprovalLog } from "../audit/approval-log";
 
 type CreateSessionRequest = {
   provider: string;
@@ -106,6 +108,28 @@ export function createWorkbenchRouter() {
     } catch (error: any) {
       return res.status(500).json({ error: "INTERNAL_ERROR", details: String(error?.message ?? error) });
     }
+  });
+
+  // Approval audit log (Phase 4.1.5): RESTRICTED tool approvals
+  router.get("/approvals/log", (_req: Request, res: Response) => {
+    const limit = Math.min(Number((_req as any).query?.limit) || 50, 100);
+    const entries = listApprovalLog(limit);
+    return res.json({ entries });
+  });
+
+  router.post("/approvals/log", (req: Request, res: Response) => {
+    const body = (req.body ?? {}) as { approverId?: string; approvedToolIds?: string[]; context?: { incidentId?: string; workflowId?: string; draftTitle?: string } };
+    const approverId = typeof body.approverId === "string" ? body.approverId : "workbench-user";
+    const approvedToolIds = Array.isArray(body.approvedToolIds) ? body.approvedToolIds : [];
+    if (approvedToolIds.length === 0) {
+      return res.status(400).json({ error: "approvedToolIds required and non-empty" });
+    }
+    const entry = appendApprovalLog({
+      approverId,
+      approvedToolIds,
+      context: body.context,
+    });
+    return res.status(201).json(entry);
   });
 
   return router;

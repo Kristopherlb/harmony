@@ -1,0 +1,21 @@
+{
+  "id": "service-health-check",
+  "name": "Service Health Check",
+  "description": "Poll health endpoints and alert on failure.",
+  "domain": "operations",
+  "subdomain": "observability",
+  "tags": ["health", "poll", "alert", "observability"],
+  "author": "Platform",
+  "version": "1.0.0",
+  "title": "Service Health Check",
+  "summary": "Poll health endpoints and alert if unhealthy.",
+  "nodes": [
+    { "id": "n1", "label": "Schedule trigger", "type": "trigger" },
+    { "id": "n2", "label": "Poll health endpoints", "type": "action", "description": "Call health endpoints" },
+    { "id": "n3", "label": "Alert on failure", "type": "action", "description": "Send alert if any endpoint fails" }
+  ],
+  "edges": [
+    { "source": "n1", "target": "n2" },
+    { "source": "n2", "target": "n3" }
+  ]
+}

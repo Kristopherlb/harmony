@@ -1,0 +1,21 @@
+{
+  "id": "compliance-scan",
+  "name": "Compliance Scan",
+  "description": "Run security scanners and generate a compliance report.",
+  "domain": "security",
+  "subdomain": "compliance",
+  "tags": ["compliance", "security", "scan", "report"],
+  "author": "Platform",
+  "version": "1.0.0",
+  "title": "Compliance Scan",
+  "summary": "Run scanners and generate report.",
+  "nodes": [
+    { "id": "n1", "label": "Schedule or manual trigger", "type": "trigger" },
+    { "id": "n2", "label": "Run security scanners", "type": "action", "description": "Execute configured scanners" },
+    { "id": "n3", "label": "Generate report", "type": "action", "description": "Produce compliance report artifact" }
+  ],
+  "edges": [
+    { "source": "n1", "target": "n2" },
+    { "source": "n2", "target": "n3" }
+  ]
+}

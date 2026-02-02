@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Workbench UX Acceptance Scenario Pack",
+  "description": "Deterministic test scenarios derived from product-management/workbench-ux.md acceptance criteria. Use for unit/E2E test vectors and regression protection.",
+  "sourceCriteria": "product-management/workbench-ux.md §5 UX Acceptance Criteria",
+  "scenarios": [
+    {
+      "id": "conv-workflow-building",
+      "acceptanceCriteriaRef": "Conversational Workflow Building",
+      "given": "Blank canvas and active chat",
+      "when": "User asks assistant to create a simple workflow (e.g. create a workflow that pings the database and then sends an email if a value is over X)",
+      "then": "System produces a multi-step workflow on the canvas; chat explains what was created",
+      "successMeasure": "Valid workflow of at least 3 steps via one chat command; user reports it matched intent",
+      "fixtures": {
+        "input": { "userMessage": "Create a workflow that pings the database and then sends me an email if a value is over 100" },
+        "expectedIR": {
+          "minNodes": 3,
+          "requiredFields": ["title", "summary", "nodes", "edges"],
+          "nodeIdsUnique": true,
+          "edgesReferenceExistingNodes": true
+        },
+        "expectedUIAssertions": [
+          "Canvas shows at least 3 nodes",
+          "Chat contains assistant reply describing created steps"
+        ]
+      }
+    },
+    {
+      "id": "chat-canvas-edit-loop",
+      "acceptanceCriteriaRef": "Chat-to-Canvas Edit Loop",
+      "given": "Workflow already on canvas",
+      "when": "User issues edit command in chat (e.g. Remove the second step, or Change the order: make email step last)",
+      "then": "Specified change applied on canvas within seconds and highlighted; assistant confirms in chat",
+      "successMeasure": "User can modify at least 5 different aspects (add, delete, rename, reorder, etc.) via chat alone without errors",
+      "fixtures": {
+        "initialDraft": {
+          "title": "Sample",
+          "summary": "",
+          "nodes": [
+            { "id": "n1", "label": "Start", "type": "trigger" },
+            { "id": "n2", "label": "Step 2", "type": "action" },
+            { "id": "n3", "label": "Email", "type": "action" }
+          ],
+          "edges": [
+            { "source": "n1", "target": "n2" },
+            { "source": "n2", "target": "n3" }
+          ]
+        },
+        "editScenarios": [
+          {
+            "intent": "remove",
+            "input": { "intent": "remove", "nodeId": "n2" },
+            "expectedNodeCount": 2,
+            "expectedNodesMissing": ["n2"],
+            "expectedEdgesCount": 1
+          },
+          {
+            "intent": "rename",
+            "input": { "intent": "rename", "nodeId": "n3", "label": "Send Email" },
+            "expectedNodeLabel": { "nodeId": "n3", "label": "Send Email" }
+          }
+        ],
+        "expectedUIAssertions": [
+          "Canvas updates to reflect edit within 2s",
+          "Changed nodes/edges are visually highlighted",
+          "Chat contains confirmation message (e.g. Removed Step 2)"
+        ]
+      }
+    },
+    {
+      "id": "no-context-loss",
+      "acceptanceCriteriaRef": "No Context Loss in Unified Workspace",
+      "given": "User has draft and conversation in progress",
+      "when": "User collapses chat panel then expands again (or switches focus between chat and canvas)",
+      "then": "Conversation history and current canvas state remain intact and in sync",
+      "successMeasure": "Automated test: simulate switching views 100 times; data consistency verified",
+      "fixtures": {
+        "initialDraft": {
+          "title": "Test",
+          "summary": "",
+          "nodes": [{ "id": "n1", "label": "A", "type": "action" }],
+          "edges": []
+        },
+        "expectedUIAssertions": [
+          "After N view toggles, draft nodes/edges unchanged",
+          "Chat message count unchanged",
+          "Selected node (if any) still selected"
+        ]
+      }
+    },
+    {
+      "id": "generative-blueprint-revision",
+      "acceptanceCriteriaRef": "Generative Blueprint Revision",
+      "given": "Assistant has generated a workflow draft",
+      "when": "User provides follow-up instruction (e.g. add a final step to notify the VP)",
+      "then": "Assistant updates the workflow accordingly without user leaving canvas view",
+      "successMeasure": "At least two rounds of natural language refinement; user feels in control",
+      "fixtures": {
+        "round1": {
+          "userMessage": "Add a final step to notify the VP",
+          "expectedIRChange": "nodes length increases by 1",
+          "expectedUIAssertions": ["New node visible on canvas", "Chat confirms addition"]
+        },
+        "round2": {
+          "userMessage": "Rename that step to VP Notification",
+          "expectedIRChange": "node with new step has label VP Notification",
+          "expectedUIAssertions": ["Node label updated on canvas"]
+        }
+      }
+    },
+    {
+      "id": "library-usage-ease",
+      "acceptanceCriteriaRef": "Library Usage Ease",
+      "given": "User on workbench with library available",
+      "when": "User searches library for term (e.g. email) and selects an item to insert",
+      "then": "Relevant results with clear names/descriptions; selected item appears on canvas or prompts for minimal required info",
+      "successMeasure": "New users find and import a template within ~2 minutes; 80% use library template without assistance",
+      "fixtures": {
+        "input": { "searchTerm": "email", "templateId": "template-email-notification" },
+        "expectedUIAssertions": [
+          "Search returns at least one result",
+          "Results show name and description",
+          "After insert, canvas shows new nodes from template OR config modal appears"
+        ]
+      }
+    },
+    {
+      "id": "execution-orchestration-chat",
+      "acceptanceCriteriaRef": "Execution & Orchestration via Chat",
+      "given": "User has accepted draft and execution is available",
+      "when": "User triggers run via chat (e.g. Run this workflow now)",
+      "then": "System executes and posts live updates or summary in chat; on error, assistant suggests next steps",
+      "successMeasure": "End-to-end: deploy and run through unified interface; observe outcome; stop/pause via chat if supported",
+      "fixtures": {
+        "input": { "userMessage": "Run this workflow now" },
+        "expectedUIAssertions": [
+          "Execution starts (e.g. run id or status indicator)",
+          "Chat shows progress or summary (e.g. Step 1 completed)",
+          "On failure: chat shows error and suggestion (retry/debug)"
+        ]
+      }
+    },
+    {
+      "id": "onboarding-learnability",
+      "acceptanceCriteriaRef": "Onboarding & Learnability",
+      "given": "New user (no prior exposure)",
+      "when": "User starts using Harmony",
+      "then": "User can discover chat-canvas hybrid via on-screen guidance (tutorial overlay or example hints in chat input)",
+      "successMeasure": "Basic task (e.g. create 3-step workflow with one AI-generated step) in first session; onboarding rated satisfactory (e.g. 4/5)",
+      "fixtures": {
+        "expectedUIAssertions": [
+          "First-time user sees onboarding/tour or example prompts",
+          "Chat input or panel shows hint (e.g. example prompts)",
+          "User can complete create-workflow task without external docs"
+        ]
+      }
+    }
+  ]
+}

@@ -18,6 +18,7 @@ import { workflowsRouter } from "./http/workflows-router";
 import { createChatRouter } from "./routers/chat-router";
 import { createMcpToolsRouter } from "./routers/mcp-tools-router";
 import { createWorkbenchRouter } from "./routers/workbench-router";
+import { createTemplatesRouter } from "./routers/templates-router";
 import { createRunbooksRouter } from "./runbooks/http/runbooks-router";
 import { createIncidentsRouter } from "./incidents/http/incidents-router";
 import { ActionRepositoryAdapter } from "./actions/adapters/action-repository-adapter";
@@ -159,6 +160,9 @@ export async function registerRoutes(
 
   // Workbench session launcher proxy (Swagger/GraphiQL/JQL launch URLs)
   app.use("/api/workbench", createWorkbenchRouter());
+
+  // Workflow template catalog (library UX)
+  app.use("/api/templates", createTemplatesRouter());
 
   // Users router
   const { UserRepositoryAdapter } = await import("./users/adapters/user-repository-adapter");

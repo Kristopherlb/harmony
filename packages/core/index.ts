@@ -13,10 +13,26 @@ export type {
 export {
   goldenContextSchema,
   parseGoldenContext,
+  hasIncidentContext,
+  extractIncidentFields,
   DATA_CLASSIFICATION,
+  INCIDENT_SEVERITY,
   type GoldenContext,
   type DataClassification,
+  type IncidentSeverity,
 } from './src/context/golden-context.js';
+export {
+  generateIncidentId,
+  createIncidentGoldenContext,
+  extractIncidentContext,
+  updateIncidentContext,
+  generateIncidentChannelName,
+  buildIncidentSummary,
+  isHighPriority,
+  getApprovalTimeoutForSeverity,
+  type IncidentContext,
+  type IncidentIdOptions,
+} from './src/context/incident-context.js';
 
 // OCS
 export type { Capability, DaggerContainer } from './src/ocs/capability.js';
@@ -138,3 +154,19 @@ export {
   type WorkbenchRestProxyRequest,
   type WorkbenchRestProxyResponse,
 } from './src/workbench/workbench-contracts.js';
+
+// Templates (Pre-work 3.1 – workflow library schema)
+export {
+  blueprintNodeSchema,
+  blueprintEdgeSchema,
+  blueprintDraftSchema,
+  templateMetadataSchema,
+  templateDraftSchema,
+  templateManifestSchema,
+  type BlueprintNode,
+  type BlueprintEdge,
+  type BlueprintDraft,
+  type TemplateMetadata,
+  type TemplateDraft,
+  type TemplateManifest,
+} from './src/templates/template-schema.js';

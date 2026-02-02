@@ -100,6 +100,7 @@ export const incidentTimelineCapability: Capability<
     },
     aiHints: {
         exampleInput: {
+            title: 'Incident Timeline',
             events: [
                 { timestamp: '2023-10-27T10:00:00Z', source: 'PagerDuty', message: 'Alert triggered', severity: 'CRITICAL' },
                 { timestamp: '2023-10-27T10:05:00Z', source: 'Slack', message: 'Acked by on-call', severity: 'INFO' },

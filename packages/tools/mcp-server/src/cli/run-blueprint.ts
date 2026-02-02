@@ -24,8 +24,21 @@ import { randomUUID } from 'crypto';
 import { SECURITY_CONTEXT_MEMO_KEY, GOLDEN_CONTEXT_MEMO_KEY } from '@golden/core/workflow';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseCliArgsFromArgv } from './run-blueprint.args.js';
+
+/**
+ * Current script path when running as CommonJS (__dirname available).
+ * Returns undefined in ESM or when __dirname is not defined (caller should not auto-invoke).
+ */
+function getThisScriptPath(): string | undefined {
+  try {
+    const dir = typeof __dirname !== 'undefined' ? __dirname : '';
+    if (dir) return path.resolve(path.join(dir, 'run-blueprint.js'));
+  } catch {
+    // __dirname not defined (e.g. ESM)
+  }
+  return undefined;
+}
 
 // Blueprint registry: maps blueprint ID to workflow type name
 const BLUEPRINT_REGISTRY: Record<string, string> = {
@@ -205,8 +218,9 @@ function isInvokedAsScript(): boolean {
   const argv1 = process.argv[1];
   if (!argv1) return true;
   const scriptPath = path.resolve(argv1);
-  const thisPath = fileURLToPath(import.meta.url);
-  return pathToFileURL(scriptPath).href === pathToFileURL(thisPath).href;
+  const thisPath = getThisScriptPath();
+  if (!thisPath) return false;
+  return path.normalize(scriptPath) === path.normalize(thisPath);
 }
 
 if (isInvokedAsScript()) {

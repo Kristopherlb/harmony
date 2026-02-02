@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harmony/spec/workbench-ir.schema.json",
+  "title": "Workbench IR (Chat→IR) Contract",
+  "description": "Schema for the workbench intermediate representation (draft) and chat-driven edit intents. Validates agent output and client-side apply logic.",
+  "definitions": {
+    "BlueprintNode": {
+      "type": "object",
+      "required": ["id", "label", "type"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "label": { "type": "string" },
+        "type": { "type": "string", "description": "e.g. trigger, action, condition" },
+        "description": { "type": "string" },
+        "properties": { "type": "object", "additionalProperties": true }
+      },
+      "additionalProperties": false
+    },
+    "BlueprintEdge": {
+      "type": "object",
+      "required": ["source", "target"],
+      "properties": {
+        "source": { "type": "string" },
+        "target": { "type": "string" },
+        "label": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "BlueprintDraft": {
+      "type": "object",
+      "description": "Full IR: workflow draft (nodes + edges + title/summary). Single source of truth for chat and canvas.",
+      "required": ["title", "summary", "nodes", "edges"],
+      "properties": {
+        "title": { "type": "string", "minLength": 1 },
+        "summary": { "type": "string" },
+        "nodes": { "type": "array", "items": { "$ref": "#/definitions/BlueprintNode" } },
+        "edges": { "type": "array", "items": { "$ref": "#/definitions/BlueprintEdge" } }
+      },
+      "additionalProperties": false
+    },
+    "EditIntentAdd": {
+      "type": "object",
+      "description": "Add a node (and optionally connect it).",
+      "required": ["intent", "node"],
+      "properties": {
+        "intent": { "const": "add" },
+        "node": { "$ref": "#/definitions/BlueprintNode" },
+        "afterNodeId": { "type": "string", "description": "Insert after this node; optional for append" },
+        "connectFrom": { "type": "string", "description": "Source node id for new edge to this node" }
+      }
+    },
+    "EditIntentRemove": {
+      "type": "object",
+      "required": ["intent", "nodeId"],
+      "properties": {
+        "intent": { "const": "remove" },
+        "nodeId": { "type": "string" }
+      }
+    },
+    "EditIntentRename": {
+      "type": "object",
+      "required": ["intent", "nodeId", "label"],
+      "properties": {
+        "intent": { "const": "rename" },
+        "nodeId": { "type": "string" },
+        "label": { "type": "string" }
+      }
+    },
+    "EditIntentReorder": {
+      "type": "object",
+      "required": ["intent", "nodeIds"],
+      "properties": {
+        "intent": { "const": "reorder" },
+        "nodeIds": { "type": "array", "items": { "type": "string" }, "minLength": 1 }
+      }
+    },
+    "EditIntentConnect": {
+      "type": "object",
+      "required": ["intent", "source", "target"],
+      "properties": {
+        "intent": { "const": "connect" },
+        "source": { "type": "string" },
+        "target": { "type": "string" },
+        "label": { "type": "string" }
+      }
+    },
+    "EditIntentBranch": {
+      "type": "object",
+      "description": "Add a branch: new node(s) and edges from a source node.",
+      "required": ["intent", "fromNodeId", "branches"],
+      "properties": {
+        "intent": { "const": "branch" },
+        "fromNodeId": { "type": "string" },
+        "branches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["node", "connectTo"],
+            "properties": {
+              "node": { "$ref": "#/definitions/BlueprintNode" },
+              "connectTo": { "type": "string", "description": "Target node id after this branch node" }
+            }
+          }
+        }
+      }
+    },
+    "EditIntentConfigure": {
+      "type": "object",
+      "required": ["intent", "nodeId", "properties"],
+      "properties": {
+        "intent": { "const": "configure" },
+        "nodeId": { "type": "string" },
+        "properties": { "type": "object", "additionalProperties": true }
+      }
+    },
+    "EditIntent": {
+      "description": "Single chat-driven edit. Apply in order for multi-edit payloads.",
+      "oneOf": [
+        { "$ref": "#/definitions/EditIntentAdd" },
+        { "$ref": "#/definitions/EditIntentRemove" },
+        { "$ref": "#/definitions/EditIntentRename" },
+        { "$ref": "#/definitions/EditIntentReorder" },
+        { "$ref": "#/definitions/EditIntentConnect" },
+        { "$ref": "#/definitions/EditIntentBranch" },
+        { "$ref": "#/definitions/EditIntentConfigure" }
+      ]
+    }
+  },
+  "$ref": "#/definitions/BlueprintDraft"
+}
+

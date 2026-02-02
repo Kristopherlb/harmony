@@ -13,6 +13,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "test": "vitest run",
+    "test:client": "vitest run --config vitest.client.config.ts",
     "test:architecture": "vitest run server/architecture.test.ts",
     "mock:jira": "tsx mock/jira-mock-server.ts"
   },

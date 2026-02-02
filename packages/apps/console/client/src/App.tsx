@@ -30,6 +30,7 @@ function Router() {
         <Route path="/" component={Dashboard} />
         <Route path="/operations" component={OperationsHub} />
         <Route path="/workbench" component={WorkbenchPage} />
+        <Route path="/workbench/library" component={LibraryPage} />
         {/* Kept for backward compat or signal view if needed, though 'Console' tab is gone */}
         <Route path="/console" component={OpsConsole} />
         <Route path="/console/signal/:id" component={SignalDetailPage} />

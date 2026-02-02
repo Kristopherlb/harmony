@@ -1,5 +1,8 @@
-
-import React, { useMemo, useState } from "react";
+/**
+ * packages/apps/console/client/src/pages/workbench-page.tsx
+ * Chat-to-canvas workbench with optional template insertion from library (Phase 4.1).
+ */
+import React, { useMemo, useState, useEffect } from "react";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -8,6 +11,7 @@ import {
 import { AgentChatPanel } from "@/features/workbench/agent-chat-panel";
 import { DraftingCanvas } from "@/features/workbench/drafting-canvas";
 import { BlueprintDraft } from "@/features/workbench/types";
+import { templateToBlueprintDraft } from "@/features/workbench/template-insertion";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +27,9 @@ import { useMcpToolCatalog } from "@/features/workbench/use-mcp-tools";
 import { NodeInfoSheet } from "@/features/workbench/node-info-sheet";
 import { updateDraftNodeProperties } from "@/features/workbench/draft-mutations";
 import { buildWorkbenchNodeRefinementMessage } from "@/features/workbench/node-refinement";
+import { useLocation } from "wouter";
+import { EmptyState } from "@/components/patterns/EmptyState";
+import { MonitorDot } from "lucide-react";
 
 function edgeKey(edge: { source: string; target: string; label?: string }) {
   return `${edge.source}::${edge.target}::${edge.label ?? ""}`;
@@ -62,6 +69,7 @@ function diffDraft(
 }
 
 export default function WorkbenchPage() {
+  const [, setLocation] = useLocation();
   const [draftHistory, setDraftHistory] = useState<BlueprintDraft[]>([]);
   const [draftHistoryMeta, setDraftHistoryMeta] = useState<
     Array<{ appliedAt: string; author: "agent" | "human"; title: string }>
@@ -88,6 +96,29 @@ export default function WorkbenchPage() {
   const [lastSelectedNodeId, setLastSelectedNodeId] = useState<string | null>(null);
   const [externalAgentSendText, setExternalAgentSendText] = useState<string | null>(null);
   const [refinementRequestSeq, setRefinementRequestSeq] = useState(0);
+
+  // Load template from library when ?templateId= is present (Phase 4.1.2)
+  useEffect(() => {
+    const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+    const templateId = params.get("templateId");
+    if (!templateId) return;
+
+    let cancelled = false;
+    fetch("/api/templates", { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error("Failed to fetch templates"))))
+      .then((data: { templates?: Array<{ id: string; title: string; summary: string; nodes: unknown[]; edges: unknown[] }> }) => {
+        if (cancelled) return;
+        const template = data.templates?.find((t) => t.id === templateId);
+        if (template) setPendingDraft(templateToBlueprintDraft(template));
+        if (typeof window !== "undefined") {
+          window.history.replaceState(null, "", "/workbench");
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const proposalDiff = useMemo(() => {
     if (!pendingDraft) return null;
@@ -126,6 +157,19 @@ export default function WorkbenchPage() {
     if (proposalRestrictedUses.length > 0 && !approveRestricted) {
       setApplyError("Approval required for RESTRICTED tools.");
       return;
+    }
+
+    if (proposalRestrictedUses.length > 0) {
+      fetch("/api/workbench/approvals/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          approverId: "workbench-user",
+          approvedToolIds: proposalRestrictedUses,
+          context: { draftTitle: pendingDraft.title },
+        }),
+      }).catch(() => {});
     }
 
     setDraftHistory((prev) => {
@@ -269,14 +313,26 @@ export default function WorkbenchPage() {
         </ResizablePanel>
         <ResizableHandle />
         <ResizablePanel defaultSize={70}>
-          <DraftingCanvas
-            draft={displayDraft}
-            canUndo={canUndo}
-            canRedo={canRedo}
-            onUndo={undo}
-            onRedo={redo}
-            onSelectNodeId={onSelectNodeId}
-          />
+          {displayDraft ? (
+            <DraftingCanvas
+              draft={displayDraft}
+              canUndo={canUndo}
+              canRedo={canRedo}
+              onUndo={undo}
+              onRedo={redo}
+              onSelectNodeId={onSelectNodeId}
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center p-8" data-testid="workbench-empty-state">
+              <EmptyState
+                icon={MonitorDot}
+                title="No workflow yet"
+                description="Browse templates (e.g. Incident Response) or describe what you want in the chat."
+                actionLabel="Browse templates"
+                onAction={() => setLocation("/workbench/library")}
+              />
+            </div>
+          )}
         </ResizablePanel>
       </ResizablePanelGroup>
 
