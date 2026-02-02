@@ -54,6 +54,7 @@ export interface PermissionServicePort {
 
 export interface EventIngestionPort {
   createEvent(event: {
+    incidentId?: string;
     timestamp: string;
     source: string;
     type: string;

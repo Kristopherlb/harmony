@@ -9,6 +9,7 @@ export class EventIngestionAdapter implements EventIngestionPort {
   constructor(private repository: IActivityRepository) {}
 
   async createEvent(event: {
+    incidentId?: string;
     timestamp: string;
     source: string;
     type: string;
@@ -22,6 +23,7 @@ export class EventIngestionAdapter implements EventIngestionPort {
     serviceTags: string[];
   }): Promise<{ id: string }> {
     const insertEvent: InsertEvent = {
+      incidentId: event.incidentId,
       timestamp: event.timestamp,
       source: event.source as any,
       type: event.type as any,
