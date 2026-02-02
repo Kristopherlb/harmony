@@ -30,6 +30,15 @@ describe("HarmonyMcpToolService", () => {
     expect((echo as any)?.requiredScopes).toEqual([]);
   });
 
+  it("includes Jira capabilities in the tool catalog snapshot (discoverability guardrail)", () => {
+    const service = new HarmonyMcpToolService({ includeBlueprints: true, version: "1" });
+    const snapshot = service.snapshot();
+
+    const toolNames = new Set(snapshot.tools.map((t) => t.name));
+    expect(toolNames.has("golden.jira.issue.search")).toBe(true);
+    expect(toolNames.has("golden.jira.issue.count")).toBe(true);
+  });
+
   it("refresh updates generated_at (monotonic)", () => {
     const service = new HarmonyMcpToolService({ includeBlueprints: true, version: "1" });
     const before = service.snapshot().manifest.generated_at;

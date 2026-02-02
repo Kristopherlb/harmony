@@ -33,6 +33,8 @@ export interface BlueGreenDeployInput {
   waitForDrain?: boolean;
   /** Drain timeout in seconds */
   drainTimeoutSeconds?: number;
+  /** OpenBao secretRef path for kubeconfig (ISS-001). */
+  kubeconfigSecretRef?: string;
 }
 
 export interface BlueGreenDeployOutput {
@@ -105,6 +107,7 @@ export class BlueGreenDeployWorkflow extends BaseBlueprint<
     skipFlags: z.boolean().optional().describe('Skip flag generation'),
     waitForDrain: z.boolean().optional().default(true).describe('Wait for old version drain'),
     drainTimeoutSeconds: z.number().optional().describe('Drain timeout'),
+    kubeconfigSecretRef: z.string().optional().describe('OpenBao secretRef path for kubeconfig'),
   }) as BaseBlueprint<BlueGreenDeployInput, BlueGreenDeployOutput, BlueGreenDeployConfig>['inputSchema'];
 
   readonly configSchema = z.object({
@@ -127,6 +130,8 @@ export class BlueGreenDeployWorkflow extends BaseBlueprint<
     const manifestPath = input.manifestPath ?? config.defaultManifestPath ?? 'deploy/k8s/workers';
     const taskQueue = input.taskQueue ?? 'golden-tools';
     const drainTimeout = input.drainTimeoutSeconds ?? config.defaultDrainTimeoutSeconds ?? 600;
+    const kubeconfigSecretRef = input.kubeconfigSecretRef;
+    const k8sSecretRefs = kubeconfigSecretRef ? { kubeconfig: kubeconfigSecretRef } : undefined;
 
     // Step 1: Build and push container image
     const imageTag = `${registry}/harmony-worker:${input.version}`;
@@ -185,6 +190,8 @@ export class BlueGreenDeployWorkflow extends BaseBlueprint<
         operation: 'sync',
         version: input.version,
         namespace,
+      }, {
+        secretRefs: k8sSecretRefs,
       });
 
       flagSyncStatus = syncResult.status as 'SYNCED' | 'PENDING' | 'FAILED';
@@ -222,6 +229,8 @@ export class BlueGreenDeployWorkflow extends BaseBlueprint<
         IMAGE_REF: imageTag,
       },
       wait: true,
+    }, {
+      secretRefs: k8sSecretRefs,
     });
 
     if (!k8sResult.success) {
@@ -234,6 +243,8 @@ export class BlueGreenDeployWorkflow extends BaseBlueprint<
         operation: 'rollout-restart',
         namespace,
         resourceType: 'deployment',
+      }, {
+        secretRefs: k8sSecretRefs,
       });
     });
 

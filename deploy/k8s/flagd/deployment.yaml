@@ -17,7 +17,7 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
         - name: flagd
-          image: ghcr.io/open-feature/flagd:latest
+          image: ghcr.io/open-feature/flagd:v0.11.1
           args:
             - start
             - --uri

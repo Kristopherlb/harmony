@@ -5,6 +5,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { getRepoRoot } from '@golden/core';
 
 type Allowlist = {
   capabilities?: string[];
@@ -12,7 +13,9 @@ type Allowlist = {
 };
 
 function readAllowlist(): Required<Allowlist> {
-  const p = path.resolve(process.cwd(), 'policies/cdm-001-domain-allowlist.json');
+  // Policy files are centralized at repo root.
+  const repoRoot = getRepoRoot();
+  const p = path.resolve(repoRoot, 'policies/cdm-001-domain-allowlist.json');
   const raw = readFileSync(p, 'utf-8');
   const parsed = JSON.parse(raw) as Allowlist;
   return {

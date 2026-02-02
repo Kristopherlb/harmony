@@ -26,6 +26,10 @@ Master list of improvement recommendations from retrospectives. Track implementa
 | IMP-014 | Standardize Package Scaffolding (root `index.ts`) | OSCAL-2026-02-01 | ✅ | 2026-02-01 (Script: `tools/scripts/create-package.ts`) |
 | IMP-020 | Enforce `retryPolicy` complete shape | Compliance-2026-02-02 | ✅ | 2026-02-02 (Extracted `RetryPolicy` interface) |
 | IMP-021 | Lint rule/check for Shell vs TS string interpolation | Compliance-2026-02-02 | ✅ | 2026-02-02 (Added `no-restricted-syntax` rule) |
+| IMP-023 | Add Kind-backed runtime smoke for dogfooding deploy (blue/green) | PHASE7-SHIPPING-2026-02-02 | ⬜ |  |
+| IMP-024 | Standardize CI blueprint input passing (file/base64; avoid inline JSON quoting) | PHASE7-SHIPPING-2026-02-02 | ⬜ |  |
+| IMP-029 | Add markdown rendering component for Console runbooks (safe subset) | INCIDENT-LIFECYCLE-P5-2026-02-02 | ✅ | 2026-02-02 |
+| IMP-030 | Add incident-scoped approvals/executions query endpoints (eventId/serviceTags) | INCIDENT-LIFECYCLE-P5-2026-02-02 | ⬜ |  |
 
 ---
 
@@ -42,6 +46,12 @@ Master list of improvement recommendations from retrospectives. Track implementa
 | IMP-017 | Add deterministic constant/literal support in blueprint generator `input_mapping` | INCIDENT-LIFECYCLE-P4-2026-02-02 | ✅ | 2026-02-02 (`blueprint-generator.ts`) |
 | IMP-018 | Create incident timeline capability for audit + post-mortem population (`golden.transformers.incident-timeline`) | INCIDENT-LIFECYCLE-P4-2026-02-02 | ✅ | 2026-02-02 (`incident-timeline.capability.ts`) |
 | IMP-019 | Populate Slack approval role claims (`approverRoles`) from identity provider | INCIDENT-LIFECYCLE-P4-2026-02-02 | ⬜ | Allows safe role-gated approvals via Slack interactions |
+| IMP-026 | Standardize repo-root policy file resolution helper (avoid cwd-dependent tests) | JIRA-WORKBENCH-2026-02-02 | ✅ | 2026-02-02 (`packages/core/src/utils/repo-root.ts` + refactors) |
+| IMP-027 | Add worker activity registration checklist/helper for Temporal integration tests | JIRA-WORKBENCH-2026-02-02 | ✅ | 2026-02-02 (`packages/tools/mcp-server/src/mcp/test-worker-activities.ts`) |
+| IMP-028 | CI guardrail: new capability must be discoverable (registry + manifest + Console `/api/mcp/tools`) | JIRA-WORKBENCH-2026-02-02 | ✅ | 2026-02-02 (Console tool catalog guardrail test) |
+| IMP-031 | Persist workflow executions + approval decisions (replace in-memory execution store) | INCIDENT-LIFECYCLE-P5-2026-02-02 | ⬜ | Enables durable audit/timeline and historical review |
+| IMP-032 | Add canonical `incidentId` propagated across event ingestion + action execution context | INCIDENT-LIFECYCLE-P5-2026-02-02 | ⬜ | Strong linking (better than tag-based inference) |
+| IMP-033 | Ensure required global skills are installed or vendored (UX/TDD) | INCIDENT-LIFECYCLE-P5-2026-02-02 | ⬜ | Avoids environment-dependent “missing skill” drift |
 
 ---
 
@@ -74,8 +84,18 @@ Master list of improvement recommendations from retrospectives. Track implementa
 | IMP-006 | Domain Generator reduces boilerplate | `domain-generator.ts` produced valid code | ⬜ |
 | IMP-020 | Build stability | `capabilities` build passed consistently | ⬜ |
 | IMP-021 | Prevent interpolation bugs | Logic verified; rule added | ⬜ |
+| IMP-023 | Dogfooding is runtime-true (cluster apply + rollout verified) | _(pending)_ | ⬜ |
+| IMP-024 | CI triggers are robust (no quoting/escaping failures) | _(pending)_ | ⬜ |
+| IMP-026 | No cwd-dependent policy failures in CI/tests | _(pending validation next runner change)_ | ⬜ |
+| IMP-027 | No “activity not registered” failures in Temporal integration tests | _(pending validation next new workflow)_ | ⬜ |
+| IMP-028 | New capabilities never ship undiscoverable in Workbench/MCP | _(pending validation next new capability)_ | ⬜ |
 | IMP-022 | Richer generator output | Verified via unit tests | ⬜ |
 | IMP-017 | Cleaner blueprints | Values inlined as constants | ⬜ |
+| IMP-029 | Runbooks are readable in Console (not raw markdown) | Markdown rendered (GFM) + `javascript:` links neutralized | ⬜ |
+| IMP-030 | Incident detail pages show precise approvals/executions without client filtering | _(pending)_ | ⬜ |
+| IMP-031 | Timeline/audit remains correct across long-running incidents | _(pending)_ | ⬜ |
+| IMP-032 | Incident linking is deterministic across all subsystems | _(pending)_ | ⬜ |
+| IMP-033 | UX/TDD guidance is consistently available in all dev environments | _(pending)_ | ⬜ |
 
 ---
 

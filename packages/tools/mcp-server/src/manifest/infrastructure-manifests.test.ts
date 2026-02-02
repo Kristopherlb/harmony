@@ -69,5 +69,27 @@ describe('infrastructure manifests', () => {
     expect(destinationRule).toContain('version: stable');
     expect(destinationRule).toContain('version: canary');
   });
+
+  it('includes K8s harmony-mcp stable/canary workloads (ground Istio routing)', () => {
+    const root = path.resolve(__dirname, '../../../../..');
+    const svc = path.join(root, 'deploy/k8s/harmony-mcp/service.yaml');
+    const stable = path.join(root, 'deploy/k8s/harmony-mcp/deployment-stable.yaml');
+    const canary = path.join(root, 'deploy/k8s/harmony-mcp/deployment-canary.yaml');
+
+    const s = readFileOrThrow(svc);
+    expect(s).toContain('kind: Service');
+    expect(s).toContain('name: harmony-mcp');
+    expect(s).toContain('app: harmony-mcp');
+
+    const st = readFileOrThrow(stable);
+    expect(st).toContain('kind: Deployment');
+    expect(st).toContain('name: harmony-mcp-stable');
+    expect(st).toContain('version: stable');
+
+    const ca = readFileOrThrow(canary);
+    expect(ca).toContain('kind: Deployment');
+    expect(ca).toContain('name: harmony-mcp-canary');
+    expect(ca).toContain('version: canary');
+  });
 });
 

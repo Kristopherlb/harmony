@@ -300,16 +300,16 @@ describe("JiraClient", () => {
   describe("isConfigured", () => {
     it("should return false when credentials are not set", () => {
       delete process.env.JIRA_HOST;
-      delete process.env.JIRA_EMAIL;
-      delete process.env.JIRA_API_TOKEN;
+      delete process.env.JIRA_EMAIL_REF;
+      delete process.env.JIRA_API_TOKEN_REF;
       const client = new JiraClient();
       expect(client.isConfigured()).toBe(false);
     });
 
-    it("should return true when all credentials are set", () => {
+    it("should return true when host + secret refs are set", () => {
       process.env.JIRA_HOST = "https://company.atlassian.net";
-      process.env.JIRA_EMAIL = "user@company.com";
-      process.env.JIRA_API_TOKEN = "token123";
+      process.env.JIRA_EMAIL_REF = "/artifacts/console/public/secrets/jira_email";
+      process.env.JIRA_API_TOKEN_REF = "/artifacts/console/public/secrets/jira_api_token";
       const client = new JiraClient();
       expect(client.isConfigured()).toBe(true);
     });
@@ -318,16 +318,16 @@ describe("JiraClient", () => {
   describe("fetchRecentActivity", () => {
     it("should throw error when not configured", async () => {
       delete process.env.JIRA_HOST;
-      delete process.env.JIRA_EMAIL;
-      delete process.env.JIRA_API_TOKEN;
+      delete process.env.JIRA_EMAIL_REF;
+      delete process.env.JIRA_API_TOKEN_REF;
       const client = new JiraClient();
       await expect(client.fetchRecentActivity()).rejects.toThrow("not configured");
     });
 
     it("should fetch and transform Jira issues", async () => {
       process.env.JIRA_HOST = "https://company.atlassian.net";
-      process.env.JIRA_EMAIL = "user@company.com";
-      process.env.JIRA_API_TOKEN = "token123";
+      process.env.JIRA_EMAIL_REF = "/artifacts/console/public/secrets/jira_email";
+      process.env.JIRA_API_TOKEN_REF = "/artifacts/console/public/secrets/jira_api_token";
 
       temporalWorkflowStart.mockResolvedValueOnce({
         result: async () => ({
@@ -366,8 +366,8 @@ describe("JiraClient", () => {
 
     it("should handle empty response", async () => {
       process.env.JIRA_HOST = "https://company.atlassian.net";
-      process.env.JIRA_EMAIL = "user@company.com";
-      process.env.JIRA_API_TOKEN = "token123";
+      process.env.JIRA_EMAIL_REF = "/artifacts/console/public/secrets/jira_email";
+      process.env.JIRA_API_TOKEN_REF = "/artifacts/console/public/secrets/jira_api_token";
 
       temporalWorkflowStart.mockResolvedValueOnce({
         result: async () => ({}),
@@ -498,6 +498,8 @@ describe("getConfiguredClients", () => {
     delete process.env.GITLAB_TOKEN;
     delete process.env.BITBUCKET_USERNAME;
     delete process.env.JIRA_HOST;
+    delete process.env.JIRA_EMAIL_REF;
+    delete process.env.JIRA_API_TOKEN_REF;
     delete process.env.PAGERDUTY_API_KEY;
     
     const clients = getConfiguredClients();
@@ -509,6 +511,8 @@ describe("getConfiguredClients", () => {
     process.env.GITLAB_TOKEN = "gitlab-token";
     delete process.env.BITBUCKET_USERNAME;
     delete process.env.JIRA_HOST;
+    delete process.env.JIRA_EMAIL_REF;
+    delete process.env.JIRA_API_TOKEN_REF;
     delete process.env.PAGERDUTY_API_KEY;
     
     const clients = getConfiguredClients();

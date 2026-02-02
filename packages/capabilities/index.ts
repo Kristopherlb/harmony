@@ -34,6 +34,7 @@ export { mathAddCapability, type MathAddInput, type MathAddOutput } from './src/
 export { grafanaApiCapability, type GrafanaApiInput, type GrafanaApiOutput } from './src/observability/grafana-api.capability.js';
 export { healthCheckProbeCapability, type HealthCheckProbeInput, type HealthCheckProbeOutput } from './src/observability/health-check-probe.capability.js';
 export { runmeRunnerCapability, type RunmeRunnerInput, type RunmeRunnerOutput } from './src/operations/runme-runner.capability.js';
+export { strategicPlannerCapability } from './src/reasoners/strategic-planner.capability.js';
 export { bomctlCapability, type BomctlInput, type BomctlOutput } from './src/sbom/bomctl.capability.js';
 export { protobomCapability, type ProtobomInput, type ProtobomOutput } from './src/sbom/protobom.capability.js';
 export { syftCapability, type SyftInput, type SyftOutput } from './src/sbom/syft.capability.js';
@@ -58,6 +59,7 @@ export { tufRepositoryCapability, type TufRepositoryInput, type TufRepositoryOut
 export { temporalVersionManagerCapability, type TemporalVersionManagerInput, type TemporalVersionManagerOutput } from './src/temporal/version-manager.capability.js';
 export { canaryAnalyzerCapability, type CanaryAnalyzerInput, type CanaryAnalyzerOutput } from './src/traffic/canary-analyzer.capability.js';
 export { meshRouterCapability, type MeshRouterInput, type MeshRouterOutput } from './src/traffic/mesh-router.capability.js';
+export { incidentTimelineCapability, type IncidentTimelineInput, type IncidentTimelineOutput } from './src/transformers/incident-timeline.capability.js';
 export { compressionCapability, type CompressionInput, type CompressionOutput } from './src/utilities/compression.capability.js';
 export { diffGeneratorCapability, type DiffGeneratorInput, type DiffGeneratorOutput } from './src/utilities/diff-generator.capability.js';
 export { digitalSigningCapability, type DigitalSigningInput, type DigitalSigningOutput } from './src/utilities/digital-signing.capability.js';

@@ -22,6 +22,12 @@ Missing tools or capabilities that would help.
 
 ## Active Patterns
 
+### 🔵 Contract-Complete, Runtime-Incomplete (Dogfooding gap)
+**Occurrences:** 1 (Phase 7 Shipping & Traffic, 2026-02-02)  
+**Description:** Work lands with strong schemas/tests/guardrails and deterministic discovery, but runtime execution (real infra, real secrets, real external services) remains unvalidated. Mirrors the Jira capability situation where container/runtime is placeholder (discovery is good; runtime usefulness lags).  
+**Impact:** User expectation mismatch (“it’s implemented” vs “it runs in production”), and longer end-to-end cycles due to late integration friction.  
+**Resolution:** Add explicit validation levels to plans (Contract vs Runtime Smoke vs Staging) and require a Kind-based runtime smoke harness for any “dogfooding” claim.
+
 ### 🔴 Shell vs TS Interpolation Confusion
 **Occurrences:** 1 (Compliance Caps, 2026-02-02)
 **Description:** Mixed Shell parameter expansion (`${VAR:-default}`) with TypeScript interpolation (`${var}`) in factory strings.
@@ -35,10 +41,10 @@ Missing tools or capabilities that would help.
 **Resolution:** [IMP-020] Enforce strict type checks or provide factory helper for config objects.
 
 ### 🔵 Workbench tool list can be stale until process restart
-**Occurrences:** 1 (Jira Capability + Workbench Tooling, 2026-02-02)  
+**Occurrences:** 2 (Jira Capability + Workbench Tooling, 2026-02-02; Jira Runtime + SecretRefs Follow-on, 2026-02-02)  
 **Description:** New capabilities were added and tests passed, but the Workbench tool list did not include them until the Console server process serving `/api/mcp/tools` was restarted.  
 **Impact:** Time lost verifying “missing” tools that were present in code/registry.  
-**Resolution:** Add a visible `manifest.generated_at` indicator + a “refresh tools” action (or hot reload) in the Workbench tool catalog.
+**Resolution:** Add a visible `manifest.generated_at` indicator + a “refresh tools” action (or hot reload) in the Workbench tool catalog. Also document a canonical restart command for when code changes require process reload.
 
 ### 🔵 Nx test output is too terse
 **Occurrences:** 1 (DX Artifacts, 2026-02-02)  
@@ -63,6 +69,18 @@ Missing tools or capabilities that would help.
 **Description:** Nx defaults/param parsing interacted poorly with “array of objects” schema options; required switching to a CLI-friendly `--fields=name:type[:optional|required]` repeated syntax.  
 **Impact:** Initial generator invocation failures until schema and parsing were updated.  
 **Resolution:** Prefer CLI-friendly option encodings for array inputs; document usage in schema descriptions.
+
+### 🔵 Repo-root artifacts need cwd-independent resolution (Console runbooks)
+**Occurrences:** 1 (Incident Lifecycle Phase 5, 2026-02-02)  
+**Description:** The Console server runs from `packages/apps/console`, while operational artifacts (like `/runbooks/*.md`) live at repo root. Any server endpoint that reads repo-root artifacts must not depend on `process.cwd()`.  
+**Impact:** Features appear “missing” in dev/test environments until path resolution is fixed.  
+**Resolution:** Standardize a shared “workspace root finder” helper and require it for any repo-local artifact endpoints.
+
+### 🔵 Approvals without incident/workflow context are not actionable
+**Occurrences:** 1 (Incident Lifecycle Phase 5, 2026-02-02)  
+**Description:** Approval items were technically present but lacked enough context (triggering eventId/serviceTags/contextType) to review safely.  
+**Impact:** Increased operator uncertainty and context switching; harder to audit “why” for approvals.  
+**Resolution:** Extend execution/request contracts to carry optional context and render it in the approval queue UI.
 
 ### 🔴 Manual Upstream Research
 **Occurrences:** 1 (OSCAL Compass, 2026-02-01)

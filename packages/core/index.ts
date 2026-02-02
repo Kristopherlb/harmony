@@ -48,6 +48,9 @@ export {
 } from './src/observability/golden-span.js';
 export { wrapExecuteDaggerCapability } from './src/observability/execute-capability-instrumentation.js';
 
+// Repo utilities
+export { getRepoRoot } from './src/utils/repo-root.js';
+
 // FinOps (Phase 6 Day 2)
 export {
   calculateRunCost,

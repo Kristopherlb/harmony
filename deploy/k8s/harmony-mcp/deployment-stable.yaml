@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: harmony-mcp-stable
+  labels:
+    app: harmony-mcp
+    version: stable
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: harmony-mcp
+      version: stable
+  template:
+    metadata:
+      labels:
+        app: harmony-mcp
+        version: stable
+    spec:
+      containers:
+        - name: harmony-mcp
+          image: nginx:1.25-alpine
+          ports:
+            - containerPort: 80

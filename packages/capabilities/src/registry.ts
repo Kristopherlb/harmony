@@ -35,6 +35,7 @@ import { mathAddCapability } from './demo/math-add.capability.js';
 import { grafanaApiCapability } from './observability/grafana-api.capability.js';
 import { healthCheckProbeCapability } from './observability/health-check-probe.capability.js';
 import { runmeRunnerCapability } from './operations/runme-runner.capability.js';
+import { strategicPlannerCapability } from './reasoners/strategic-planner.capability.js';
 import { bomctlCapability } from './sbom/bomctl.capability.js';
 import { protobomCapability } from './sbom/protobom.capability.js';
 import { syftCapability } from './sbom/syft.capability.js';
@@ -59,6 +60,7 @@ import { tufRepositoryCapability } from './security/tuf-repository.capability.js
 import { temporalVersionManagerCapability } from './temporal/version-manager.capability.js';
 import { canaryAnalyzerCapability } from './traffic/canary-analyzer.capability.js';
 import { meshRouterCapability } from './traffic/mesh-router.capability.js';
+import { incidentTimelineCapability } from './transformers/incident-timeline.capability.js';
 import { compressionCapability } from './utilities/compression.capability.js';
 import { diffGeneratorCapability } from './utilities/diff-generator.capability.js';
 import { digitalSigningCapability } from './utilities/digital-signing.capability.js';
@@ -101,6 +103,7 @@ export function createCapabilityRegistry(): CapabilityRegistry {
     [grafanaApiCapability.metadata.id, grafanaApiCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [healthCheckProbeCapability.metadata.id, healthCheckProbeCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [runmeRunnerCapability.metadata.id, runmeRunnerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [strategicPlannerCapability.metadata.id, strategicPlannerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [bomctlCapability.metadata.id, bomctlCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [protobomCapability.metadata.id, protobomCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [syftCapability.metadata.id, syftCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
@@ -125,6 +128,7 @@ export function createCapabilityRegistry(): CapabilityRegistry {
     [temporalVersionManagerCapability.metadata.id, temporalVersionManagerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [canaryAnalyzerCapability.metadata.id, canaryAnalyzerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [meshRouterCapability.metadata.id, meshRouterCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [incidentTimelineCapability.metadata.id, incidentTimelineCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [compressionCapability.metadata.id, compressionCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [diffGeneratorCapability.metadata.id, diffGeneratorCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [digitalSigningCapability.metadata.id, digitalSigningCapability as unknown as Capability<unknown, unknown, unknown, unknown>],

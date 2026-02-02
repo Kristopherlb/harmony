@@ -22,6 +22,10 @@
 import { Client, Connection } from '@temporalio/client';
 import { randomUUID } from 'crypto';
 import { SECURITY_CONTEXT_MEMO_KEY, GOLDEN_CONTEXT_MEMO_KEY } from '@golden/core/workflow';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { parseCliArgsFromArgv } from './run-blueprint.args.js';
 
 // Blueprint registry: maps blueprint ID to workflow type name
 const BLUEPRINT_REGISTRY: Record<string, string> = {
@@ -32,58 +36,17 @@ const BLUEPRINT_REGISTRY: Record<string, string> = {
   'workflows.math-pipeline': 'mathPipelineWorkflow',
 };
 
-interface CliArgs {
-  blueprint: string;
-  input: string;
-  config?: string;
-  await?: boolean;
-  timeoutMs?: number;
-}
-
-function parseArgs(): CliArgs {
-  const args: CliArgs = {
-    blueprint: '',
-    input: '{}',
-    await: true,
-    timeoutMs: 300_000, // 5 minutes default
-  };
-
-  for (const arg of process.argv.slice(2)) {
-    if (arg.startsWith('--blueprint=')) {
-      args.blueprint = arg.slice('--blueprint='.length);
-    } else if (arg.startsWith('--input=')) {
-      args.input = arg.slice('--input='.length);
-    } else if (arg.startsWith('--config=')) {
-      args.config = arg.slice('--config='.length);
-    } else if (arg === '--no-await') {
-      args.await = false;
-    } else if (arg.startsWith('--timeout=')) {
-      args.timeoutMs = parseInt(arg.slice('--timeout='.length), 10);
-    } else if (arg === '--help' || arg === '-h') {
-      printHelp();
-      process.exit(0);
-    }
-  }
-
-  if (!args.blueprint) {
-    console.error('Error: --blueprint is required');
-    printHelp();
-    process.exit(1);
-  }
-
-  return args;
-}
-
 function printHelp(): void {
   console.log(`
 run-blueprint - Start a blueprint as a Temporal workflow
 
 Usage:
-  run-blueprint --blueprint=<id> --input='<json>' [options]
+  run-blueprint --blueprint=<id> (--input='<json>' | --input-file=<path>) [options]
 
 Options:
   --blueprint=<id>    Blueprint ID (required)
   --input='<json>'    JSON input for the blueprint (default: {})
+  --input-file=<path> Read JSON input from a file (preferred for CI)
   --config='<json>'   JSON config for the blueprint (optional)
   --no-await          Don't wait for workflow completion
   --timeout=<ms>      Timeout for await in milliseconds (default: 300000)
@@ -102,6 +65,9 @@ Examples:
   # Run echo workflow
   run-blueprint --blueprint=workflows.echo --input='{"x":42}'
 
+  # Run with input file
+  run-blueprint --blueprint=workflows.echo --input-file=/tmp/input.json
+
   # Run blue/green deploy
   run-blueprint --blueprint=blueprints.deploy.blue-green \\
     --input='{"version":"2.0.0","registry":"ghcr.io/org","contextPath":"."}'
@@ -114,7 +80,11 @@ Examples:
 }
 
 async function main(): Promise<void> {
-  const args = parseArgs();
+  const args = parseCliArgsFromArgv(process.argv.slice(2));
+  if (args.help) {
+    printHelp();
+    process.exit(0);
+  }
 
   // Resolve workflow type from blueprint ID
   const workflowType = BLUEPRINT_REGISTRY[args.blueprint];
@@ -131,9 +101,12 @@ async function main(): Promise<void> {
   let input: unknown;
   let config: unknown = {};
   try {
-    input = JSON.parse(args.input);
+    const rawInput = args.inputFile
+      ? fs.readFileSync(args.inputFile, 'utf-8')
+      : (args.input ?? '{}');
+    input = JSON.parse(rawInput);
   } catch (e) {
-    console.error(`Error: Invalid JSON in --input: ${e}`);
+    console.error(`Error: Invalid JSON input: ${e}`);
     process.exit(1);
   }
   if (args.config) {
@@ -228,7 +201,17 @@ async function main(): Promise<void> {
   await connection.close();
 }
 
-main().catch((err) => {
-  console.error('[run-blueprint] Fatal error:', err);
-  process.exit(1);
-});
+function isInvokedAsScript(): boolean {
+  const argv1 = process.argv[1];
+  if (!argv1) return true;
+  const scriptPath = path.resolve(argv1);
+  const thisPath = fileURLToPath(import.meta.url);
+  return pathToFileURL(scriptPath).href === pathToFileURL(thisPath).href;
+}
+
+if (isInvokedAsScript()) {
+  main().catch((err) => {
+    console.error('[run-blueprint] Fatal error:', err);
+    process.exit(1);
+  });
+}

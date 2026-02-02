@@ -1,3 +1,8 @@
+---
+description: Global agent behaviors and startup checklist for Harmony project
+alwaysApply: true
+---
+
 # Agent Behavior Rules
 
 1. **Session Startup**: You MUST read `.cursor/skills/AGENT_STARTUP.md` at the start of every session.

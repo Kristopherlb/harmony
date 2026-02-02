@@ -443,6 +443,28 @@ export const PendingApprovalsResponseSchema = z.object({
 export type PendingApprovalsResponse = z.infer<typeof PendingApprovalsResponseSchema>;
 
 // ============================================
+// Phase 5: Runbooks (UI catalog + content)
+// ============================================
+
+export const RunbookSummarySchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  filename: z.string(),
+  updatedAt: z.string().datetime().optional(),
+});
+export type RunbookSummary = z.infer<typeof RunbookSummarySchema>;
+
+export const RunbookDetailSchema = RunbookSummarySchema.extend({
+  content: z.string(),
+});
+export type RunbookDetail = z.infer<typeof RunbookDetailSchema>;
+
+export const RunbookListResponseSchema = z.object({
+  runbooks: z.array(RunbookSummarySchema),
+});
+export type RunbookListResponse = z.infer<typeof RunbookListResponseSchema>;
+
+// ============================================
 // MODULE A: Service Graph / Service Catalog
 // ============================================
 

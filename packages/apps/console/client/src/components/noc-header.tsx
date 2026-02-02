@@ -3,7 +3,20 @@ import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "./theme-toggle";
 import { SystemStatus } from "./status-indicator";
-import { Activity, Radio, Menu, LayoutDashboard, Wrench, MonitorDot, Network, Workflow, Boxes, AlertTriangle } from "lucide-react";
+import {
+  Activity,
+  Radio,
+  Menu,
+  LayoutDashboard,
+  Wrench,
+  MonitorDot,
+  Network,
+  Workflow,
+  Boxes,
+  AlertTriangle,
+  BookOpen,
+  Clock,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -37,6 +50,8 @@ export function NOCHeader({ className }: NOCHeaderProps) {
   const navItems = [
     { path: "/", label: "Dashboard", icon: LayoutDashboard },
     { path: "/incidents", label: "Incidents", icon: AlertTriangle },
+    { path: "/runbooks", label: "Runbooks", icon: BookOpen },
+    { path: "/timeline", label: "Timeline", icon: Clock },
     { path: "/workbench", label: "Workbench", icon: MonitorDot },
     { path: "/workflows", label: "Workflows", icon: Workflow },
     { path: "/capabilities", label: "Capabilities", icon: Boxes },

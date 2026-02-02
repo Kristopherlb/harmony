@@ -5,7 +5,7 @@
 import * as React from "react";
 import { Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { AlertTriangle, CheckCircle2, Activity, ExternalLink, Tags } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Activity, ExternalLink, Tags, Play, Clock, BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { EmptyState } from "@/components/patterns/EmptyState";
-import type { ActivityStreamResponse, Event, Severity } from "@shared/schema";
+import type { ActionCatalogResponse, ActivityStreamResponse, Event, Severity, WorkflowExecution } from "@shared/schema";
 
 function severityBadgeVariant(sev: Severity): "default" | "secondary" | "destructive" | "outline" {
   if (sev === "critical") return "destructive";
@@ -233,6 +233,20 @@ export function IncidentDetailPage(props: { params: { id: string } }): JSX.Eleme
     refetchInterval: 15000,
   });
 
+  const pendingApprovalsQuery = useQuery<{ executions: WorkflowExecution[]; total?: number }>({
+    queryKey: ["/api/actions/approvals/pending"],
+    refetchInterval: 5000,
+  });
+
+  const executionsQuery = useQuery<{ executions: WorkflowExecution[]; total?: number }>({
+    queryKey: ["/api/actions/executions?limit=100"],
+    refetchInterval: 5000,
+  });
+
+  const actionsQuery = useQuery<ActionCatalogResponse>({
+    queryKey: ["/api/actions/catalog"],
+  });
+
   const incident = React.useMemo(() => {
     const all = streamQuery.data?.events ?? [];
     return all.find((e) => e.id === incidentId) ?? null;
@@ -268,6 +282,37 @@ export function IncidentDetailPage(props: { params: { id: string } }): JSX.Eleme
       </div>
     );
   }
+
+  const incidentTags = incident.serviceTags ?? [];
+  const allEvents = streamQuery.data?.events ?? [];
+  const relatedEvents = allEvents.filter((e) => {
+    if (e.id === incident.id) return true;
+    if (incidentTags.length === 0) return false;
+    return (e.serviceTags ?? []).some((t) => incidentTags.includes(t));
+  });
+
+  const pendingApprovals = pendingApprovalsQuery.data?.executions ?? [];
+  const approvalsForIncident = pendingApprovals.filter((ex) => {
+    if (ex.context?.eventId && ex.context.eventId === incident.id) return true;
+    if (incidentTags.length === 0) return false;
+    return (ex.context?.serviceTags ?? []).some((t) => incidentTags.includes(t));
+  });
+
+  const executions = executionsQuery.data?.executions ?? [];
+  const executionsForIncident = executions.filter((ex) => {
+    if (ex.context?.eventId && ex.context.eventId === incident.id) return true;
+    if (incidentTags.length === 0) return false;
+    return (ex.context?.serviceTags ?? []).some((t) => incidentTags.includes(t));
+  });
+
+  type TimelineItem =
+    | { kind: "event"; at: string; event: Event }
+    | { kind: "execution"; at: string; execution: WorkflowExecution };
+
+  const timelineItems: TimelineItem[] = [
+    ...relatedEvents.map((e) => ({ kind: "event" as const, at: e.timestamp, event: e })),
+    ...executionsForIncident.map((ex) => ({ kind: "execution" as const, at: ex.startedAt, execution: ex })),
+  ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 
   return (
     <div data-testid="incident-detail-page" className="space-y-6">
@@ -320,50 +365,231 @@ export function IncidentDetailPage(props: { params: { id: string } }): JSX.Eleme
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Overview</CardTitle>
-          <CardDescription>Key incident context for triage and safe action.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {(incident.serviceTags?.length ?? 0) > 0 ? (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                <Tags className="h-4 w-4" />
-                Service tags
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {(incident.serviceTags ?? []).map((tag) => (
-                  <Badge key={tag} variant="secondary" className="font-mono text-[10px]">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="text-sm text-muted-foreground">
-              No service tags are attached to this incident. Adding tags improves action relevance and grouping.
-            </div>
-          )}
+      <Tabs defaultValue="overview">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="approvals">
+            Approvals {approvalsForIncident.length > 0 ? `(${approvalsForIncident.length})` : ""}
+          </TabsTrigger>
+          <TabsTrigger value="runbooks">Runbooks</TabsTrigger>
+          <TabsTrigger value="timeline">Timeline</TabsTrigger>
+        </TabsList>
 
-          <div className="space-y-2">
-            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Raw payload</div>
-            <pre className="text-xs p-3 rounded-md bg-muted/40 border border-border overflow-auto">
-              {JSON.stringify(incident.payload ?? {}, null, 2)}
-            </pre>
-          </div>
-        </CardContent>
-      </Card>
+        <TabsContent value="overview" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Context</CardTitle>
+              <CardDescription>Key incident context for triage and safe action.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {(incident.serviceTags?.length ?? 0) > 0 ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <Tags className="h-4 w-4" />
+                    Service tags
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {(incident.serviceTags ?? []).map((tag) => (
+                      <Badge key={tag} variant="secondary" className="font-mono text-[10px]">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">
+                  No service tags are attached to this incident. Adding tags improves action relevance and grouping.
+                </div>
+              )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Next steps</CardTitle>
-          <CardDescription>Phase 5 adds approvals, runbooks, and timeline views in follow-on tabs.</CardDescription>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          Use the Operations Hub to run actions; follow-on Phase 5 work will wire incident-scoped approvals and runbooks here.
-        </CardContent>
-      </Card>
+              <div className="space-y-2">
+                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Raw payload</div>
+                <pre className="text-xs p-3 rounded-md bg-muted/40 border border-border overflow-auto">
+                  {JSON.stringify(incident.payload ?? {}, null, 2)}
+                </pre>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Actions</CardTitle>
+              <CardDescription>Use context-aware actions for remediation.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap items-center gap-2">
+              <Link href="/operations">
+                <Button variant="secondary" className="gap-2">
+                  <Play className="h-4 w-4" />
+                  Open Operations Hub
+                </Button>
+              </Link>
+              <Link href="/runbooks">
+                <Button variant="outline" className="gap-2">
+                  <BookOpen className="h-4 w-4" />
+                  Browse runbooks
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="approvals">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Pending approvals</CardTitle>
+              <CardDescription>Approvals linked to this incident by event ID or overlapping service tags.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {pendingApprovalsQuery.isLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                </div>
+              ) : approvalsForIncident.length === 0 ? (
+                <EmptyState icon={CheckCircle2} title="No pending approvals" description="No incident-scoped approvals are waiting." />
+              ) : (
+                <div className="space-y-2">
+                  {approvalsForIncident.map((ex) => (
+                    <div key={ex.id} className="flex items-start justify-between gap-3 p-3 rounded-lg border border-border">
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="text-[10px] font-mono">
+                            pending_approval
+                          </Badge>
+                          <span className="text-sm font-medium truncate">{ex.actionName}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          requested by {ex.executedByUsername} • {new Date(ex.startedAt).toLocaleString()}
+                        </div>
+                        <div className="text-xs text-muted-foreground line-clamp-2">{ex.reasoning}</div>
+                      </div>
+                      <Link href="/operations">
+                        <Button variant="outline" size="sm">
+                          Review
+                        </Button>
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="runbooks">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Recommended runbooks</CardTitle>
+              <CardDescription>Runbooks inferred from action targets vs incident service tags.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {actionsQuery.isLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              ) : (
+                <>
+                  <div className="text-xs text-muted-foreground mb-3">
+                    Tip: Runbooks are listed under <span className="font-mono">/runbooks</span> and executable when an action with the same ID exists.
+                  </div>
+                  <div className="space-y-2">
+                    {(actionsQuery.data?.actions ?? [])
+                      .filter((a) => a.id.includes("runbook") || a.id.includes("rollback") || a.id.includes("cache") || a.id.includes("redis"))
+                      .filter((a) => (incidentTags.length === 0 ? true : (a.targetServices ?? []).some((t) => incidentTags.includes(t))))
+                      .slice(0, 8)
+                      .map((a) => (
+                        <div key={a.id} className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border">
+                          <div className="space-y-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-[10px] font-mono">
+                                {a.riskLevel}
+                              </Badge>
+                              <span className="text-sm font-medium truncate">{a.name}</span>
+                            </div>
+                            <div className="text-xs text-muted-foreground line-clamp-2">{a.description}</div>
+                          </div>
+                          <Link href="/runbooks">
+                            <Button variant="outline" size="sm">
+                              Open
+                            </Button>
+                          </Link>
+                        </div>
+                      ))}
+                    <Link href="/runbooks">
+                      <Button variant="secondary" className="mt-2">
+                        Browse all runbooks
+                      </Button>
+                    </Link>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="timeline">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Timeline</CardTitle>
+              <CardDescription>Unified audit feed (events + executions) scoped by service tags.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              {timelineItems.length === 0 ? (
+                <div className="p-6">
+                  <EmptyState icon={Clock} title="No timeline entries" description="No related events or executions were found for this incident." />
+                </div>
+              ) : (
+                <ScrollArea className="h-[520px]">
+                  <div className="divide-y">
+                    {timelineItems.map((item) => (
+                      <div key={`${item.kind}-${item.at}-${item.kind === "event" ? item.event.id : item.execution.id}`} className="p-4">
+                        {item.kind === "event" ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-[10px] font-mono">
+                                event:{item.event.type}
+                              </Badge>
+                              <Badge variant={severityBadgeVariant(item.event.severity)} className="text-[10px] font-mono">
+                                {item.event.severity}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground font-mono">{new Date(item.at).toLocaleString()}</span>
+                            </div>
+                            <div className="text-sm font-medium">{item.event.message}</div>
+                            {(item.event.serviceTags?.length ?? 0) > 0 ? (
+                              <div className="flex flex-wrap gap-1 pt-1">
+                                {(item.event.serviceTags ?? []).slice(0, 8).map((t) => (
+                                  <Badge key={t} variant="secondary" className="text-[10px] font-mono">
+                                    {t}
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="text-[10px] font-mono">
+                                exec:{item.execution.status}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground font-mono">{new Date(item.at).toLocaleString()}</span>
+                            </div>
+                            <div className="text-sm font-medium">{item.execution.actionName}</div>
+                            <div className="text-xs text-muted-foreground">
+                              by {item.execution.executedByUsername}
+                            </div>
+                            <div className="text-xs text-muted-foreground line-clamp-2">{item.execution.reasoning}</div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <div className="flex items-center gap-2">
         <Link href="/incidents">

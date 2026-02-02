@@ -259,7 +259,8 @@ describe("SeedableActionRepository", () => {
 
     it("should filter actions by category", async () => {
       const remediation = await repository.getActionsByCategory("remediation");
-      expect(remediation.length).toBe(4);
+      // Phase 5 adds runbook-backed remediation actions; keep this assertion resilient.
+      expect(remediation.length).toBeGreaterThanOrEqual(4);
       expect(remediation.every((a) => a.category === "remediation")).toBe(true);
     });
 

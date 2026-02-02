@@ -1,0 +1,26 @@
+stages:
+  - ci
+  - deploy
+
+variables:
+  DAGGER_VERSION: "0.18.17"
+  REPO_URL: "${CI_SERVER_URL}/${CI_PROJECT_PATH}.git"
+
+ci:
+  stage: ci
+  image: dagger/dagger:${DAGGER_VERSION}
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - dagger -m .dagger call audit-git --repo-url "${REPO_URL}" --ref "${CI_COMMIT_SHA}"
+
+deploy:
+  stage: deploy
+  image: dagger/dagger:${DAGGER_VERSION}
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    # NOTE: Provide TEMPORAL_ADDRESS/TEMPORAL_NAMESPACE/TASK_QUEUE as masked variables in GitLab.
+    - dagger -m .dagger call run-blueprint --repo-url "${REPO_URL}" --ref "${CI_COMMIT_SHA}" --blueprint-id "blueprints.deploy.blue-green" --input "{\"version\":\"${CI_COMMIT_TAG}\",\"registry\":\"${CI_REGISTRY_IMAGE}\",\"contextPath\":\"packages/blueprints\",\"taskQueue\":\"golden-tools\",\"namespace\":\"default\",\"manifestPath\":\"deploy/k8s/workers\",\"waitForDrain\":true}"
+

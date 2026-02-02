@@ -91,6 +91,15 @@ describe("IncidentDetailPage", () => {
           }),
         } as any;
       }
+      if (u === "/api/actions/approvals/pending") {
+        return { ok: true, json: async () => ({ executions: [], total: 0 }) } as any;
+      }
+      if (u.startsWith("/api/actions/executions")) {
+        return { ok: true, json: async () => ({ executions: [], total: 0 }) } as any;
+      }
+      if (u === "/api/actions/catalog") {
+        return { ok: true, json: async () => ({ actions: [], categories: [] }) } as any;
+      }
       if (u === `/api/events/${incidentId}` && init?.method === "PATCH") {
         return {
           ok: true,

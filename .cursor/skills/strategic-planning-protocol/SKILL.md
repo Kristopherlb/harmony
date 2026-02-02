@@ -121,6 +121,9 @@ Walk through each phase and ask:
    
 5. "How do I know if the operation succeeded?"
    - If unclear → Gap: Output schema or status indicators
+
+6. "If I surface an approval request to a human, what context do I include so it is reviewable?"
+   - If unclear → Gap: execution/request contract missing incident/workflow context (eventId/incidentId, service tags, contextType)
 ```
 
 #### 2. Developer (Platform Contributor)
@@ -183,6 +186,9 @@ Walk through the plan and ask:
    
 5. "What will confuse me about the terminology?"
    - Each term → Gap: Glossary or tooltips needed
+
+6. "If I need to approve/reject an action, can I do it without context switching?"
+   - If no → Gap: approval item lacks incident/workflow context (eventId/incidentId, service tags, reasoning, blast radius hints)
 ```
 
 #### 4. Leadership (Platform Engineering)
@@ -313,6 +319,8 @@ For each category, identify what's missing:
 - [ ] Are operational procedures documented?
 - [ ] Do runbooks exist for common scenarios?
 - [ ] Is there an onboarding guide?
+- [ ] If docs/runbooks are repo-local artifacts, is **workspace-root resolution** defined and tested (not cwd-dependent)?
+- [ ] If runbooks are rendered in a UI, is the renderer **safe by default** (no raw HTML; link scheme allowlist)?
 
 #### MCP/Tools
 - [ ] Are all capabilities exposed via MCP?

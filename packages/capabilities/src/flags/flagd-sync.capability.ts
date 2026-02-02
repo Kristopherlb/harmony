@@ -27,6 +27,7 @@ const inputSchema = z
     operation: operationSchema,
     version: z.string().optional().describe('Version label for ConfigMap'),
     configPath: z.string().optional().describe('Path to local flag configuration, defaults to deploy/flagd/flags.json'),
+    configJson: z.string().optional().describe('Inline flagd config JSON (overrides configPath; useful for runtime smoke without repo mounts)'),
     namespace: z.string().optional().describe('Kubernetes namespace, defaults to default'),
     configMapName: z.string().optional().describe('ConfigMap name, defaults to flagd-flags'),
     dryRun: z.boolean().optional().describe('Perform dry-run without applying'),
@@ -153,11 +154,13 @@ export const flagdSyncCapability: Capability<
     const namespace = input.namespace || context.config.defaultNamespace || 'default';
     const configMapName = input.configMapName || 'flagd-flags';
     const configPath = input.configPath || 'deploy/flagd/flags.json';
+    const configJson = input.configJson;
 
     const payload = {
       operation: input.operation,
       version: input.version,
       configPath,
+      configJson,
       namespace,
       configMapName,
       dryRun: input.dryRun ?? false,
@@ -169,7 +172,8 @@ export const flagdSyncCapability: Capability<
       .withEnvVariable('INPUT_JSON', JSON.stringify(payload))
       .withEnvVariable('OPERATION', input.operation)
       .withEnvVariable('NAMESPACE', namespace)
-      .withEnvVariable('CONFIG_MAP_NAME', configMapName);
+      .withEnvVariable('CONFIG_MAP_NAME', configMapName)
+      .withEnvVariable('CONFIG_JSON', configJson ?? '');
 
     // Mount kubeconfig if provided (ISS-compliant)
     if (context.secretRefs.kubeconfig) {
@@ -188,9 +192,9 @@ set -e
 
 apk add --no-cache jq 2>/dev/null || true
 
-INPUT_JSON='${JSON.stringify(payload)}'
 OPERATION="${input.operation}"
 CONFIG_PATH="${configPath}"
+CONFIG_JSON="$CONFIG_JSON"
 NAMESPACE="${namespace}"
 CONFIG_MAP_NAME="${configMapName}"
 DRY_RUN="${input.dryRun ?? false}"
@@ -204,6 +208,11 @@ fi
 if [ -f /run/secrets/kubeconfig ]; then
   export KUBECONFIG=/tmp/kubeconfig
   base64 -d /run/secrets/kubeconfig > /tmp/kubeconfig 2>/dev/null || cp /run/secrets/kubeconfig /tmp/kubeconfig
+fi
+
+if [ -n "$CONFIG_JSON" ]; then
+  echo "$CONFIG_JSON" > /tmp/flags.json
+  CONFIG_PATH="/tmp/flags.json"
 fi
 
 KUBECTL="kubectl -n $NAMESPACE"

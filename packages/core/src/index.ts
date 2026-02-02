@@ -35,3 +35,6 @@ export {
 // OCS exports
 export type { Capability } from './ocs/capability.js';
 export type { CapabilityContext, ErrorCategory } from './types.js';
+
+// Observability exports (GOS-001)
+export { withGoldenSpan, getGoldenSpanAttributes, GOLDEN_ATTRIBUTES } from './observability/golden-span.js';

@@ -66,6 +66,11 @@
       "variants": { "on": true, "off": false },
       "defaultVariant": "on"
     },
+    "cap-golden.reasoners.strategic-planner-enabled": {
+      "state": "ENABLED",
+      "variants": { "on": true, "off": false },
+      "defaultVariant": "on"
+    },
     "bp-blueprints.deploy.blue-green-enabled": {
       "state": "ENABLED",
       "variants": { "on": true, "off": false },

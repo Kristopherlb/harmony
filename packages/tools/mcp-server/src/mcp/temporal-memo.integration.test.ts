@@ -13,6 +13,7 @@ import { generateToolManifestFromCapabilities } from '../manifest/capabilities.j
 import { createCapabilityRegistry } from '@golden/capabilities';
 import { createBlueprintRegistry } from '@golden/blueprints';
 import { GOLDEN_CONTEXT_MEMO_KEY, SECURITY_CONTEXT_MEMO_KEY } from '@golden/core/workflow';
+import { createTestWorkerActivities } from './test-worker-activities.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -34,11 +35,10 @@ describe('Temporal memo propagation (integration)', () => {
     const taskQueue = 'mcp-integration';
 
     const repoRoot = path.resolve(__dirname, '../../../../..');
-    const workflowsPath = path.join(repoRoot, 'packages/blueprints/dist/src/workflows');
+    const workflowsPath = path.join(repoRoot, 'packages/blueprints/src/workflows');
     const bundle = await bundleWorkflowCode({ workflowsPath, ignoreModules: [] });
 
-    const activitiesPath = path.join(repoRoot, 'packages/blueprints/dist/src/activities/execute-capability-activity.js');
-    const activitiesModule = await import(activitiesPath);
+    const activities = await createTestWorkerActivities();
 
     const worker = await Worker.create({
       connection: testEnv.nativeConnection,
@@ -47,7 +47,8 @@ describe('Temporal memo propagation (integration)', () => {
       workflowBundle: bundle,
       reuseV8Context: false,
       activities: {
-        executeDaggerCapability: activitiesModule.executeDaggerCapability,
+        executeDaggerCapability: activities.executeDaggerCapability,
+        evaluateFlag: activities.evaluateFlag,
       },
     });
 

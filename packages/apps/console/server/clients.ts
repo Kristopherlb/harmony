@@ -265,22 +265,23 @@ export class BitbucketClient implements ServiceClient {
 export class JiraClient implements ServiceClient {
   source: EventSource = "jira";
   private host: string | undefined;
-  private email: string | undefined;
-  private apiToken: string | undefined;
+  private emailRef: string | undefined;
+  private apiTokenRef: string | undefined;
 
   constructor() {
     this.host = process.env.JIRA_HOST;
-    this.email = process.env.JIRA_EMAIL;
-    this.apiToken = process.env.JIRA_API_TOKEN;
+    // ISS-001: Console passes secret *references* only (late-bound by worker).
+    this.emailRef = process.env.JIRA_EMAIL_REF;
+    this.apiTokenRef = process.env.JIRA_API_TOKEN_REF;
   }
 
   isConfigured(): boolean {
-    return !!(this.host && this.email && this.apiToken);
+    return !!(this.host && this.emailRef && this.apiTokenRef);
   }
 
   async fetchRecentActivity(options?: { since?: Date; limit?: number }): Promise<InsertEvent[]> {
-    if (!this.host || !this.email || !this.apiToken) {
-      throw new Error("JIRA_HOST, JIRA_EMAIL, or JIRA_API_TOKEN not configured");
+    if (!this.host || !this.emailRef || !this.apiTokenRef) {
+      throw new Error("JIRA_HOST, JIRA_EMAIL_REF, or JIRA_API_TOKEN_REF not configured");
     }
 
     const events: InsertEvent[] = [];
@@ -322,9 +323,8 @@ export class JiraClient implements ServiceClient {
               maxResults: limit,
               fields: ["summary", "priority", "status", "assignee", "updated", "comment"],
             },
-            // NOTE: secretRefs here are values for now; will be upgraded to ISS-001 refs via secret broker.
             config: { host: this.host, authMode: "basic" },
-            secretRefs: { jiraEmail: this.email, jiraApiToken: this.apiToken },
+            secretRefs: { jiraEmail: this.emailRef, jiraApiToken: this.apiTokenRef },
           },
         ],
         memo,

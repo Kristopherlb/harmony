@@ -58,6 +58,18 @@ The Jira capabilities currently build a container shape and provide schemas/meta
 
 **Impact:** Great for discovery + contract stability, but not yet functionally useful for real Jira data without a follow-on runtime implementation.
 
+#### Addendum (post-implementation status update)
+This item is **no longer accurate** as of the follow-on work completed later the same day:
+- Jira capabilities now execute real HTTP in-container via a shared runtime script:
+  - `packages/capabilities/src/connectors/jira-runtime.ts`
+- ISS-001 secret handling is end-to-end:
+  - Console passes secret *refs* (e.g. `JIRA_EMAIL_REF`, `JIRA_API_TOKEN_REF`)
+  - Worker resolves refs to Dagger secrets at runtime (late-binding)
+- Tests cover the runtime behavior and integration plumbing:
+  - Capabilities: `packages/capabilities/src/connectors/jira-runtime.test.ts`
+  - Blueprints worker secret broker: `packages/blueprints/src/worker/secret-broker.test.ts`
+  - MCP server integration worker activity registration: `packages/tools/mcp-server/src/mcp/temporal-memo.integration.test.ts`
+
 ---
 
 ## The Golden Path (If It Existed)

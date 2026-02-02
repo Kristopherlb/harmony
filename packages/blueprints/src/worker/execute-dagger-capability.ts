@@ -9,6 +9,7 @@
 import type { ExecuteCapabilityActivityInput } from '@golden/core';
 import { wrapExecuteDaggerCapability } from '@golden/core';
 import { createCapabilityRegistry, getCapability } from '@golden/capabilities';
+import { resolveSecretRefs } from './secret-broker.js';
 
 async function _executeDaggerCapability<In, Out>(
   input: ExecuteCapabilityActivityInput<In>
@@ -34,9 +35,34 @@ async function _executeDaggerCapability<In, Out>(
   let stdout = '';
   await connection(
     async () => {
+      const openBao = {
+        address:
+          (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env
+            ?.BAO_ADDR ??
+          (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env
+            ?.VAULT_ADDR ??
+          'http://localhost:8200',
+        token:
+          (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env
+            ?.BAO_TOKEN ??
+          (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env
+            ?.VAULT_TOKEN ??
+          'root',
+        mount:
+          (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env
+            ?.BAO_KV_MOUNT ?? 'secret',
+      };
+
+      const resolvedSecretRefs = await resolveSecretRefs({
+        dag: dag as unknown,
+        appId: input.ctx?.app_id ?? 'app',
+        secretRefs: secretRefs as unknown as Record<string, unknown>,
+        openBao,
+      });
+
       const container = cap.factory(
         dag as unknown,
-        { ctx: input.ctx!, config: config as unknown, secretRefs: secretRefs as unknown },
+        { ctx: input.ctx!, config: config as unknown, secretRefs: resolvedSecretRefs as unknown },
         parsedIn
       ) as unknown;
       const maybe = container as { stdout?: unknown };

@@ -132,6 +132,17 @@ describe('flagdSyncCapability', () => {
             }
         });
 
+        it('accepts inline configJson override (for runtime smoke / no repo mount)', () => {
+            const parsed = flagdSyncCapability.schemas.input.parse({
+                operation: 'sync',
+                namespace: 'default',
+                configMapName: 'flagd-flags',
+                configJson:
+                    '{"$schema":"https://flagd.dev/schema/v0/flags.json","flags":{}}',
+            }) as unknown as { configJson?: string };
+            expect(parsed.configJson).toContain('"flags"');
+        });
+
         it('allows optional fields to be omitted', () => {
             const result = flagdSyncCapability.schemas.input.parse({
                 operation: 'sync',

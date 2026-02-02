@@ -16,6 +16,8 @@ vi.mock('@temporalio/workflow', () => {
   } = { flagCalls: [] };
 
   return {
+    defineSignal: <T extends any[]>(_name: string) => ({}) as unknown as T,
+    defineQuery: <T>(_name: string) => ({}) as unknown as T,
     workflowInfo: () => ({ memo: state.memo ?? {}, workflowId: 'wf-1' }),
     proxyActivities: <T>(_opts?: unknown) => {
       // Return both capability execution and flag evaluation activities

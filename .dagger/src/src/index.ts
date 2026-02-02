@@ -135,18 +135,23 @@ export class HarmonyCi {
     input: string
   ): Promise<string> {
     const repo = repoFromGit(repoUrl, ref)
-    const escapedInput = escapeJsonForShell(input)
-
-    // Build the CLI command to start the blueprint as a Temporal workflow
+    // Prefer file-based input passing to avoid YAML/shell quoting issues in CI.
+    const inputFilePath = "/tmp/blueprint-input.json"
     const runBlueprintCmd = [
       "pnpm tsx packages/tools/mcp-server/src/cli/run-blueprint.ts",
       `--blueprint='${blueprintId}'`,
-      `--input='${escapedInput}'`,
+      `--input-file='${inputFilePath}'`,
     ].join(" ")
 
+    // Purpose: allow CI runners to point at a real Temporal cluster.
+    // Defaults are safe for local docker-compose / in-cluster usage.
+    const temporalAddress = process.env.TEMPORAL_ADDRESS ?? "temporal:7233"
+    const temporalNamespace = process.env.TEMPORAL_NAMESPACE ?? "default"
+
     const ctr = baseNodeContainer(repo)
-      .withEnvVariable("TEMPORAL_ADDRESS", "temporal:7233")
-      .withEnvVariable("TEMPORAL_NAMESPACE", "default")
+      .withEnvVariable("TEMPORAL_ADDRESS", temporalAddress)
+      .withEnvVariable("TEMPORAL_NAMESPACE", temporalNamespace)
+      .withNewFile(inputFilePath, input)
       .withExec(["bash", "-lc", runBlueprintCmd])
 
     return await ctr.stdout()

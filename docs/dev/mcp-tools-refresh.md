@@ -9,6 +9,16 @@
 - Or call:
   - `POST /api/mcp/tools/refresh`
 
+### Quick validation: freshness + latency
+- **Freshness**: after refresh, `manifest.generated_at` should increase.
+- **Latency**: refresh should typically complete quickly (local dev: sub-second to a couple seconds).
+
+```bash
+# Measure refresh latency + verify a 200 response
+curl -sS -o /dev/null -w "status=%{http_code} total=%{time_total}s\n" \
+  -X POST "http://localhost:5000/api/mcp/tools/refresh"
+```
+
 ### When you should restart anyway
 Refresh reloads the current process snapshot. You still need a restart when:
 - You changed code that affects module loading (new exports, package wiring), and the running server hasn’t reloaded that code.

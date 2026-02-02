@@ -1,0 +1,83 @@
+name: deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      blueprint:
+        description: Blueprint ID to run
+        required: true
+        default: blueprints.deploy.blue-green
+      inputJson:
+        description: Blueprint input JSON (compact, no spaces)
+        required: true
+        default: '{"version":"v0.0.0","registry":"ghcr.io/owner","contextPath":"packages/blueprints"}'
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  manual-run:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run blueprint (dagger -> runBlueprint)
+        uses: dagger/dagger-for-github@v8.2.0
+        env:
+          TEMPORAL_ADDRESS: ${{ secrets.TEMPORAL_ADDRESS }}
+          TEMPORAL_NAMESPACE: ${{ secrets.TEMPORAL_NAMESPACE }}
+          TASK_QUEUE: ${{ secrets.TASK_QUEUE }}
+        with:
+          version: "0.18.17"
+          module: "./.dagger"
+          call: >
+            run-blueprint
+            --repo-url https://github.com/${{ github.repository }}.git
+            --ref ${{ github.sha }}
+            --blueprint-id ${{ github.event.inputs.blueprint }}
+            --input ${{ github.event.inputs.inputJson }}
+
+  release-pipeline:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Release pipeline (dagger -> runBlueprint)
+        uses: dagger/dagger-for-github@v8.2.0
+        env:
+          TEMPORAL_ADDRESS: ${{ secrets.TEMPORAL_ADDRESS }}
+          TEMPORAL_NAMESPACE: ${{ secrets.TEMPORAL_NAMESPACE }}
+          TASK_QUEUE: ${{ secrets.TASK_QUEUE }}
+        with:
+          version: "0.18.17"
+          module: "./.dagger"
+          call: >
+            run-blueprint
+            --repo-url https://github.com/${{ github.repository }}.git
+            --ref ${{ github.sha }}
+            --blueprint-id blueprints.ci.release-pipeline
+            --input {"version":"${{ github.ref_name }}","gitSha":"${{ github.sha }}","contextPath":"."}
+
+  deploy-blue-green:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    needs: [release-pipeline]
+    steps:
+      - name: Deploy blue/green (dagger -> runBlueprint)
+        uses: dagger/dagger-for-github@v8.2.0
+        env:
+          TEMPORAL_ADDRESS: ${{ secrets.TEMPORAL_ADDRESS }}
+          TEMPORAL_NAMESPACE: ${{ secrets.TEMPORAL_NAMESPACE }}
+          TASK_QUEUE: ${{ secrets.TASK_QUEUE }}
+        with:
+          version: "0.18.17"
+          module: "./.dagger"
+          call: >
+            run-blueprint
+            --repo-url https://github.com/${{ github.repository }}.git
+            --ref ${{ github.sha }}
+            --blueprint-id blueprints.deploy.blue-green
+            --input {"version":"${{ github.ref_name }}","registry":"ghcr.io/${{ github.repository_owner }}","contextPath":"packages/blueprints","taskQueue":"golden-tools","previousBuildId":"${{ vars.CURRENT_BUILD_ID }}","namespace":"default","manifestPath":"deploy/k8s/workers","waitForDrain":true}
+

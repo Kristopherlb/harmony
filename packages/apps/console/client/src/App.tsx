@@ -14,6 +14,8 @@ import { WorkflowListPage, WorkflowDetailPage } from "@/pages/workflows";
 import ComplianceOverview from "@/pages/compliance/overview";
 import SSPEditor from "@/pages/compliance/ssp-editor";
 import IncidentsPage, { IncidentDetailPage } from "@/pages/incidents";
+import RunbooksPage from "@/pages/runbooks";
+import TimelinePage from "@/pages/timeline";
 import { PageLayout } from "@/components/page-layout";
 
 // Placeholder for future lazy loading if needed
@@ -38,6 +40,8 @@ function Router() {
         <Route path="/workflows/:id" component={WorkflowDetailPage} />
         <Route path="/incidents" component={IncidentsPage} />
         <Route path="/incidents/:id" component={IncidentDetailPage} />
+        <Route path="/runbooks" component={RunbooksPage} />
+        <Route path="/timeline" component={TimelinePage} />
         <Route path="/compliance" component={ComplianceOverview} />
         <Route path="/compliance/ssp" component={SSPEditor} />
         <Route component={NotFound} />

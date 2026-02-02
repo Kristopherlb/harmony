@@ -427,16 +427,16 @@ describe("JiraClient", () => {
   describe("isConfigured", () => {
     it("should return false when credentials are not set", () => {
       delete process.env.JIRA_HOST;
-      delete process.env.JIRA_EMAIL;
-      delete process.env.JIRA_API_TOKEN;
+      delete process.env.JIRA_EMAIL_REF;
+      delete process.env.JIRA_API_TOKEN_REF;
       const client = new JiraClient();
       expect(client.isConfigured()).toBe(false);
     });
 
-    it("should return true when all credentials are set", () => {
+    it("should return true when host + secret refs are set", () => {
       process.env.JIRA_HOST = "https://company.atlassian.net";
-      process.env.JIRA_EMAIL = "user@company.com";
-      process.env.JIRA_API_TOKEN = "token123";
+      process.env.JIRA_EMAIL_REF = "/artifacts/console/public/secrets/jira_email";
+      process.env.JIRA_API_TOKEN_REF = "/artifacts/console/public/secrets/jira_api_token";
       const client = new JiraClient();
       expect(client.isConfigured()).toBe(true);
     });
@@ -445,16 +445,16 @@ describe("JiraClient", () => {
   describe("fetchRecentActivity", () => {
     it("should throw error when not configured", async () => {
       delete process.env.JIRA_HOST;
-      delete process.env.JIRA_EMAIL;
-      delete process.env.JIRA_API_TOKEN;
+      delete process.env.JIRA_EMAIL_REF;
+      delete process.env.JIRA_API_TOKEN_REF;
       const client = new JiraClient();
       await expect(client.fetchRecentActivity()).rejects.toThrow("not configured");
     });
 
     it("should execute Jira capability via Temporal and transform Jira issues", async () => {
       process.env.JIRA_HOST = "https://company.atlassian.net";
-      process.env.JIRA_EMAIL = "user@company.com";
-      process.env.JIRA_API_TOKEN = "token123";
+      process.env.JIRA_EMAIL_REF = "/artifacts/console/public/secrets/jira_email";
+      process.env.JIRA_API_TOKEN_REF = "/artifacts/console/public/secrets/jira_api_token";
       
       const started: Array<{ workflowType: string; args: unknown[]; memo?: Record<string, unknown> }> = [];
       const fakeTemporal = {
@@ -506,12 +506,19 @@ describe("JiraClient", () => {
       expect(events[1].severity).toBe("high");
       expect(mockFetch).not.toHaveBeenCalled();
       expect(started[0]?.workflowType).toBe("executeCapabilityWorkflow");
+
+      // ISS-001: never pass secret values; only secret refs
+      const capArgs = started[0]?.args?.[0] as any;
+      expect(capArgs?.secretRefs).toEqual({
+        jiraEmail: "/artifacts/console/public/secrets/jira_email",
+        jiraApiToken: "/artifacts/console/public/secrets/jira_api_token",
+      });
     });
 
     it("should include assignee information in payload for assigned issues", async () => {
       process.env.JIRA_HOST = "https://company.atlassian.net";
-      process.env.JIRA_EMAIL = "user@company.com";
-      process.env.JIRA_API_TOKEN = "token123";
+      process.env.JIRA_EMAIL_REF = "/artifacts/console/public/secrets/jira_email";
+      process.env.JIRA_API_TOKEN_REF = "/artifacts/console/public/secrets/jira_api_token";
       
       const assignee = { displayName: "Jane Doe", accountId: "account-123" };
       
@@ -560,8 +567,8 @@ describe("JiraClient", () => {
 
     it("should handle issues without assignee", async () => {
       process.env.JIRA_HOST = "https://company.atlassian.net";
-      process.env.JIRA_EMAIL = "user@company.com";
-      process.env.JIRA_API_TOKEN = "token123";
+      process.env.JIRA_EMAIL_REF = "/artifacts/console/public/secrets/jira_email";
+      process.env.JIRA_API_TOKEN_REF = "/artifacts/console/public/secrets/jira_api_token";
       
       const fakeTemporal = {
         workflow: {
@@ -603,8 +610,8 @@ describe("JiraClient", () => {
 
     it("should handle empty response", async () => {
       process.env.JIRA_HOST = "https://company.atlassian.net";
-      process.env.JIRA_EMAIL = "user@company.com";
-      process.env.JIRA_API_TOKEN = "token123";
+      process.env.JIRA_EMAIL_REF = "/artifacts/console/public/secrets/jira_email";
+      process.env.JIRA_API_TOKEN_REF = "/artifacts/console/public/secrets/jira_api_token";
       
       const fakeTemporal = {
         workflow: {
@@ -632,16 +639,16 @@ describe("JiraClient", () => {
   describe.skip("postComment", () => {
     it("should throw error when not configured", async () => {
       delete process.env.JIRA_HOST;
-      delete process.env.JIRA_EMAIL;
-      delete process.env.JIRA_API_TOKEN;
+      delete process.env.JIRA_EMAIL_REF;
+      delete process.env.JIRA_API_TOKEN_REF;
       const client = new JiraClient();
       await expect(client.postComment("PROJ-123", "Test comment")).rejects.toThrow("not configured");
     });
 
     it("should post comment to Jira issue", async () => {
       process.env.JIRA_HOST = "https://company.atlassian.net";
-      process.env.JIRA_EMAIL = "user@company.com";
-      process.env.JIRA_API_TOKEN = "token123";
+      process.env.JIRA_EMAIL_REF = "/artifacts/console/public/secrets/jira_email";
+      process.env.JIRA_API_TOKEN_REF = "/artifacts/console/public/secrets/jira_api_token";
       
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -681,8 +688,8 @@ describe("JiraClient", () => {
 
     it("should throw error when Jira API returns error", async () => {
       process.env.JIRA_HOST = "https://company.atlassian.net";
-      process.env.JIRA_EMAIL = "user@company.com";
-      process.env.JIRA_API_TOKEN = "token123";
+      process.env.JIRA_EMAIL_REF = "/artifacts/console/public/secrets/jira_email";
+      process.env.JIRA_API_TOKEN_REF = "/artifacts/console/public/secrets/jira_api_token";
       
       mockFetch.mockResolvedValueOnce({
         ok: false,
@@ -702,16 +709,16 @@ describe("JiraClient", () => {
   describe.skip("updateIssue", () => {
     it("should throw error when not configured", async () => {
       delete process.env.JIRA_HOST;
-      delete process.env.JIRA_EMAIL;
-      delete process.env.JIRA_API_TOKEN;
+      delete process.env.JIRA_EMAIL_REF;
+      delete process.env.JIRA_API_TOKEN_REF;
       const client = new JiraClient();
       await expect(client.updateIssue("PROJ-123", { status: "Done" })).rejects.toThrow("not configured");
     });
 
     it("should update Jira issue status", async () => {
       process.env.JIRA_HOST = "https://company.atlassian.net";
-      process.env.JIRA_EMAIL = "user@company.com";
-      process.env.JIRA_API_TOKEN = "token123";
+      process.env.JIRA_EMAIL_REF = "/artifacts/console/public/secrets/jira_email";
+      process.env.JIRA_API_TOKEN_REF = "/artifacts/console/public/secrets/jira_api_token";
       
       mockFetch
         // GET transitions
@@ -767,8 +774,8 @@ describe("JiraClient", () => {
 
     it("should update Jira issue priority", async () => {
       process.env.JIRA_HOST = "https://company.atlassian.net";
-      process.env.JIRA_EMAIL = "user@company.com";
-      process.env.JIRA_API_TOKEN = "token123";
+      process.env.JIRA_EMAIL_REF = "/artifacts/console/public/secrets/jira_email";
+      process.env.JIRA_API_TOKEN_REF = "/artifacts/console/public/secrets/jira_api_token";
       
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -785,8 +792,8 @@ describe("JiraClient", () => {
 
     it("should update multiple fields at once", async () => {
       process.env.JIRA_HOST = "https://company.atlassian.net";
-      process.env.JIRA_EMAIL = "user@company.com";
-      process.env.JIRA_API_TOKEN = "token123";
+      process.env.JIRA_EMAIL_REF = "/artifacts/console/public/secrets/jira_email";
+      process.env.JIRA_API_TOKEN_REF = "/artifacts/console/public/secrets/jira_api_token";
       
       mockFetch
         // GET transitions
@@ -1662,8 +1669,8 @@ describe("getConfiguredClients", () => {
     delete process.env.BITBUCKET_API_TOKEN;
     delete process.env.BITBUCKET_WORKSPACE;
     delete process.env.JIRA_HOST;
-    delete process.env.JIRA_EMAIL;
-    delete process.env.JIRA_API_TOKEN;
+    delete process.env.JIRA_EMAIL_REF;
+    delete process.env.JIRA_API_TOKEN_REF;
     delete process.env.PAGERDUTY_API_KEY;
     delete process.env.CIRCLECI_API_TOKEN;
     delete process.env.CIRCLECI_PROJECT_SLUG;
