@@ -12,6 +12,7 @@ import {
   APPROVAL_ACTION_IDS,
   type ApprovalSignalPayload,
 } from '@golden/core/workflow';
+import { buildSlackApprovalSignalPayload, loadSlackApproverPolicy } from './slack-approver-policy';
 
 /**
  * Slack interactive payload structure.
@@ -60,6 +61,11 @@ export interface SlackInteractiveHandlerConfig {
   temporalNamespace?: string;
   /** Slack signing secret for verification. */
   slackSigningSecret?: string;
+  /**
+   * Path to Slack approver policy JSON.
+   * Default: `<repoRoot>/policies/slack-approvers.json`
+   */
+  slackApproverPolicyPath?: string;
 }
 
 // Singleton Temporal client
@@ -87,6 +93,8 @@ async function getTemporalClient(config: SlackInteractiveHandlerConfig): Promise
 export function createSlackInteractiveHandler(config: SlackInteractiveHandlerConfig = {}) {
   return async function slackInteractiveHandler(req: Request, res: Response): Promise<Response> {
     try {
+      const policy = loadSlackApproverPolicy(config.slackApproverPolicyPath);
+
       // Slack sends the payload as a URL-encoded 'payload' field
       const rawPayload = req.body.payload;
       if (!rawPayload) {
@@ -124,14 +132,14 @@ export function createSlackInteractiveHandler(config: SlackInteractiveHandlerCon
         }
 
         // Build the approval signal payload
-        const signalPayload: ApprovalSignalPayload = {
+        const signalPayload: ApprovalSignalPayload = buildSlackApprovalSignalPayload({
           decision: isApprove ? 'approved' : 'rejected',
-          approverId: payload.user.id,
-          approverName: payload.user.name || payload.user.username,
-          approverRoles: [], // TODO: Fetch from user profile or Keycloak
+          slackUserId: payload.user.id,
+          slackUserName: payload.user.name,
+          slackUserUsername: payload.user.username,
+          policy,
           timestamp: new Date().toISOString(),
-          source: 'slack',
-        };
+        });
 
         // If rejecting, prompt for reason (for now, just use a default)
         // In the future, we could open a modal to get the reason

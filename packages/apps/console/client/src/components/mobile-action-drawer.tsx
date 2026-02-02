@@ -125,8 +125,16 @@ export function MobileActionDrawer({
       return res.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/actions/executions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/actions/approvals/pending"] });
+      queryClient.invalidateQueries({
+        predicate: (q) =>
+          typeof q.queryKey[0] === "string" &&
+          String(q.queryKey[0]).startsWith("/api/actions/executions"),
+      });
+      queryClient.invalidateQueries({
+        predicate: (q) =>
+          typeof q.queryKey[0] === "string" &&
+          String(q.queryKey[0]).startsWith("/api/actions/approvals/pending"),
+      });
       
       if (data.requiresApproval) {
         toast({

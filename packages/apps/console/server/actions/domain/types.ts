@@ -7,6 +7,12 @@ export type UserRole = "viewer" | "dev" | "sre" | "admin";
 export type WorkflowStatus = "pending" | "pending_approval" | "approved" | "rejected" | "running" | "completed" | "failed" | "cancelled";
 export type ContextType = "incident" | "support_ticket" | "deployment_failure" | "security_alert" | "infrastructure" | "general";
 
+export interface ExecutionScope {
+  eventId?: string;
+  incidentId?: string;
+  serviceTag?: string;
+}
+
 export interface ActionParam {
   name: string;
   type: "string" | "number" | "boolean" | "select" | "email" | "url";

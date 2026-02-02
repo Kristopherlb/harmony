@@ -3,7 +3,7 @@
 
 import type { IActionRepository } from "../../action-repository";
 import type { ActionRepositoryPort } from "../application/ports";
-import type { Action, WorkflowExecution, ActionCategory, QueryTemplate } from "../domain/types";
+import type { Action, WorkflowExecution, ActionCategory, ExecutionScope, QueryTemplate } from "../domain/types";
 import { toDomainAction, toDomainWorkflowExecution, toSharedAction, toSharedWorkflowExecution } from "../domain/mappers";
 
 export class ActionRepositoryAdapter implements ActionRepositoryPort {
@@ -60,13 +60,13 @@ export class ActionRepositoryAdapter implements ActionRepositoryPort {
     return shared.map(toDomainWorkflowExecution);
   }
 
-  async getPendingApprovals(): Promise<WorkflowExecution[]> {
-    const shared = await this.repository.getPendingApprovals();
+  async getPendingApprovals(scope?: ExecutionScope): Promise<WorkflowExecution[]> {
+    const shared = await this.repository.getPendingApprovals(scope);
     return shared.map(toDomainWorkflowExecution);
   }
 
-  async getRecentExecutions(limit?: number): Promise<WorkflowExecution[]> {
-    const shared = await this.repository.getRecentExecutions(limit);
+  async getRecentExecutions(limit?: number, scope?: ExecutionScope): Promise<WorkflowExecution[]> {
+    const shared = await this.repository.getRecentExecutions(limit, scope);
     return shared.map(toDomainWorkflowExecution);
   }
 

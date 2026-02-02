@@ -64,7 +64,7 @@
     "dev-bootstrap": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "pnpm nx run harmony:dev-up && node -e \"console.log(['Next (in separate terminals):','- pnpm nx run harmony:dev-worker','- pnpm nx run harmony:dev-demo -- --x 7',''].join('\\\\n'));\""
+        "command": "pnpm nx run harmony:dev-up && node tools/scripts/dev-bootstrap.mjs {args}"
       }
     },
     "audit": {

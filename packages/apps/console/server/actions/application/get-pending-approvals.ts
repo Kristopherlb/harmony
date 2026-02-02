@@ -1,11 +1,12 @@
 // server/actions/application/get-pending-approvals.ts
 // Use case: Get pending approvals with RBAC
 
-import type { UserRole, WorkflowExecution } from "../domain/types";
+import type { ExecutionScope, UserRole, WorkflowExecution } from "../domain/types";
 import type { ActionRepositoryPort, PermissionServicePort } from "./ports";
 
 export interface GetPendingApprovalsRequest {
   role: UserRole;
+  scope?: ExecutionScope;
 }
 
 export interface GetPendingApprovalsResponse {
@@ -24,7 +25,7 @@ export class GetPendingApprovals {
       throw new Error("Insufficient permissions to view approvals");
     }
 
-    const executions = await this.actionRepository.getPendingApprovals();
+    const executions = await this.actionRepository.getPendingApprovals(request.scope);
     return { executions, total: executions.length };
   }
 }

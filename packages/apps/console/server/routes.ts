@@ -19,6 +19,7 @@ import { createChatRouter } from "./routers/chat-router";
 import { createMcpToolsRouter } from "./routers/mcp-tools-router";
 import { createWorkbenchRouter } from "./routers/workbench-router";
 import { createRunbooksRouter } from "./runbooks/http/runbooks-router";
+import { createIncidentsRouter } from "./incidents/http/incidents-router";
 import { ActionRepositoryAdapter } from "./actions/adapters/action-repository-adapter";
 import { WorkflowEngineAdapter } from "./actions/adapters/workflow-engine-adapter";
 import { PermissionServiceAdapter } from "./actions/adapters/permission-service-adapter";
@@ -171,6 +172,9 @@ export async function registerRoutes(
 
   // Runbooks (repo-local markdown)
   app.use("/api/runbooks", createRunbooksRouter());
+
+  // Incidents (convenience endpoints)
+  app.use("/api/incidents", createIncidentsRouter({ repository, actionRepository }));
 
   return httpServer;
 }

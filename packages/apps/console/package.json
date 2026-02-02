@@ -10,6 +10,8 @@
     "check": "tsc && npm run check:design-system",
     "check:design-system": "tsx script/check-design-system.ts",
     "db:push": "drizzle-kit push",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
     "test": "vitest run",
     "test:architecture": "vitest run server/architecture.test.ts",
     "mock:jira": "tsx mock/jira-mock-server.ts"

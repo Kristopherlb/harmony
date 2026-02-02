@@ -19,7 +19,23 @@ export function createAppDeps(): AppDeps {
   // Build repositories
   const seedData = generateSeedData();
   const repository = createRepository(seedData);
-  const actionRepository = new SeedableActionRepository();
+  const catalogActionRepository = new SeedableActionRepository();
+
+  const repositoryMode = process.env.REPOSITORY_MODE || "memory";
+  const actionRepository = (() => {
+    if (repositoryMode !== "postgres") return catalogActionRepository;
+
+    // Lazy load to avoid importing drizzle when using memory mode
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { PostgresActionExecutionRepository } = require("./repositories/postgres-action-execution-repository");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { HybridActionRepository } = require("./repositories/hybrid-action-repository");
+
+    return new HybridActionRepository(
+      catalogActionRepository,
+      new PostgresActionExecutionRepository()
+    );
+  })();
   
   // Build services
   const workflowEngine = new MockWorkflowEngine();

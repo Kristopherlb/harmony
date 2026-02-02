@@ -26,6 +26,19 @@ Use this skill to transform a draft plan into a comprehensive, persona-validated
 
 Before evaluating the plan, assess what external knowledge is needed.
 
+### 0.0 Determinism + Registry Hygiene (Monorepo Reality Check)
+
+If the plan adds or changes **any** Capability/Blueprint/Tool that is expected to be discoverable (MCP/UI/registry), explicitly include these checks up front:
+
+- **Deterministic artifacts are part of the contract**: some repos require committed/generated artifacts (ex: tool catalogs) to be updated alongside code changes.
+- **Registry / catalog update order matters** (avoid “tool exists in code but is missing in UI”):
+  - Align `metadata.domain/subdomain` with `metadata.id`-derived domain parts
+  - Regenerate the tool catalog artifact (deterministically)
+  - Run the sync generator that updates barrel exports/registries
+  - Restart any long-running processes serving tool lists if the UI can be stale until restart
+- **Validation levels**: declare what “done” means (contract-only vs runtime smoke vs staging).
+  - Contract-only is valid for MVPs, but it must be labeled to avoid “implemented but not runnable” confusion.
+
 ### External Research Triggers
 
 Ask these questions. If any answer is "yes", research before proceeding:
@@ -124,6 +137,12 @@ Walk through each phase and ask:
 
 6. "If I surface an approval request to a human, what context do I include so it is reviewable?"
    - If unclear → Gap: execution/request contract missing incident/workflow context (eventId/incidentId, service tags, contextType)
+
+7. "Will the tool actually appear where agents look for it?"
+   - If unclear → Gap: deterministic tool-catalog regeneration + registry/barrel export sync step missing from plan
+
+8. "If the tool list in the UI is stale, do we have a clear restart/refresh step?"
+   - If unclear → Gap: runbook/action missing; add explicit “restart/refresh tool catalog” step for local/dev workflows
 ```
 
 #### 2. Developer (Platform Contributor)
@@ -155,6 +174,15 @@ Walk through the plan and ask:
    
 5. "What would I copy-paste from this implementation?"
    - Each item → Gap: Should be a pattern, not copy-paste
+
+6. "Are tests deterministic across machines and CI?"
+   - If unclear → Gap: avoid reliance on global/user-local directories in tests; add explicit overrides/fixtures
+
+7. "If there are two execution surfaces (in-process vs container/runtime), do we keep them aligned?"
+   - If unclear → Gap: missing smoke/contract tests proving both surfaces match on key invariants
+
+8. "Are there any `${...}`-shaped template hazards in generated scripts or embedded strings?"
+   - If yes → Gap: add explicit escaping conventions and tests for template/script output
 ```
 
 #### 3. End User (Platform Operator)
@@ -321,10 +349,12 @@ For each category, identify what's missing:
 - [ ] Is there an onboarding guide?
 - [ ] If docs/runbooks are repo-local artifacts, is **workspace-root resolution** defined and tested (not cwd-dependent)?
 - [ ] If runbooks are rendered in a UI, is the renderer **safe by default** (no raw HTML; link scheme allowlist)?
+- [ ] If “plans” live outside the repo (e.g., editor/global plan stores), does the plan include **deterministic path resolution** (e.g., via `homedir()`), not a repo-relative assumption?
 
 #### MCP/Tools
 - [ ] Are all capabilities exposed via MCP?
 - [ ] Is the tool manifest up to date?
+- [ ] Does the plan explicitly include the **tool-catalog + registry sync workflow** required for discoverability (including process restart if needed)?
 
 ### 2.3 Gap Prioritization
 
@@ -369,6 +399,8 @@ Classify gaps by impact and urgency:
 - Sample runbooks/playbooks
 - Template configurations
 - Example test cases
+- Contract tests that “lock” schemas + `aiHints.exampleInput/exampleOutput` against drift
+- Dogfood tests that run the capability on its own plan/spec artifact (kept resilient to small edits)
 
 ### 3.2 Pre-Work Template
 
@@ -485,6 +517,14 @@ For each persona, define measurable success criteria:
 | Leadership | Compliance score | 100% | Certification gates |
 | Domain Expert | [Domain-specific] | [Target] | [Method] |
 
+### Validation Level Metrics (Recommended)
+
+Add one explicit row (or equivalent) that labels delivery scope:
+
+- **Contract validation**: schemas, examples, prompt templates, deterministic fixtures
+- **Runtime smoke**: executes in the real runtime surface (container/workflow) with representative inputs
+- **Staging/production**: runs end-to-end with real infra/secrets and is observable
+
 ---
 
 ## Output Artifacts
@@ -549,6 +589,18 @@ Update the skill when:
 4. **Update scoring rubric** if calibration is off
 5. **Add to examples** in pre-work planning guide
 
+### Applied learnings (2026-02-02: Strategic Planner capability)
+
+Use these as common “misses” to check for early in new plans:
+
+| Gap to catch earlier | What happened | Update location |
+|---|---|---|
+| Tool catalog/registry coupling | Discoverability depended on committed tool-catalog + sync generator order | Phase 0.0 + Agent prompts + MCP/Tools checklist |
+| Contract vs runtime confusion | Strong contract/tests can ship while runtime remains unvalidated | Phase 0.0 + Validation level metrics |
+| Non-deterministic tests via global dirs | Tests must not depend on user-local/global skill directories | Developer prompts + Pre-work sample implementations |
+| Plan path assumptions | Dogfood plan lived under `~/.cursor/plans/`, not in-repo | Documentation checklist |
+| Template string hazards | `${...}` sequences inside embedded scripts/regexes can break builds | Developer prompts |
+
 ---
 
 ## Quick Reference Checklist
@@ -556,6 +608,8 @@ Update the skill when:
 Before executing any plan:
 
 - [ ] External knowledge assessed (Phase 0)
+- [ ] Deterministic artifacts + registry sync steps included (Phase 0.0)
+- [ ] Validation level labeled (contract vs runtime smoke vs staging)
 - [ ] Evaluated from 5 personas (Agent, Developer, End User, Leadership, Domain Expert)
 - [ ] All alignment scores ≥6/10 (or gaps mitigated)
 - [ ] Relevant skills identified and read

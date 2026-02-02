@@ -17,6 +17,8 @@ describe("API Routes", () => {
     // (Otherwise local JIRA_* / SLACK_* etc can make sources appear configured unexpectedly.)
     delete process.env.SLACK_BOT_TOKEN;
     delete process.env.SLACK_SIGNING_SECRET;
+    delete process.env.NODE_ENV;
+    delete process.env.WORKBENCH_ENVIRONMENT;
     delete process.env.GITLAB_TOKEN;
     delete process.env.GITLAB_WEBHOOK_SECRET;
     delete process.env.BITBUCKET_USERNAME;
@@ -219,6 +221,41 @@ describe("API Routes", () => {
     });
   });
 
+  describe("POST /api/integrations/slack/interactive", () => {
+    it("allows unsigned callbacks in local/dev posture", async () => {
+      // Default posture in tests is dev/local due to env unset.
+      // Send a malformed request that fails fast before any Temporal signaling happens.
+      const res = await api()
+        .post("/api/integrations/slack/interactive")
+        .type("form")
+        .send({})
+        .expect(400);
+
+      expect(res.body).toHaveProperty("error", "Missing payload");
+    });
+
+    it("rejects unsigned callbacks in non-local posture when SLACK_SIGNING_SECRET is missing", async () => {
+      // This behavior is determined at router creation time, so we create an isolated server
+      // after setting the non-local posture env vars.
+      process.env.NODE_ENV = "production";
+      process.env.WORKBENCH_ENVIRONMENT = "production";
+
+      const isolatedDeps = createAppDeps();
+      const isolatedApp = express();
+      isolatedApp.use(express.json());
+      const isolatedHttpServer = createServer(isolatedApp);
+      await registerRoutes(isolatedHttpServer, isolatedApp, isolatedDeps);
+
+      const res = await request(isolatedApp)
+        .post("/api/integrations/slack/interactive")
+        .type("form")
+        .send({ payload: JSON.stringify({}) })
+        .expect(500);
+
+      expect(res.body).toHaveProperty("error", "SLACK_SIGNING_SECRET_REQUIRED");
+    });
+  });
+
   describe("GET /api/metrics/users/:userId/stats", () => {
     it("should return user statistics", async () => {
       const response = await api()
@@ -378,6 +415,200 @@ describe("API Routes", () => {
         .expect(400);
 
       expect(response.body).toHaveProperty("error", "Invalid execution request");
+    });
+  });
+
+  describe("GET /api/actions/approvals/pending (scoped)", () => {
+    const auth = {
+      "x-user-id": "user-123",
+      "x-username": "testuser",
+      "x-user-role": "sre",
+    };
+
+    it("filters pending approvals by incidentId", async () => {
+      const incidentId = "11111111-1111-1111-1111-111111111111";
+      const otherIncidentId = "22222222-2222-2222-2222-222222222222";
+
+      await deps.actionRepository.createExecution({
+        runId: "run-1",
+        actionId: "restart-pods",
+        actionName: "Restart Pods",
+        status: "pending_approval",
+        params: {},
+        reasoning: "Need to mitigate incident quickly.",
+        executedBy: "user-1",
+        executedByUsername: "alice",
+        startedAt: new Date("2026-01-01T00:00:00.000Z").toISOString(),
+        output: [],
+        context: {
+          eventId: incidentId,
+          incidentId,
+          contextType: "incident",
+          serviceTags: ["api"],
+        },
+      });
+
+      await deps.actionRepository.createExecution({
+        runId: "run-2",
+        actionId: "flush-redis-cache",
+        actionName: "Flush Redis Cache",
+        status: "pending_approval",
+        params: {},
+        reasoning: "Need to mitigate other incident quickly.",
+        executedBy: "user-2",
+        executedByUsername: "bob",
+        startedAt: new Date("2026-01-01T00:01:00.000Z").toISOString(),
+        output: [],
+        context: {
+          eventId: otherIncidentId,
+          incidentId: otherIncidentId,
+          contextType: "incident",
+          serviceTags: ["redis"],
+        },
+      });
+
+      const response = await api()
+        .get(`/api/actions/approvals/pending?incidentId=${incidentId}`)
+        .set(auth)
+        .expect(200);
+
+      expect(Array.isArray(response.body.executions)).toBe(true);
+      expect(response.body.executions).toHaveLength(1);
+      expect(response.body.executions[0].runId).toBe("run-1");
+      expect(response.body.total).toBe(1);
+    });
+
+    it("filters pending approvals by serviceTag", async () => {
+      await deps.actionRepository.createExecution({
+        runId: "run-3",
+        actionId: "restart-pods",
+        actionName: "Restart Pods",
+        status: "pending_approval",
+        params: {},
+        reasoning: "Need to restart pods.",
+        executedBy: "user-1",
+        executedByUsername: "alice",
+        startedAt: new Date("2026-01-01T00:02:00.000Z").toISOString(),
+        output: [],
+        context: {
+          eventId: "33333333-3333-3333-3333-333333333333",
+          incidentId: "33333333-3333-3333-3333-333333333333",
+          contextType: "incident",
+          serviceTags: ["api", "gateway"],
+        },
+      });
+
+      const response = await api()
+        .get("/api/actions/approvals/pending?serviceTag=gateway")
+        .set(auth)
+        .expect(200);
+
+      expect(response.body.executions).toHaveLength(1);
+      expect(response.body.executions[0].runId).toBe("run-3");
+    });
+  });
+
+  describe("GET /api/actions/executions (scoped)", () => {
+    it("does not shadow fixed-prefix routes with /:actionId", async () => {
+      await api().get("/api/actions/executions").expect(200);
+    });
+
+    it("filters executions by incidentId", async () => {
+      const incidentId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+      const otherIncidentId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+
+      await deps.actionRepository.createExecution({
+        runId: "run-x",
+        actionId: "restart-pods",
+        actionName: "Restart Pods",
+        status: "running",
+        params: {},
+        reasoning: "Restarting during incident.",
+        executedBy: "user-1",
+        executedByUsername: "alice",
+        startedAt: new Date("2026-01-01T00:00:00.000Z").toISOString(),
+        output: [],
+        context: {
+          eventId: incidentId,
+          incidentId,
+          contextType: "incident",
+          serviceTags: ["api"],
+        },
+      });
+
+      await deps.actionRepository.createExecution({
+        runId: "run-y",
+        actionId: "flush-redis-cache",
+        actionName: "Flush Redis Cache",
+        status: "running",
+        params: {},
+        reasoning: "Running for other incident.",
+        executedBy: "user-2",
+        executedByUsername: "bob",
+        startedAt: new Date("2026-01-01T00:01:00.000Z").toISOString(),
+        output: [],
+        context: {
+          eventId: otherIncidentId,
+          incidentId: otherIncidentId,
+          contextType: "incident",
+          serviceTags: ["redis"],
+        },
+      });
+
+      const response = await api()
+        .get(`/api/actions/executions?limit=20&incidentId=${incidentId}`)
+        .expect(200);
+
+      expect(response.body.executions).toHaveLength(1);
+      expect(response.body.executions[0].runId).toBe("run-x");
+      expect(response.body.total).toBe(1);
+    });
+  });
+
+  describe("GET /api/incidents/:incidentId/timeline", () => {
+    it("returns events + executions scoped by incidentId", async () => {
+      const incidentId = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+
+      await deps.repository.createEvent({
+        timestamp: new Date("2026-01-01T00:00:00.000Z").toISOString(),
+        source: "pagerduty",
+        type: "alert",
+        severity: "critical",
+        message: "Incident root event",
+        payload: {},
+        resolved: false,
+        contextType: "incident",
+        serviceTags: ["api"],
+        incidentId,
+      } as any);
+
+      await deps.actionRepository.createExecution({
+        runId: "run-tl-1",
+        actionId: "restart-pods",
+        actionName: "Restart Pods",
+        status: "running",
+        params: {},
+        reasoning: "Mitigate incident.",
+        executedBy: "user-1",
+        executedByUsername: "alice",
+        startedAt: new Date("2026-01-01T00:01:00.000Z").toISOString(),
+        output: [],
+        context: {
+          incidentId,
+          contextType: "incident",
+          serviceTags: ["api"],
+        },
+      });
+
+      const response = await api()
+        .get(`/api/incidents/${incidentId}/timeline`)
+        .expect(200);
+
+      expect(response.body.incidentId).toBe(incidentId);
+      expect(Array.isArray(response.body.events)).toBe(true);
+      expect(Array.isArray(response.body.executions)).toBe(true);
+      expect(response.body.events.length).toBeGreaterThanOrEqual(1);
+      expect(response.body.executions.length).toBeGreaterThanOrEqual(1);
     });
   });
 

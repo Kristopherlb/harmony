@@ -40,6 +40,17 @@ export const contextTypeEnum = pgEnum("context_type", [
   "general",
 ]);
 
+export const workflowStatusEnum = pgEnum("workflow_status", [
+  "pending",
+  "pending_approval",
+  "approved",
+  "rejected",
+  "running",
+  "completed",
+  "failed",
+  "cancelled",
+]);
+
 export const serviceTypeEnum = pgEnum("service_type", [
   "api",
   "worker",
@@ -104,6 +115,35 @@ export const comments = pgTable("comments", {
   eventIdIdx: index("comments_event_id_idx").on(table.eventId),
   createdAtIdx: index("comments_created_at_idx").on(table.createdAt),
   parentIdIdx: index("comments_parent_id_idx").on(table.parentId),
+}));
+
+// Workflow executions table (Phase 6: IMP-031 persistence)
+export const workflowExecutions = pgTable("workflow_executions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  runId: varchar("run_id", { length: 255 }).notNull(),
+  actionId: varchar("action_id", { length: 255 }).notNull(),
+  actionName: text("action_name").notNull(),
+  status: workflowStatusEnum("status").notNull(),
+  params: jsonb("params").notNull().default({}),
+  reasoning: text("reasoning").notNull().default(""),
+  executedBy: varchar("executed_by", { length: 255 }).notNull(),
+  executedByUsername: varchar("executed_by_username", { length: 255 }).notNull(),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  approvedBy: varchar("approved_by", { length: 255 }),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  output: jsonb("output").notNull().default([]),
+  error: text("error"),
+  context: jsonb("context").notNull().default({}),
+  // Indexed linkage for scoping queries (IMP-030/IMP-032)
+  incidentId: uuid("incident_id"),
+  eventId: uuid("event_id"),
+}, (table) => ({
+  runIdUnique: unique("workflow_executions_run_id_unique").on(table.runId),
+  statusIdx: index("workflow_executions_status_idx").on(table.status),
+  startedAtIdx: index("workflow_executions_started_at_idx").on(table.startedAt.desc()),
+  incidentIdIdx: index("workflow_executions_incident_id_idx").on(table.incidentId),
+  eventIdIdx: index("workflow_executions_event_id_idx").on(table.eventId),
 }));
 
 // Teams table (must exist before services due to foreign key)

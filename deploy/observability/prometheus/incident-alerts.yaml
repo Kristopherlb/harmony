@@ -1,0 +1,240 @@
+# Incident Lifecycle Alerting Rules
+# GOS-001 Compliant - Golden Path Incident Management
+
+groups:
+  - name: incident-lifecycle-slos
+    interval: 30s
+    rules:
+      # SLO: P1 incidents should be responded to within 15 minutes
+      - alert: P1IncidentResponseSLOBreach
+        expr: |
+          (
+            golden_orchestrator_workflow_duration_seconds{app_id="incident.initiate", severity="P1", status="running"}
+            > 900
+          )
+        for: 1m
+        labels:
+          severity: critical
+          team: sre
+          golden_component_type: ORCHESTRATOR
+        annotations:
+          summary: "P1 incident response time exceeding 15 minute SLO"
+          description: "Incident {{ $labels.incident_id }} has been in initiate phase for {{ $value | humanizeDuration }}. SLO target is 15 minutes."
+          runbook_url: "https://harmony.internal/runbooks/incident-response-slo"
+          dashboard_url: "https://grafana.internal/d/incident-lifecycle-gos001"
+
+      # SLO: P2 incidents should be responded to within 1 hour
+      - alert: P2IncidentResponseSLOBreach
+        expr: |
+          (
+            golden_orchestrator_workflow_duration_seconds{app_id="incident.initiate", severity="P2", status="running"}
+            > 3600
+          )
+        for: 5m
+        labels:
+          severity: warning
+          team: sre
+          golden_component_type: ORCHESTRATOR
+        annotations:
+          summary: "P2 incident response time exceeding 1 hour SLO"
+          description: "Incident {{ $labels.incident_id }} has been in initiate phase for {{ $value | humanizeDuration }}. SLO target is 1 hour."
+          runbook_url: "https://harmony.internal/runbooks/incident-response-slo"
+
+  - name: incident-workflow-health
+    interval: 30s
+    rules:
+      # High error rate on incident workflows
+      - alert: IncidentWorkflowHighErrorRate
+        expr: |
+          (
+            sum(rate(golden_orchestrator_workflow_total{app_id=~"incident.*", status="failed"}[5m])) by (app_id)
+            /
+            sum(rate(golden_orchestrator_workflow_total{app_id=~"incident.*"}[5m])) by (app_id)
+          ) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          golden_component_type: ORCHESTRATOR
+        annotations:
+          summary: "Incident workflow {{ $labels.app_id }} has high error rate"
+          description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes. Threshold is 10%."
+          runbook_url: "https://harmony.internal/runbooks/workflow-errors"
+
+      # Workflow stuck (no progress)
+      - alert: IncidentWorkflowStuck
+        expr: |
+          (
+            time() - golden_orchestrator_last_activity_timestamp{app_id=~"incident.*", status="running"}
+          ) > 1800
+        for: 5m
+        labels:
+          severity: warning
+          team: sre
+          golden_component_type: ORCHESTRATOR
+        annotations:
+          summary: "Incident workflow {{ $labels.app_id }} appears stuck"
+          description: "No activity on workflow {{ $labels.workflow_id }} for {{ $value | humanizeDuration }}."
+          runbook_url: "https://harmony.internal/runbooks/stuck-workflow"
+
+      # Too many active incidents (capacity)
+      - alert: HighActiveIncidentCount
+        expr: |
+          sum(golden_orchestrator_active_workflows{app_id=~"incident.*"}) > 20
+        for: 10m
+        labels:
+          severity: warning
+          team: sre
+          golden_component_type: ORCHESTRATOR
+        annotations:
+          summary: "High number of concurrent incidents"
+          description: "{{ $value }} active incident workflows. Consider capacity planning or escalation procedures."
+          runbook_url: "https://harmony.internal/runbooks/incident-capacity"
+
+  - name: incident-approval-health
+    interval: 30s
+    rules:
+      # Approvals waiting too long
+      - alert: ApprovalQueueBacklog
+        expr: |
+          sum(golden_orchestrator_pending_approvals{app_id=~"incident.*"}) > 10
+        for: 15m
+        labels:
+          severity: warning
+          team: sre
+          golden_component_type: ORCHESTRATOR
+        annotations:
+          summary: "High number of pending incident approvals"
+          description: "{{ $value }} approvals pending. SREs may need to review the approval queue."
+          runbook_url: "https://harmony.internal/runbooks/approval-backlog"
+
+      # Individual approval taking too long
+      - alert: ApprovalWaitTimeExceeded
+        expr: |
+          golden_orchestrator_approval_wait_seconds{app_id=~"incident.*"} > 1800
+        for: 1m
+        labels:
+          severity: warning
+          team: sre
+          golden_component_type: ORCHESTRATOR
+        annotations:
+          summary: "Approval wait time exceeded for {{ $labels.app_id }}"
+          description: "Approval for workflow {{ $labels.workflow_id }} has been pending for {{ $value | humanizeDuration }}."
+          runbook_url: "https://harmony.internal/runbooks/approval-timeout"
+
+  - name: incident-capability-health
+    interval: 30s
+    rules:
+      # Capability execution failures
+      - alert: IncidentCapabilityFailures
+        expr: |
+          (
+            sum(rate(golden_executable_errors_total{capability_id=~"golden.connectors.statuspage|golden.connectors.confluence|golden.connectors.pagerduty|golden.operations.runme-runner"}[5m])) by (capability_id)
+            /
+            sum(rate(golden_executable_invocations_total{capability_id=~"golden.connectors.statuspage|golden.connectors.confluence|golden.connectors.pagerduty|golden.operations.runme-runner"}[5m])) by (capability_id)
+          ) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          golden_component_type: EXECUTABLE
+        annotations:
+          summary: "Incident capability {{ $labels.capability_id }} has high failure rate"
+          description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes."
+          runbook_url: "https://harmony.internal/runbooks/capability-failures"
+
+      # Capability latency degradation
+      - alert: IncidentCapabilitySlowdown
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(golden_executable_compute_seconds_bucket{capability_id=~"golden.connectors.statuspage|golden.connectors.confluence"}[5m])) by (le, capability_id)
+          ) > 30
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          golden_component_type: EXECUTABLE
+        annotations:
+          summary: "Incident capability {{ $labels.capability_id }} latency degraded"
+          description: "P95 latency is {{ $value | humanizeDuration }}. Expected < 30s."
+          runbook_url: "https://harmony.internal/runbooks/capability-latency"
+
+  - name: incident-saga-health
+    interval: 30s
+    rules:
+      # Saga compensation triggered
+      - alert: IncidentSagaCompensation
+        expr: |
+          increase(golden_orchestrator_compensation_total{app_id=~"incident.*"}[5m]) > 0
+        labels:
+          severity: info
+          team: sre
+          golden_component_type: ORCHESTRATOR
+          golden_is_compensation: "true"
+        annotations:
+          summary: "Saga compensation triggered for {{ $labels.app_id }}"
+          description: "{{ $value }} compensation actions in the last 5 minutes. Review workflow history for root cause."
+          runbook_url: "https://harmony.internal/runbooks/saga-compensation"
+
+      # High compensation rate (indicates systemic issue)
+      - alert: HighCompensationRate
+        expr: |
+          (
+            sum(rate(golden_orchestrator_compensation_total{app_id=~"incident.*"}[15m]))
+            /
+            sum(rate(golden_orchestrator_workflow_total{app_id=~"incident.*"}[15m]))
+          ) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          golden_component_type: ORCHESTRATOR
+        annotations:
+          summary: "High saga compensation rate in incident workflows"
+          description: "{{ $value | humanizePercentage }} of incident workflows are triggering compensations. Investigate systemic issues."
+          runbook_url: "https://harmony.internal/runbooks/high-compensation-rate"
+
+  - name: incident-integration-health
+    interval: 60s
+    rules:
+      # Statuspage API unreachable
+      - alert: StatuspageAPIDown
+        expr: |
+          probe_success{job="blackbox", target="api.statuspage.io"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          team: sre
+          golden_component_type: EXECUTABLE
+        annotations:
+          summary: "Statuspage API unreachable"
+          description: "Cannot reach api.statuspage.io. Incident status updates may fail."
+          runbook_url: "https://harmony.internal/runbooks/statuspage-down"
+
+      # PagerDuty API unreachable
+      - alert: PagerDutyAPIDown
+        expr: |
+          probe_success{job="blackbox", target="api.pagerduty.com"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          team: sre
+          golden_component_type: EXECUTABLE
+        annotations:
+          summary: "PagerDuty API unreachable"
+          description: "Cannot reach api.pagerduty.com. Incident escalation may fail."
+          runbook_url: "https://harmony.internal/runbooks/pagerduty-down"
+
+      # Confluence API unreachable
+      - alert: ConfluenceAPIDown
+        expr: |
+          probe_success{job="blackbox", target="api.atlassian.com"} == 0
+        for: 5m
+        labels:
+          severity: warning
+          team: sre
+          golden_component_type: EXECUTABLE
+        annotations:
+          summary: "Confluence API unreachable"
+          description: "Cannot reach api.atlassian.com. Post-mortem generation may fail."
+          runbook_url: "https://harmony.internal/runbooks/confluence-down"

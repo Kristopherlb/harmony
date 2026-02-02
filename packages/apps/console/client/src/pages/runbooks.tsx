@@ -66,8 +66,16 @@ export default function RunbooksPage(): JSX.Element {
       return res.json();
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["/api/actions/executions"] });
-      await queryClient.invalidateQueries({ queryKey: ["/api/actions/approvals/pending"] });
+      await queryClient.invalidateQueries({
+        predicate: (q) =>
+          typeof q.queryKey[0] === "string" &&
+          String(q.queryKey[0]).startsWith("/api/actions/executions"),
+      });
+      await queryClient.invalidateQueries({
+        predicate: (q) =>
+          typeof q.queryKey[0] === "string" &&
+          String(q.queryKey[0]).startsWith("/api/actions/approvals/pending"),
+      });
       setExecuteOpen(false);
       setActionParams({});
       setReasoning("");

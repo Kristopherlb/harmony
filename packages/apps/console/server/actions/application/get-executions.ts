@@ -1,11 +1,12 @@
 // server/actions/application/get-executions.ts
 // Use case: Get recent executions
 
-import type { WorkflowExecution } from "../domain/types";
+import type { ExecutionScope, WorkflowExecution } from "../domain/types";
 import type { ActionRepositoryPort } from "./ports";
 
 export interface GetExecutionsRequest {
   limit?: number;
+  scope?: ExecutionScope;
 }
 
 export interface GetExecutionsResponse {
@@ -18,7 +19,7 @@ export class GetExecutions {
 
   async execute(request: GetExecutionsRequest): Promise<GetExecutionsResponse> {
     const limit = request.limit ?? 20;
-    const executions = await this.actionRepository.getRecentExecutions(limit);
+    const executions = await this.actionRepository.getRecentExecutions(limit, request.scope);
     return { executions, total: executions.length };
   }
 }

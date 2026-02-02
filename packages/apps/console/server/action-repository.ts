@@ -22,8 +22,11 @@ export interface IActionRepository {
   getExecutionByRunId(runId: string): Promise<WorkflowExecution | undefined>;
   updateExecution(id: string, updates: Partial<WorkflowExecution>): Promise<WorkflowExecution | undefined>;
   getExecutionsByUser(userId: string): Promise<WorkflowExecution[]>;
-  getPendingApprovals(): Promise<WorkflowExecution[]>;
-  getRecentExecutions(limit?: number): Promise<WorkflowExecution[]>;
+  getPendingApprovals(scope?: { eventId?: string; incidentId?: string; serviceTag?: string }): Promise<WorkflowExecution[]>;
+  getRecentExecutions(
+    limit?: number,
+    scope?: { eventId?: string; incidentId?: string; serviceTag?: string }
+  ): Promise<WorkflowExecution[]>;
 
   getQueryTemplates(): Promise<QueryTemplate[]>;
   getQueryTemplateById(id: string): Promise<QueryTemplate | undefined>;
@@ -406,14 +409,38 @@ export class SeedableActionRepository implements IActionRepository {
       .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
   }
 
-  async getPendingApprovals(): Promise<WorkflowExecution[]> {
+  private incidentIdFromContext(ctx: WorkflowExecution["context"] | undefined): string | undefined {
+    if (!ctx) return undefined;
+    return ctx.incidentId ?? (ctx.contextType === "incident" ? ctx.eventId : undefined);
+  }
+
+  private matchesScope(
+    ex: WorkflowExecution,
+    scope: { eventId?: string; incidentId?: string; serviceTag?: string } | undefined
+  ): boolean {
+    if (!scope) return true;
+    if (scope.eventId && ex.context?.eventId !== scope.eventId) return false;
+    if (scope.incidentId && this.incidentIdFromContext(ex.context) !== scope.incidentId) return false;
+    if (scope.serviceTag) {
+      const tags = ex.context?.serviceTags ?? [];
+      if (!tags.includes(scope.serviceTag)) return false;
+    }
+    return true;
+  }
+
+  async getPendingApprovals(scope?: { eventId?: string; incidentId?: string; serviceTag?: string }): Promise<WorkflowExecution[]> {
     return Array.from(this.executions.values())
       .filter((e) => e.status === "pending_approval")
+      .filter((e) => this.matchesScope(e, scope))
       .sort((a, b) => new Date(a.startedAt).getTime() - new Date(b.startedAt).getTime());
   }
 
-  async getRecentExecutions(limit: number = 20): Promise<WorkflowExecution[]> {
+  async getRecentExecutions(
+    limit: number = 20,
+    scope?: { eventId?: string; incidentId?: string; serviceTag?: string }
+  ): Promise<WorkflowExecution[]> {
     return Array.from(this.executions.values())
+      .filter((e) => this.matchesScope(e, scope))
       .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
       .slice(0, limit);
   }

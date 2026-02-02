@@ -91,10 +91,10 @@ describe("IncidentDetailPage", () => {
           }),
         } as any;
       }
-      if (u === "/api/actions/approvals/pending") {
+      if (u === `/api/actions/approvals/pending?incidentId=${encodeURIComponent(incidentId)}`) {
         return { ok: true, json: async () => ({ executions: [], total: 0 }) } as any;
       }
-      if (u.startsWith("/api/actions/executions")) {
+      if (u === `/api/actions/executions?limit=100&incidentId=${encodeURIComponent(incidentId)}`) {
         return { ok: true, json: async () => ({ executions: [], total: 0 }) } as any;
       }
       if (u === "/api/actions/catalog") {

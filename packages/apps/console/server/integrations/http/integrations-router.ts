@@ -2,7 +2,7 @@
 // HTTP router for integrations context - parse/validate → use case → map response
 
 import type { Request, Response, NextFunction } from "express";
-import { Router as createRouter, type Router } from "express";
+import { Router as createRouter, type Router, urlencoded } from "express";
 import { SlackCommandSchema, type EventSource } from "@shared/schema";
 import { IngestWebhookEvent } from "../application/ingest-webhook-event";
 import { SyncSource } from "../application/sync-source";
@@ -51,15 +51,29 @@ export function createIntegrationsRouter(deps: IntegrationsRouterDeps): Router {
 
   // Slack interactive messages (approval buttons)
   const slackSigningSecret = process.env.SLACK_SIGNING_SECRET;
+  const isLocal =
+    (process.env.NODE_ENV ?? 'development') === 'development' ||
+    (process.env.WORKBENCH_ENVIRONMENT ?? 'local') === 'local';
   if (slackSigningSecret) {
     router.post(
       "/slack/interactive",
+      urlencoded({ extended: true }),
       createSlackVerificationMiddleware(slackSigningSecret),
       createSlackInteractiveHandler()
     );
   } else {
-    // Allow unauthenticated for local development
-    router.post("/slack/interactive", createSlackInteractiveHandler());
+    // Local dev convenience only: allow unsigned Slack callbacks when explicitly in local/dev posture.
+    if (isLocal) {
+      router.post("/slack/interactive", urlencoded({ extended: true }), createSlackInteractiveHandler());
+    } else {
+      router.post("/slack/interactive", (_req: Request, res: Response) => {
+        return res.status(500).json({
+          error: "SLACK_SIGNING_SECRET_REQUIRED",
+          message:
+            "SLACK_SIGNING_SECRET must be configured for Slack interactive callbacks in non-local environments.",
+        });
+      });
+    }
   }
 
   // Slack events

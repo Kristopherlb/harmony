@@ -22,6 +22,12 @@ Missing tools or capabilities that would help.
 
 ## Active Patterns
 
+### 🔴 Param-route Shadowing in Express Routers
+**Occurrences:** 1 (IMP-030–033 Followthrough, 2026-02-02)  
+**Description:** A `/:id`-style route registered before fixed-prefix routes can accidentally match those paths (e.g. `/:actionId` capturing `/executions`).  
+**Impact:** False 404s and wasted time debugging “missing” endpoints; tests can fail in non-obvious ways.  
+**Resolution:** Register fixed-prefix routes first; add a route test that hits fixed-prefix paths; add a brief router comment near `/:id` routes.
+
 ### 🔵 Contract-Complete, Runtime-Incomplete (Dogfooding gap)
 **Occurrences:** 1 (Phase 7 Shipping & Traffic, 2026-02-02)  
 **Description:** Work lands with strong schemas/tests/guardrails and deterministic discovery, but runtime execution (real infra, real secrets, real external services) remains unvalidated. Mirrors the Jira capability situation where container/runtime is placeholder (discovery is good; runtime usefulness lags).  
@@ -39,6 +45,12 @@ Missing tools or capabilities that would help.
 **Description:** Multiple files implemented `retryPolicy` missing `backoffCoefficient`, causing build failure across package.
 **Impact:** Blocked build, required auditing multiple files.
 **Resolution:** [IMP-020] Enforce strict type checks or provide factory helper for config objects.
+
+### 🔴 Documentation drift (stale symbol/control references)
+**Occurrences:** 1 (Incident Lifecycle Phase 6, 2026-02-02)  
+**Description:** Documentation referenced a stale/incorrect symbol name for a security control (middleware) even though the correct implementation existed in code.  
+**Impact:** Readers can assume a control is missing (or present) incorrectly; reduces trust in security posture documentation.  
+**Resolution:** [IMP-038] Add a lightweight “docs drift” check (validate key doc claims against code symbols / grep allowlist) and document config-dependent controls explicitly (e.g., dev bypass vs production-required env).  
 
 ### 🔵 Workbench tool list can be stale until process restart
 **Occurrences:** 2 (Jira Capability + Workbench Tooling, 2026-02-02; Jira Runtime + SecretRefs Follow-on, 2026-02-02)  

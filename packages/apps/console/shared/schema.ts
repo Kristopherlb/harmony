@@ -346,6 +346,17 @@ export type WorkflowExecution = z.infer<typeof WorkflowExecutionSchema>;
 export const InsertWorkflowExecutionSchema = WorkflowExecutionSchema.omit({ id: true });
 export type InsertWorkflowExecution = z.infer<typeof InsertWorkflowExecutionSchema>;
 
+// ============================================
+// Phase 6: Incident-scoped Timeline (server-joined convenience)
+// ============================================
+
+export const IncidentTimelineResponseSchema = z.object({
+  incidentId: z.string().uuid(),
+  events: z.array(EventSchema),
+  executions: z.array(WorkflowExecutionSchema),
+});
+export type IncidentTimelineResponse = z.infer<typeof IncidentTimelineResponseSchema>;
+
 // Permission schema for RBAC
 export const PermissionSchema = z.object({
   role: UserRoleSchema,

@@ -233,13 +233,14 @@ export function IncidentDetailPage(props: { params: { id: string } }): JSX.Eleme
     refetchInterval: 15000,
   });
 
+  // IMP-030: fetch incident-scoped approvals/executions server-side (no client-side filtering).
   const pendingApprovalsQuery = useQuery<{ executions: WorkflowExecution[]; total?: number }>({
-    queryKey: ["/api/actions/approvals/pending"],
+    queryKey: [`/api/actions/approvals/pending?incidentId=${encodeURIComponent(incidentId)}`],
     refetchInterval: 5000,
   });
 
   const executionsQuery = useQuery<{ executions: WorkflowExecution[]; total?: number }>({
-    queryKey: ["/api/actions/executions?limit=100"],
+    queryKey: [`/api/actions/executions?limit=100&incidentId=${encodeURIComponent(incidentId)}`],
     refetchInterval: 5000,
   });
 
@@ -284,26 +285,17 @@ export function IncidentDetailPage(props: { params: { id: string } }): JSX.Eleme
   }
 
   const incidentTags = incident.serviceTags ?? [];
+  const canonicalIncidentId = incident.incidentId ?? incident.id;
   const allEvents = streamQuery.data?.events ?? [];
   const relatedEvents = allEvents.filter((e) => {
     if (e.id === incident.id) return true;
+    if (e.incidentId && e.incidentId === canonicalIncidentId) return true;
     if (incidentTags.length === 0) return false;
     return (e.serviceTags ?? []).some((t) => incidentTags.includes(t));
   });
 
-  const pendingApprovals = pendingApprovalsQuery.data?.executions ?? [];
-  const approvalsForIncident = pendingApprovals.filter((ex) => {
-    if (ex.context?.eventId && ex.context.eventId === incident.id) return true;
-    if (incidentTags.length === 0) return false;
-    return (ex.context?.serviceTags ?? []).some((t) => incidentTags.includes(t));
-  });
-
-  const executions = executionsQuery.data?.executions ?? [];
-  const executionsForIncident = executions.filter((ex) => {
-    if (ex.context?.eventId && ex.context.eventId === incident.id) return true;
-    if (incidentTags.length === 0) return false;
-    return (ex.context?.serviceTags ?? []).some((t) => incidentTags.includes(t));
-  });
+  const approvalsForIncident = pendingApprovalsQuery.data?.executions ?? [];
+  const executionsForIncident = executionsQuery.data?.executions ?? [];
 
   type TimelineItem =
     | { kind: "event"; at: string; event: Event }
@@ -437,7 +429,7 @@ export function IncidentDetailPage(props: { params: { id: string } }): JSX.Eleme
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Pending approvals</CardTitle>
-              <CardDescription>Approvals linked to this incident by event ID or overlapping service tags.</CardDescription>
+              <CardDescription>Approvals scoped server-side by canonical incidentId.</CardDescription>
             </CardHeader>
             <CardContent>
               {pendingApprovalsQuery.isLoading ? (
@@ -532,7 +524,7 @@ export function IncidentDetailPage(props: { params: { id: string } }): JSX.Eleme
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Timeline</CardTitle>
-              <CardDescription>Unified audit feed (events + executions) scoped by service tags.</CardDescription>
+              <CardDescription>Unified audit feed (events + executions) scoped by incidentId (and tags fallback for events).</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               {timelineItems.length === 0 ? (

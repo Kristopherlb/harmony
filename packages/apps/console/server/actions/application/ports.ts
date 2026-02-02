@@ -4,6 +4,7 @@
 import type {
   Action,
   ActionCategory,
+  ExecutionScope,
   WorkflowExecution,
   WorkflowStatus,
   ExecuteActionRequest,
@@ -22,8 +23,8 @@ export interface ActionRepositoryPort {
   getExecutionByRunId(runId: string): Promise<WorkflowExecution | undefined>;
   updateExecution(id: string, updates: Partial<WorkflowExecution>): Promise<WorkflowExecution | undefined>;
   getExecutionsByUser(userId: string): Promise<WorkflowExecution[]>;
-  getPendingApprovals(): Promise<WorkflowExecution[]>;
-  getRecentExecutions(limit?: number): Promise<WorkflowExecution[]>;
+  getPendingApprovals(scope?: ExecutionScope): Promise<WorkflowExecution[]>;
+  getRecentExecutions(limit?: number, scope?: ExecutionScope): Promise<WorkflowExecution[]>;
 
   getQueryTemplates(): Promise<QueryTemplate[]>;
   getQueryTemplateById(id: string): Promise<QueryTemplate | undefined>;

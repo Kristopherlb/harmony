@@ -20,6 +20,23 @@ jobs:
           module: "./.dagger"
           call: "audit-git --repo-url https://github.com/${{ github.repository }}.git --ref ${{ github.sha }}"
 
+  cursor-skills-vendored:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Verify vendored Cursor skills
+        run: node tools/scripts/cursor-skills.mjs verify --vendored-only
+
+      - name: Test cursor-skills bootstrap logic
+        run: node --test tools/scripts/cursor-skills.test.mjs
+
   tool-catalog-drift:
     runs-on: ubuntu-latest
     steps:

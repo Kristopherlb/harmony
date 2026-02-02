@@ -17,6 +17,7 @@ import { GetPendingApprovals } from "../application/get-pending-approvals";
 import { ApproveOrRejectAction } from "../application/approve-or-reject-action";
 import { GetExecutions } from "../application/get-executions";
 import { toSharedAction, toSharedWorkflowExecution, toDomainExecuteActionRequest } from "../domain/mappers";
+import type { ExecutionScope } from "../domain/types";
 import type {
   ActionRepositoryPort,
   WorkflowEnginePort,
@@ -60,6 +61,21 @@ export function createActionsRouter(deps: ActionsRouterDeps): Router {
   );
   const getExecutions = new GetExecutions(deps.actionRepository);
 
+  function queryString(req: Request, key: string): string | undefined {
+    const raw = req.query[key];
+    if (typeof raw === "string") return raw;
+    if (Array.isArray(raw) && typeof raw[0] === "string") return raw[0];
+    return undefined;
+  }
+
+  function scopeFromQuery(req: Request): ExecutionScope | undefined {
+    const eventId = queryString(req, "eventId");
+    const incidentId = queryString(req, "incidentId");
+    const serviceTag = queryString(req, "serviceTag");
+    if (!eventId && !incidentId && !serviceTag) return undefined;
+    return { eventId, incidentId, serviceTag };
+  }
+
   // Get action catalog
   router.get("/catalog", async (req: Request, res: Response) => {
     try {
@@ -73,24 +89,6 @@ export function createActionsRouter(deps: ActionsRouterDeps): Router {
     } catch (error) {
       console.error("Error fetching action catalog:", error);
       return res.status(500).json({ error: "Failed to fetch action catalog" });
-    }
-  });
-
-  // Get single action
-  router.get("/:actionId", async (req: Request, res: Response) => {
-    try {
-      const actionId = Array.isArray(req.params.actionId) ? req.params.actionId[0] : req.params.actionId;
-      const action = await getActionById.execute({ actionId });
-
-      if (!action) {
-        return res.status(404).json({ error: "Action not found" });
-      }
-
-      // Map domain action to shared/contract format
-      return res.json(toSharedAction(action));
-    } catch (error) {
-      console.error("Error fetching action:", error);
-      return res.status(500).json({ error: "Failed to fetch action" });
     }
   });
 
@@ -158,7 +156,8 @@ export function createActionsRouter(deps: ActionsRouterDeps): Router {
   router.get("/approvals/pending", async (req: Request, res: Response) => {
     try {
       const { role } = getCurrentUser(req);
-      const result = await getPendingApprovals.execute({ role });
+      const scope = scopeFromQuery(req);
+      const result = await getPendingApprovals.execute({ role, scope });
       // Map domain executions to shared/contract format
       return res.json({
         executions: result.executions.map(toSharedWorkflowExecution),
@@ -214,7 +213,8 @@ export function createActionsRouter(deps: ActionsRouterDeps): Router {
   router.get("/executions", async (req: Request, res: Response) => {
     try {
       const limit = parseInt(req.query.limit as string) || 20;
-      const result = await getExecutions.execute({ limit });
+      const scope = scopeFromQuery(req);
+      const result = await getExecutions.execute({ limit, scope });
       // Map domain executions to shared/contract format
       return res.json({
         executions: result.executions.map(toSharedWorkflowExecution),
@@ -223,6 +223,26 @@ export function createActionsRouter(deps: ActionsRouterDeps): Router {
     } catch (error) {
       console.error("Error fetching executions:", error);
       return res.status(500).json({ error: "Failed to fetch executions" });
+    }
+  });
+
+  // Get single action
+  // IMPORTANT: this must be registered AFTER more specific routes like /executions
+  // otherwise "executions" will be interpreted as an actionId.
+  router.get("/:actionId", async (req: Request, res: Response) => {
+    try {
+      const actionId = Array.isArray(req.params.actionId) ? req.params.actionId[0] : req.params.actionId;
+      const action = await getActionById.execute({ actionId });
+
+      if (!action) {
+        return res.status(404).json({ error: "Action not found" });
+      }
+
+      // Map domain action to shared/contract format
+      return res.json(toSharedAction(action));
+    } catch (error) {
+      console.error("Error fetching action:", error);
+      return res.status(500).json({ error: "Failed to fetch action" });
     }
   });
 
