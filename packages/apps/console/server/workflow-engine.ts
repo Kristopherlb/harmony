@@ -1,10 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { Client, Connection } from "@temporalio/client";
-import {
-  approvalSignal,
-  approvalStateQuery,
-  type ApprovalSignalPayload,
-} from "@golden/core/workflow";
+import coreWorkflow from "@golden/core/workflow";
+import type { ApprovalSignalPayload } from "@golden/core/workflow";
 import type {
   Action,
   WorkflowExecution,
@@ -278,7 +275,7 @@ export class TemporalAdapter implements IWorkflowEngine {
 
       // Try to query approval state if the workflow supports it
       try {
-        const approvalState = await handle.query(approvalStateQuery);
+        const approvalState = await handle.query(coreWorkflow.approvalStateQuery);
         if (approvalState?.status === "pending") {
           status = "pending_approval";
         }
@@ -324,7 +321,7 @@ export class TemporalAdapter implements IWorkflowEngine {
         source: "console",
       };
 
-      await handle.signal(approvalSignal, payload);
+      await handle.signal(coreWorkflow.approvalSignal, payload);
       console.log(`[TemporalAdapter] Sent approval signal to workflow: ${runId}`);
       return true;
     } catch (err) {
@@ -347,7 +344,7 @@ export class TemporalAdapter implements IWorkflowEngine {
         source: "console",
       };
 
-      await handle.signal(approvalSignal, payload);
+      await handle.signal(coreWorkflow.approvalSignal, payload);
       console.log(`[TemporalAdapter] Sent rejection signal to workflow: ${runId}`);
       return true;
     } catch (err) {

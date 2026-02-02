@@ -6,7 +6,6 @@
  */
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 function hasRepoMarkers(dir: string): boolean {
   return (
@@ -17,19 +16,44 @@ function hasRepoMarkers(dir: string): boolean {
 }
 
 /**
- * Resolve repo root by walking upward from this module until monorepo markers are found.
+ * Resolve repo root by walking upward from a few safe starting points.
+ *
+ * Notes:
+ * - We intentionally avoid `import.meta.url` so this file can compile to CJS under TS NodeNext rules.
+ * - `typeof __dirname` is safe in ESM (returns 'undefined' without throwing).
  */
 export function getRepoRoot(): string {
-  const start = path.dirname(fileURLToPath(import.meta.url));
-  let cur = start;
+  const candidates: string[] = [];
 
-  for (let i = 0; i < 12; i++) {
-    if (hasRepoMarkers(cur)) return cur;
-    const parent = path.dirname(cur);
-    if (parent === cur) break;
-    cur = parent;
+  // Prefer explicit override when running in atypical environments (optional).
+  const envRoot = process.env.HARMONY_REPO_ROOT;
+  if (envRoot && envRoot.trim()) candidates.push(envRoot);
+
+  // CJS: module directory. ESM: this evaluates to false safely.
+  // eslint-disable-next-line no-undef
+  if (typeof __dirname !== 'undefined') {
+    // eslint-disable-next-line no-undef
+    candidates.push(__dirname);
   }
 
-  throw new Error(`Failed to resolve repo root from: ${start}`);
+  // Current working directory (often repo root, but not always).
+  candidates.push(process.cwd());
+
+  // Entry-point directory (often inside the repo even when cwd is not).
+  if (process.argv[1]) {
+    candidates.push(path.dirname(process.argv[1]));
+  }
+
+  for (const start of candidates) {
+    let cur = path.resolve(start);
+    for (let i = 0; i < 16; i++) {
+      if (hasRepoMarkers(cur)) return cur;
+      const parent = path.dirname(cur);
+      if (parent === cur) break;
+      cur = parent;
+    }
+  }
+
+  throw new Error(`Failed to resolve repo root (tried: ${candidates.join(', ')})`);
 }
 

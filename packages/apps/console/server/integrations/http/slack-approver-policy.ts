@@ -12,7 +12,7 @@
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { getRepoRoot } from '@golden/core';
+import core from '@golden/core';
 import type { ApprovalSignalPayload } from '@golden/core/workflow';
 
 export interface SlackApproverPolicy {
@@ -31,7 +31,7 @@ export interface SlackApproverPolicy {
 }
 
 export function getDefaultSlackApproverPolicyPath(): string {
-  return path.join(getRepoRoot(), 'policies', 'slack-approvers.json');
+  return path.join(core.getRepoRoot(), 'policies', 'slack-approvers.json');
 }
 
 export function loadSlackApproverPolicy(

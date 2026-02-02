@@ -5,6 +5,7 @@
 export * from './binders/oauth-broker.js';
 export * from './binders/flag-provider.js';
 export * from './types.js';
+export { getRepoRoot } from './utils/repo-root.js';
 
 // Context exports
 export {

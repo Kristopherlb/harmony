@@ -2,15 +2,8 @@ import { convertToModelMessages, createUIMessageStream, streamText, tool, type U
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import type { McpTool } from "@golden/mcp-server";
-import {
-  BudgetExceededError,
-  calculateLlmCostUsd,
-  createInMemoryLlmCostManager,
-  getDefaultLlmPricing,
-  withGoldenSpan,
-  type GoldenContext,
-  type LlmBudgetPolicy,
-} from "@golden/core";
+import core from "@golden/core";
+import type { GoldenContext, LlmBudgetPolicy } from "@golden/core";
 import type { ToolCatalogTool } from "../agent/services/harmony-mcp-tool-service";
 import { deriveDomainParts } from "../../client/src/features/capabilities/tool-taxonomy";
 import { randomUUID } from "node:crypto";
@@ -38,8 +31,8 @@ const blueprintZodSchema = z.object({
   ),
 });
 
-const defaultPricing = getDefaultLlmPricing();
-const llmCostManager = createInMemoryLlmCostManager({ pricing: defaultPricing });
+const defaultPricing = core.getDefaultLlmPricing();
+const llmCostManager = core.createInMemoryLlmCostManager({ pricing: defaultPricing });
 
 function createConsoleGoldenContext(input: { initiatorId: string }): GoldenContext {
   return {
@@ -86,7 +79,7 @@ function preflightModelSelection(input: {
   if (!budget) return { model: input.model, estimatedUsd: 0 };
 
   const inputTokens = estimateTokensFromUnknown(input.system) + estimateTokensFromUnknown(input.messages);
-  const first = calculateLlmCostUsd({
+  const first = core.calculateLlmCostUsd({
     pricing: defaultPricing,
     provider: "openai",
     model: input.model,
@@ -98,7 +91,7 @@ function preflightModelSelection(input: {
 
   // Fallback: cheaper OpenAI model (local/free provider integration is out of scope for this service).
   const fallbackModel = "gpt-4o-mini";
-  const second = calculateLlmCostUsd({
+  const second = core.calculateLlmCostUsd({
     pricing: defaultPricing,
     provider: "openai",
     model: fallbackModel,
@@ -108,7 +101,7 @@ function preflightModelSelection(input: {
 
   if (second <= budget.hardLimitUsd) return { model: fallbackModel, estimatedUsd: second };
 
-  throw new BudgetExceededError(
+  throw new core.BudgetExceededError(
     `Estimated LLM cost exceeds budget for ${input.budgetKey}. ` +
       `budget=$${budget.hardLimitUsd.toFixed(4)}, est=$${second.toFixed(4)} (fallback=${fallbackModel})`,
   );
@@ -184,7 +177,7 @@ export const OpenAIAgentService = {
         const ctx = createConsoleGoldenContext({ initiatorId: budgetKey });
 
         try {
-          await withGoldenSpan("console.chat.generate_blueprint", ctx, "REASONER", async (rootSpan) => {
+          await core.withGoldenSpan("console.chat.generate_blueprint", ctx, "REASONER", async (rootSpan) => {
             rootSpan.setAttribute("ai.budget.key", budgetKey);
             rootSpan.setAttribute("ai.request.kind", "generate_blueprint");
             rootSpan.setAttribute("ai.tools.count", toolsList.length);
@@ -209,7 +202,7 @@ export const OpenAIAgentService = {
               expectedOutputTokens: 1200,
             }).model;
 
-            const planningMessages = await withGoldenSpan("console.chat.llm.planning", ctx, "REASONER", async (span) => {
+            const planningMessages = await core.withGoldenSpan("console.chat.llm.planning", ctx, "REASONER", async (span) => {
               span.setAttribute("ai.provider", "openai");
               span.setAttribute("ai.model", planningModel);
               span.setAttribute("ai.step", "planning");
@@ -265,7 +258,7 @@ export const OpenAIAgentService = {
               expectedOutputTokens: 800,
             }).model;
 
-            await withGoldenSpan("console.chat.llm.summary", ctx, "REASONER", async (span) => {
+            await core.withGoldenSpan("console.chat.llm.summary", ctx, "REASONER", async (span) => {
               span.setAttribute("ai.provider", "openai");
               span.setAttribute("ai.model", summaryModel);
               span.setAttribute("ai.step", "summary");

@@ -1,13 +1,7 @@
-import {
-  createToolSurface,
-  generateToolCatalog,
-  type McpTool,
-  type ToolCatalog,
-  type ToolManifest,
-  type ToolManifestEntry,
-  type ToolSurface,
-} from "@golden/mcp-server";
-import { createCapabilityRegistry, type CapabilityRegistry } from "@golden/capabilities";
+import mcpServer from "@golden/mcp-server";
+import type { McpTool, ToolCatalog, ToolManifest, ToolManifestEntry, ToolSurface } from "@golden/mcp-server";
+import capabilities from "@golden/capabilities";
+import type { CapabilityRegistry } from "@golden/capabilities";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -57,7 +51,7 @@ export class HarmonyMcpToolService {
   }
 
   constructor(input?: { includeBlueprints?: boolean; version?: string }) {
-    this.registry = createCapabilityRegistry();
+    this.registry = capabilities.createCapabilityRegistry();
     this.version = input?.version ?? "1";
     this.includeBlueprints = input?.includeBlueprints ?? true;
 
@@ -66,7 +60,7 @@ export class HarmonyMcpToolService {
     // not "when the artifact was originally generated", because the UI needs freshness
     // relative to the running process.
     this.manifest = { generated_at: "1970-01-01T00:00:00.000Z", version: this.version, tools: [] };
-    this.toolSurface = createToolSurface({ manifest: this.manifest, traceId: () => `console-${Date.now()}` });
+    this.toolSurface = mcpServer.createToolSurface({ manifest: this.manifest, traceId: () => `console-${Date.now()}` });
     this.refresh();
   }
 
@@ -92,7 +86,7 @@ export class HarmonyMcpToolService {
       };
     }
 
-    const catalog = generateToolCatalog({ registry: this.registry, version, includeBlueprints });
+    const catalog = mcpServer.generateToolCatalog({ registry: this.registry, version, includeBlueprints });
     return {
       generated_at: this.nextGeneratedAtIso(),
       version: catalog.version,
@@ -102,7 +96,7 @@ export class HarmonyMcpToolService {
 
   refresh(): ToolCatalogSnapshot {
     this.manifest = this.buildManifest();
-    this.toolSurface = createToolSurface({
+    this.toolSurface = mcpServer.createToolSurface({
       manifest: this.manifest,
       traceId: () => `console-${Date.now()}`,
     });

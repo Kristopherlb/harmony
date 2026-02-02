@@ -40,7 +40,7 @@
     "dev-worker": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "pnpm --filter @golden/blueprints run bundle-workflows && pnpm --filter @golden/blueprints exec tsx scripts/run-local-worker.ts"
+        "command": "pnpm nx run core:build && pnpm --filter @golden/blueprints run bundle-workflows && pnpm --filter @golden/blueprints exec tsx scripts/run-local-worker.ts"
       }
     },
     "dev-mcp": {

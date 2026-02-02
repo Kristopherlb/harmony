@@ -1,12 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { createBlueprintRegistry, getBlueprint } from '@golden/blueprints';
-import {
-  GOLDEN_CONTEXT_MEMO_KEY,
-  SECURITY_CONTEXT_MEMO_KEY,
-  type GoldenContext,
-  type SecurityContext,
-} from '@golden/core/workflow';
+import blueprints from '@golden/blueprints';
+import coreWorkflow from '@golden/core/workflow';
+import type { GoldenContext, SecurityContext } from '@golden/core/workflow';
 import { getTemporalClient } from '../services/temporal/temporal-client.js';
 
 export const workflowsRouter = Router();
@@ -70,8 +66,8 @@ workflowsRouter.post('/run-blueprint', async (req, res) => {
 
   try {
     const client = await getTemporalClient();
-    const registry = createBlueprintRegistry();
-    const bp = getBlueprint(registry, parsed.data.blueprintId);
+    const registry = blueprints.createBlueprintRegistry();
+    const bp = blueprints.getBlueprint(registry, parsed.data.blueprintId);
 
     const taskQueue = process.env.TEMPORAL_TASK_QUEUE || 'golden-tools';
     const workflowId =
@@ -100,8 +96,8 @@ workflowsRouter.post('/run-blueprint', async (req, res) => {
       workflowId,
       args: [parsed.data.input ?? {}],
       memo: {
-        [SECURITY_CONTEXT_MEMO_KEY]: securityContext,
-        [GOLDEN_CONTEXT_MEMO_KEY]: goldenContext,
+        [coreWorkflow.SECURITY_CONTEXT_MEMO_KEY]: securityContext,
+        [coreWorkflow.GOLDEN_CONTEXT_MEMO_KEY]: goldenContext,
       },
     });
 
