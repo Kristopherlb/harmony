@@ -51,3 +51,22 @@ services:
       BAO_ADDR: "http://0.0.0.0:8200"
     cap_add:
       - IPC_LOCK
+
+  # flagd - OpenFeature feature flag service (CNCF)
+  # Used for capability flags (cap-{id}-enabled) and release gates
+  flagd:
+    image: ghcr.io/open-feature/flagd:v0.11.1
+    command:
+      - start
+      - --uri
+      - file:/etc/flagd/flags.json
+    ports:
+      - "8013:8013"   # gRPC port for OpenFeature SDK
+      - "8014:8014"   # HTTP port for REST API
+    volumes:
+      - ./deploy/flagd:/etc/flagd:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8014/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

@@ -83,7 +83,11 @@ class TestBlueprint extends BaseBlueprint<
       secretRefs: z.unknown().optional(),
       skipFlagCheck: z.boolean().optional(),
     })
-    .describe('TestBlueprint input');
+    .describe('TestBlueprint input') as BaseBlueprint<
+    { capId: string; args: unknown; config?: unknown; secretRefs?: unknown; skipFlagCheck?: boolean },
+    unknown,
+    object
+  >['inputSchema'];
 
   readonly configSchema = z.object({});
 
@@ -156,10 +160,12 @@ describe('BaseBlueprint.executeById', () => {
     await b.main({ capId: 'golden.security.trivy', args: { target: '.' } }, {});
 
     const flagCalls = wf.__getFlagCalls();
-    expect(flagCalls).toContainEqual({
-      flagKey: 'cap-golden.security.trivy-enabled',
-      defaultValue: true,
-    });
+    expect(flagCalls).toContainEqual(
+      expect.objectContaining({
+        flagKey: 'cap-golden.security.trivy-enabled',
+        defaultValue: true,
+      })
+    );
   });
 
   it('throws CapabilityDisabledError when flag is false', async () => {

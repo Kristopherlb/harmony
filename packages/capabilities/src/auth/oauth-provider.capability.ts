@@ -6,6 +6,7 @@
  * Manages token lifecycle including refresh handling and scope negotiation.
  */
 import { z } from '@golden/schema-registry';
+import { oauthTokenSchema } from '@golden/core';
 import type { Capability, CapabilityContext } from '@golden/core';
 
 const grantTypeSchema = z.enum([
@@ -29,14 +30,8 @@ const inputSchema = z
     })
     .describe('OAuth Provider input - token acquisition request');
 
-const outputSchema = z
-    .object({
-        accessToken: z.string().describe('OAuth access token'),
-        tokenType: z.string().describe('Token type (usually "Bearer")'),
-        expiresIn: z.number().optional().describe('Token lifetime in seconds'),
-        expiresAt: z.string().datetime().optional().describe('Token expiration timestamp (ISO 8601)'),
-        refreshToken: z.string().optional().describe('Refresh token for obtaining new access tokens'),
-        scope: z.string().optional().describe('Granted scopes (may differ from requested)'),
+const outputSchema = oauthTokenSchema
+    .extend({
         idToken: z.string().optional().describe('OIDC ID token (if openid scope was requested)'),
     })
     .describe('OAuth Provider output - token response');

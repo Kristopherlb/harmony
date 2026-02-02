@@ -11,6 +11,7 @@ import { terraformRunnerCapability } from './commanders/terraform-runner.capabil
 import { awsSdkCapability } from './connectors/aws-sdk.capability.js';
 import { postgresqlCapability } from './connectors/postgresql.capability.js';
 import { redisCapability } from './connectors/redis.capability.js';
+import { pagerdutyCapability } from './connectors/pagerduty.capability.js';
 import { slackConnectorCapability } from './connectors/slack-connector.capability.js';
 import { echoCapability } from './demo/echo.capability.js';
 import { openfeatureProviderCapability } from './flags/openfeature-provider.capability.js';
@@ -23,6 +24,7 @@ import { healthCheckProbeCapability } from './observability/health-check-probe.c
 import { bomctlCapability } from './sbom/bomctl.capability.js';
 import { protobomCapability } from './sbom/protobom.capability.js';
 import { syftCapability } from './sbom/syft.capability.js';
+import { checkovCapability } from './security/checkov.capability.js';
 import { clamavScannerCapability } from './security/clamav-scanner.capability.js';
 import { gitleaksCapability } from './security/gitleaks.capability.js';
 import { grypeCapability } from './security/grype.capability.js';
@@ -32,6 +34,7 @@ import { openvexCapability } from './security/openvex.capability.js';
 import { osvScannerCapability } from './security/osv-scanner.capability.js';
 import { scorecardCapability } from './security/scorecard.capability.js';
 import { semgrepScannerCapability } from './security/semgrep-scanner.capability.js';
+import { securityInsightsCapability } from './security/security-insights.capability.js';
 import { sigstoreCapability } from './security/sigstore.capability.js';
 import { slsaVerifierCapability } from './security/slsa-verifier.capability.js';
 import { trivyScannerCapability } from './security/trivy-scanner.capability.js';
@@ -80,6 +83,7 @@ export function createCapabilityRegistry(): CapabilityRegistry {
     [bomctlCapability.metadata.id, bomctlCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [protobomCapability.metadata.id, protobomCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [syftCapability.metadata.id, syftCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [checkovCapability.metadata.id, checkovCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [clamavScannerCapability.metadata.id, clamavScannerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [gitleaksCapability.metadata.id, gitleaksCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [grypeCapability.metadata.id, grypeCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
@@ -89,6 +93,7 @@ export function createCapabilityRegistry(): CapabilityRegistry {
     [osvScannerCapability.metadata.id, osvScannerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [scorecardCapability.metadata.id, scorecardCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [semgrepScannerCapability.metadata.id, semgrepScannerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [securityInsightsCapability.metadata.id, securityInsightsCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [sigstoreCapability.metadata.id, sigstoreCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [slsaVerifierCapability.metadata.id, slsaVerifierCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [trivyScannerCapability.metadata.id, trivyScannerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],

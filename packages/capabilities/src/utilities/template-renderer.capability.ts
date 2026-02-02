@@ -1,46 +1,23 @@
 /**
  * packages/capabilities/src/utilities/template-renderer.capability.ts
-<<<<<<< ours
- * Template Renderer Capability (OCS-001 Utility Pattern)
- *
- * Renders templates using Handlebars/Mustache syntax with data contexts.
-=======
  * Template Renderer Capability (OCS-001 Transformer Pattern)
  *
- * Template rendering using Handlebars/Mustache syntax.
+ * Template rendering using Handlebars, Mustache, EJS, or Nunjucks.
  * Variable substitution, loops, conditionals, and helpers.
->>>>>>> theirs
  */
 import { z } from '@golden/schema-registry';
-import type { Capability, CapabilityContext } from '@golden/core';
+import { Capability, CapabilityContext } from '@golden/core';
 
-<<<<<<< ours
-=======
 const operationSchema = z.enum([
     'render',         // Render template with data
     'validate',       // Validate template syntax
     'extract-vars',   // Extract variable names from template
 ]).describe('Template operation');
 
->>>>>>> theirs
 const engineSchema = z.enum([
     'handlebars',
     'mustache',
     'ejs',
-<<<<<<< ours
-]).describe('Template engine to use');
-
-const inputSchema = z
-    .object({
-        template: z.string().optional().describe('Template string'),
-        templatePath: z.string().optional().describe('Path to template file'),
-        data: z.record(z.unknown()).describe('Data context for rendering'),
-        outputPath: z.string().optional().describe('Output file path'),
-        engine: engineSchema.optional().describe('Template engine (default: handlebars)'),
-        partials: z.record(z.string()).optional().describe('Named partial templates'),
-        helpers: z.record(z.string()).optional().describe('Custom helper function names'),
-        strict: z.boolean().optional().describe('Strict mode - fail on missing variables'),
-=======
     'nunjucks',
 ]).describe('Template engine');
 
@@ -55,27 +32,17 @@ const inputSchema = z
         partials: z.record(z.string()).optional().describe('Named partial templates'),
         helpers: z.record(z.string()).optional().describe('Custom helper definitions'),
         strict: z.boolean().optional().describe('Fail on missing variables'),
->>>>>>> theirs
     })
     .describe('Template Renderer input');
 
 const outputSchema = z
     .object({
-<<<<<<< ours
-        success: z.boolean().describe('Whether rendering succeeded'),
-        rendered: z.string().describe('Rendered output'),
-        outputPath: z.string().optional().describe('Output file path if written'),
-        engine: engineSchema.describe('Engine used'),
-        variablesUsed: z.array(z.string()).optional().describe('Variables found in template'),
-        missingVariables: z.array(z.string()).optional().describe('Variables not provided'),
-=======
         success: z.boolean().describe('Whether the operation succeeded'),
         operation: operationSchema.describe('Operation performed'),
         rendered: z.string().optional().describe('Rendered output'),
         valid: z.boolean().optional().describe('Whether template is valid'),
         variables: z.array(z.string()).optional().describe('Extracted variable names'),
         errors: z.array(z.string()).optional().describe('Syntax or rendering errors'),
->>>>>>> theirs
         message: z.string().describe('Human-readable result message'),
     })
     .describe('Template Renderer output');
@@ -83,21 +50,11 @@ const outputSchema = z
 const configSchema = z
     .object({
         defaultEngine: engineSchema.optional().describe('Default template engine'),
-<<<<<<< ours
-        templatesDir: z.string().optional().describe('Base directory for template files'),
-    })
-    .describe('Template Renderer configuration');
-
-const secretsSchema = z
-    .object({})
-    .describe('Template Renderer secrets');
-=======
         partialsDir: z.string().optional().describe('Directory for partial templates'),
     })
     .describe('Template Renderer configuration');
 
 const secretsSchema = z.object({}).describe('Template Renderer secrets (none required)');
->>>>>>> theirs
 
 export type TemplateRendererInput = z.infer<typeof inputSchema>;
 export type TemplateRendererOutput = z.infer<typeof outputSchema>;
@@ -115,13 +72,8 @@ export const templateRendererCapability: Capability<
         version: '1.0.0',
         name: 'templateRenderer',
         description:
-<<<<<<< ours
-            'Template rendering utility supporting Handlebars, Mustache, and EJS. Render configuration files, documents, and code from templates.',
-        tags: ['utility', 'template', 'rendering'],
-=======
             'Render templates using Handlebars, Mustache, EJS, or Nunjucks. Supports partials, helpers, and data from files or inline.',
         tags: ['transformer', 'utilities', 'template', 'handlebars'],
->>>>>>> theirs
         maintainer: 'platform',
     },
     schemas: {
@@ -131,33 +83,19 @@ export const templateRendererCapability: Capability<
         secrets: secretsSchema,
     },
     security: {
-<<<<<<< ours
-        requiredScopes: ['utility:template'],
-        dataClassification: 'INTERNAL',
-        networkAccess: {
-            allowOutbound: [],
-=======
         requiredScopes: ['utilities:transform'],
         dataClassification: 'INTERNAL',
         networkAccess: {
             allowOutbound: [], // Pure transformation, no network needed
->>>>>>> theirs
         },
     },
     operations: {
         isIdempotent: true,
-<<<<<<< ours
-        retryPolicy: { maxAttempts: 1, initialIntervalSeconds: 0, backoffCoefficient: 1 },
-        errorMap: (error: unknown) => {
-            if (error instanceof Error) {
-                if (error.message.includes('missing')) return 'FATAL';
-=======
         retryPolicy: { maxAttempts: 2, initialIntervalSeconds: 1, backoffCoefficient: 2 },
         errorMap: (error: unknown) => {
             if (error instanceof Error) {
                 if (error.message.includes('syntax')) return 'FATAL';
                 if (error.message.includes('not found')) return 'FATAL';
->>>>>>> theirs
             }
             return 'FATAL';
         },
@@ -165,34 +103,19 @@ export const templateRendererCapability: Capability<
     },
     aiHints: {
         exampleInput: {
-<<<<<<< ours
-            template: 'Hello, {{name}}! Welcome to {{project}}.',
-            data: { name: 'Developer', project: 'Harmony' },
-=======
             operation: 'render',
             template: 'Hello {{name}}! You have {{count}} notifications.',
             data: { name: 'Alice', count: 5 },
->>>>>>> theirs
             engine: 'handlebars',
         },
         exampleOutput: {
             success: true,
-<<<<<<< ours
-            rendered: 'Hello, Developer! Welcome to Harmony.',
-            engine: 'handlebars',
-            variablesUsed: ['name', 'project'],
-            message: 'Template rendered successfully',
-        },
-        usageNotes:
-            'Use for generating config files, Kubernetes manifests, documentation, etc. Handlebars supports helpers and partials. Use strict mode to catch missing variables.',
-=======
             operation: 'render',
             rendered: 'Hello Alice! You have 5 notifications.',
             message: 'Template rendered successfully',
         },
         usageNotes:
             'Use for generating config files, email templates, and dynamic content. Handlebars supports helpers and partials for complex templates.',
->>>>>>> theirs
     },
     factory: (
         dag,
@@ -204,40 +127,13 @@ export const templateRendererCapability: Capability<
             withEnvVariable(key: string, value: string): ContainerBuilder;
             withExec(args: string[]): unknown;
         };
-<<<<<<< ours
-        type DaggerClient = { container(): ContainerBuilder };
-=======
         type DaggerClient = {
             container(): ContainerBuilder;
         };
->>>>>>> theirs
         const d = dag as unknown as DaggerClient;
 
         const engine = input.engine ?? context.config.defaultEngine ?? 'handlebars';
 
-<<<<<<< ours
-        let container = d
-            .container()
-            .from('node:20-alpine')
-            .withEnvVariable('ENGINE', engine)
-            .withEnvVariable('DATA', JSON.stringify(input.data));
-
-        if (input.template) {
-            container = container.withEnvVariable('TEMPLATE', input.template);
-        }
-        if (input.templatePath) {
-            container = container.withEnvVariable('TEMPLATE_PATH', input.templatePath);
-        }
-        if (input.outputPath) {
-            container = container.withEnvVariable('OUTPUT_PATH', input.outputPath);
-        }
-        if (input.partials) {
-            container = container.withEnvVariable('PARTIALS', JSON.stringify(input.partials));
-        }
-        if (input.strict) {
-            container = container.withEnvVariable('STRICT', 'true');
-        }
-=======
         const payload = {
             operation: input.operation,
             template: input.template,
@@ -256,7 +152,6 @@ export const templateRendererCapability: Capability<
             .withEnvVariable('INPUT_JSON', JSON.stringify(payload))
             .withEnvVariable('OPERATION', input.operation)
             .withEnvVariable('ENGINE', engine);
->>>>>>> theirs
 
         return container.withExec([
             'sh',
@@ -265,111 +160,6 @@ export const templateRendererCapability: Capability<
 #!/bin/sh
 set -e
 
-<<<<<<< ours
-npm install --silent handlebars mustache ejs 2>/dev/null >/dev/null
-
-ENGINE="$ENGINE"
-SUCCESS=true
-MESSAGE=""
-RENDERED=""
-OUTPUT_PATH_OUT=""
-VARIABLES_USED="[]"
-MISSING_VARS="[]"
-
-# Create renderer script
-cat > /tmp/render.js << 'SCRIPT'
-const fs = require('fs');
-
-const engine = process.env.ENGINE || 'handlebars';
-const data = JSON.parse(process.env.DATA || '{}');
-const template = process.env.TEMPLATE || (process.env.TEMPLATE_PATH ? fs.readFileSync(process.env.TEMPLATE_PATH, 'utf8') : '');
-const strict = process.env.STRICT === 'true';
-const partials = process.env.PARTIALS ? JSON.parse(process.env.PARTIALS) : {};
-
-let rendered = '';
-let variablesUsed = [];
-let missingVars = [];
-
-// Extract variables from template
-const varPattern = /\\{\\{\\s*([\\w.]+)\\s*\\}\\}/g;
-let match;
-while ((match = varPattern.exec(template)) !== null) {
-  if (!variablesUsed.includes(match[1])) {
-    variablesUsed.push(match[1]);
-  }
-}
-
-// Check for missing variables
-for (const v of variablesUsed) {
-  const parts = v.split('.');
-  let current = data;
-  for (const part of parts) {
-    if (current === undefined || current === null || !(part in current)) {
-      if (!missingVars.includes(v)) missingVars.push(v);
-      break;
-    }
-    current = current[part];
-  }
-}
-
-if (strict && missingVars.length > 0) {
-  console.log(JSON.stringify({
-    success: false,
-    rendered: '',
-    engine,
-    variablesUsed,
-    missingVariables: missingVars,
-    message: 'Missing required variables: ' + missingVars.join(', ')
-  }));
-  process.exit(0);
-}
-
-try {
-  switch (engine) {
-    case 'handlebars':
-      const Handlebars = require('handlebars');
-      for (const [name, content] of Object.entries(partials)) {
-        Handlebars.registerPartial(name, content);
-      }
-      const hbsTemplate = Handlebars.compile(template, { strict });
-      rendered = hbsTemplate(data);
-      break;
-      
-    case 'mustache':
-      const Mustache = require('mustache');
-      rendered = Mustache.render(template, data, partials);
-      break;
-      
-    case 'ejs':
-      const ejs = require('ejs');
-      rendered = ejs.render(template, data);
-      break;
-  }
-  
-  if (process.env.OUTPUT_PATH) {
-    fs.writeFileSync(process.env.OUTPUT_PATH, rendered);
-  }
-  
-  console.log(JSON.stringify({
-    success: true,
-    rendered,
-    outputPath: process.env.OUTPUT_PATH || '',
-    engine,
-    variablesUsed,
-    missingVariables: missingVars,
-    message: 'Template rendered successfully'
-  }));
-} catch (err) {
-  console.log(JSON.stringify({
-    success: false,
-    rendered: '',
-    engine,
-    variablesUsed,
-    missingVariables: missingVars,
-    message: err.message
-  }));
-}
-=======
 # Install template engines
 npm install --silent handlebars mustache ejs nunjucks 2>/dev/null
 
@@ -486,11 +276,10 @@ try {
 }
 
 console.log(JSON.stringify(result, null, 2));
->>>>>>> theirs
 SCRIPT
 
 node /tmp/render.js
-        `.trim(),
+            `.trim(),
         ]);
     },
 };
