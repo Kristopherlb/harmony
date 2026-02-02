@@ -38,3 +38,21 @@ export type { CapabilityContext, ErrorCategory } from './types.js';
 
 // Observability exports (GOS-001)
 export { withGoldenSpan, getGoldenSpanAttributes, GOLDEN_ATTRIBUTES } from './observability/golden-span.js';
+
+// FinOps (LLM usage + budgets)
+export {
+  BudgetExceededError,
+  LlmCostManager,
+  calculateLlmCostUsd,
+  createInMemoryLlmCostManager,
+  getDefaultLlmPricing,
+  type LlmBudgetPolicy,
+  type LlmBudgetWindow,
+  type LlmCostInput,
+  type LlmCostResult,
+  type LlmPricingTable,
+  type LlmProvider,
+  type LlmUsageEntry,
+  type LlmUsageTotals,
+  type LlmRate,
+} from './finops/llm-cost.js';

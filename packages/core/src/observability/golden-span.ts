@@ -70,9 +70,30 @@ export async function withGoldenSpan<T>(
   options?: { isCompensation?: boolean }
 ): Promise<T> {
   const tracer = trace.getTracer(TRACER_NAME, TRACER_VERSION);
-  const span = tracer.startSpan(name, {
-    attributes: getGoldenSpanAttributes(ctx, componentType, options),
-  });
+  const attributes = getGoldenSpanAttributes(ctx, componentType, options);
+
+  // Prefer active spans so nested calls parent correctly.
+  if (typeof (tracer as any).startActiveSpan === 'function') {
+    return (tracer as any).startActiveSpan(
+      name,
+      { attributes },
+      async (span: Span) => {
+        try {
+          const result = await fn(span);
+          span.setStatus({ code: SpanStatusCode.OK });
+          return result;
+        } catch (err) {
+          span.setStatus({ code: SpanStatusCode.ERROR, message: (err as Error).message });
+          span.recordException(err as Error);
+          throw err;
+        } finally {
+          span.end();
+        }
+      }
+    );
+  }
+
+  const span = tracer.startSpan(name, { attributes });
   try {
     const result = await fn(span);
     span.setStatus({ code: SpanStatusCode.OK });

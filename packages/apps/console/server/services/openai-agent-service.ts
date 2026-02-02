@@ -2,8 +2,18 @@ import { convertToModelMessages, createUIMessageStream, streamText, tool, type U
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import type { McpTool } from "@golden/mcp-server";
+import {
+  BudgetExceededError,
+  calculateLlmCostUsd,
+  createInMemoryLlmCostManager,
+  getDefaultLlmPricing,
+  withGoldenSpan,
+  type GoldenContext,
+  type LlmBudgetPolicy,
+} from "@golden/core";
 import type { ToolCatalogTool } from "../agent/services/harmony-mcp-tool-service";
 import { deriveDomainParts } from "../../client/src/features/capabilities/tool-taxonomy";
+import { randomUUID } from "node:crypto";
 
 // Define the schema for the workflow blueprint
 // This MUST match the frontend BlueprintDraft type
@@ -27,6 +37,82 @@ const blueprintZodSchema = z.object({
     })
   ),
 });
+
+const defaultPricing = getDefaultLlmPricing();
+const llmCostManager = createInMemoryLlmCostManager({ pricing: defaultPricing });
+
+function createConsoleGoldenContext(input: { initiatorId: string }): GoldenContext {
+  return {
+    app_id: "console",
+    environment: process.env.NODE_ENV || "development",
+    initiator_id: input.initiatorId,
+    trace_id: randomUUID(),
+    data_classification: "INTERNAL",
+    cost_center: "",
+  };
+}
+
+function parseUsdEnv(key: string): number | undefined {
+  const raw = process.env[key];
+  if (raw == null || raw.trim() === "") return undefined;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? n : undefined;
+}
+
+function getBudgetPolicyFromEnv(): LlmBudgetPolicy | undefined {
+  const perRun = parseUsdEnv("AI_BUDGET_USD_PER_RUN");
+  if (typeof perRun === "number") return { hardLimitUsd: perRun, window: "run" };
+
+  const perDay = parseUsdEnv("AI_BUDGET_USD_PER_DAY");
+  if (typeof perDay === "number") return { hardLimitUsd: perDay, window: "day" };
+
+  return undefined;
+}
+
+function estimateTokensFromUnknown(value: unknown): number {
+  // Deterministic heuristic (no tokenizer dependency): ~1 token per ~4 chars.
+  const s = typeof value === "string" ? value : JSON.stringify(value);
+  return Math.max(1, Math.ceil((s?.length ?? 0) / 4));
+}
+
+function preflightModelSelection(input: {
+  budgetKey: string;
+  model: string;
+  system: string;
+  messages: unknown;
+  expectedOutputTokens: number;
+}): { model: string; estimatedUsd: number } {
+  const budget = llmCostManager.getBudget(input.budgetKey);
+  if (!budget) return { model: input.model, estimatedUsd: 0 };
+
+  const inputTokens = estimateTokensFromUnknown(input.system) + estimateTokensFromUnknown(input.messages);
+  const first = calculateLlmCostUsd({
+    pricing: defaultPricing,
+    provider: "openai",
+    model: input.model,
+    inputTokens,
+    outputTokens: input.expectedOutputTokens,
+  }).usd;
+
+  if (first <= budget.hardLimitUsd) return { model: input.model, estimatedUsd: first };
+
+  // Fallback: cheaper OpenAI model (local/free provider integration is out of scope for this service).
+  const fallbackModel = "gpt-4o-mini";
+  const second = calculateLlmCostUsd({
+    pricing: defaultPricing,
+    provider: "openai",
+    model: fallbackModel,
+    inputTokens,
+    outputTokens: input.expectedOutputTokens,
+  }).usd;
+
+  if (second <= budget.hardLimitUsd) return { model: fallbackModel, estimatedUsd: second };
+
+  throw new BudgetExceededError(
+    `Estimated LLM cost exceeds budget for ${input.budgetKey}. ` +
+      `budget=$${budget.hardLimitUsd.toFixed(4)}, est=$${second.toFixed(4)} (fallback=${fallbackModel})`,
+  );
+}
 
 function summarizeToolsForPrompt(tools: Array<McpTool & Partial<ToolCatalogTool>>, limit: number = 50): string {
   const sorted = [...tools].sort((a, b) => a.name.localeCompare(b.name)).slice(0, limit);
@@ -79,7 +165,11 @@ export function normalizeIncomingMessages(messages: unknown): UIMessage[] {
 }
 
 export const OpenAIAgentService = {
-  async generateBlueprint(input: { messages: any[]; tools?: Array<McpTool & Partial<ToolCatalogTool>> }) {
+  async generateBlueprint(input: {
+    messages: any[];
+    tools?: Array<McpTool & Partial<ToolCatalogTool>>;
+    budgetKey?: string;
+  }) {
     const toolsList = input.tools ?? [];
     const toolsSummary = toolsList.length > 0 ? summarizeToolsForPrompt(toolsList, 80) : "- (no tools available)";
 
@@ -90,37 +180,130 @@ export const OpenAIAgentService = {
       execute: async ({ writer }) => {
         writer.write({ type: "start" });
 
+        const budgetKey = typeof input.budgetKey === "string" && input.budgetKey.length > 0 ? input.budgetKey : "session:anonymous";
+        const ctx = createConsoleGoldenContext({ initiatorId: budgetKey });
+
         try {
-          const uiMessages = normalizeIncomingMessages(input.messages);
-          const modelMessages = await convertToModelMessages(uiMessages);
+          await withGoldenSpan("console.chat.generate_blueprint", ctx, "REASONER", async (rootSpan) => {
+            rootSpan.setAttribute("ai.budget.key", budgetKey);
+            rootSpan.setAttribute("ai.request.kind", "generate_blueprint");
+            rootSpan.setAttribute("ai.tools.count", toolsList.length);
 
-          // Step 1: force a tool call so the UI always receives a structured draft.
-          const planning = streamText({
-            model: openai(process.env.AI_MODEL_NAME || "gpt-4o"),
-            system: blueprintPlanningPrompt,
-            messages: modelMessages,
-            toolChoice: "required",
-            tools: {
-              proposeWorkflow: tool({
-                description: "Propose a workflow blueprint draft the user can refine.",
-                inputSchema: blueprintZodSchema,
-                execute: async (draft) => draft,
-              }),
-            },
+            const budget = getBudgetPolicyFromEnv();
+            if (budget) {
+              llmCostManager.setBudget(budgetKey, budget);
+              rootSpan.setAttribute("ai.budget.window", budget.window);
+              rootSpan.setAttribute("ai.budget.hard_limit_usd", budget.hardLimitUsd);
+            }
+
+            const uiMessages = normalizeIncomingMessages(input.messages);
+            const modelMessages = await convertToModelMessages(uiMessages);
+
+            // Step 1: force a tool call so the UI always receives a structured draft.
+            const requestedModel = process.env.AI_MODEL_NAME || "gpt-4o";
+            const planningModel = preflightModelSelection({
+              budgetKey,
+              model: requestedModel,
+              system: blueprintPlanningPrompt,
+              messages: modelMessages,
+              expectedOutputTokens: 1200,
+            }).model;
+
+            const planningMessages = await withGoldenSpan("console.chat.llm.planning", ctx, "REASONER", async (span) => {
+              span.setAttribute("ai.provider", "openai");
+              span.setAttribute("ai.model", planningModel);
+              span.setAttribute("ai.step", "planning");
+
+              const planning = streamText(
+                {
+                  model: openai(planningModel),
+                  system: blueprintPlanningPrompt,
+                  messages: modelMessages,
+                  toolChoice: "required",
+                  tools: {
+                    proposeWorkflow: tool({
+                      description: "Propose a workflow blueprint draft the user can refine.",
+                      inputSchema: blueprintZodSchema,
+                      execute: async (draft) => draft,
+                    }),
+                  },
+                  onFinish: (result: any) => {
+                    const usage = result?.usage;
+                    const promptTokens = usage?.promptTokens ?? usage?.inputTokens ?? usage?.prompt_tokens;
+                    const completionTokens = usage?.completionTokens ?? usage?.outputTokens ?? usage?.completion_tokens;
+                    if (typeof promptTokens === "number" && typeof completionTokens === "number") {
+                      span.setAttribute("ai.usage.input_tokens", promptTokens);
+                      span.setAttribute("ai.usage.output_tokens", completionTokens);
+
+                      const entry = llmCostManager.recordUsage({
+                        budgetKey,
+                        provider: "openai",
+                        model: planningModel,
+                        inputTokens: promptTokens,
+                        outputTokens: completionTokens,
+                      });
+                      const totals = llmCostManager.getTotals({ budgetKey });
+
+                      span.setAttribute("ai.cost.usd", entry.usd);
+                      span.setAttribute("ai.cost.total_usd", totals.usd);
+                      console.debug("[llm.cost]", { budgetKey, step: "planning", entry, totals });
+                    }
+                  },
+                } as any,
+              );
+
+              writer.merge(planning.toUIMessageStream({ sendFinish: false }));
+              return (await planning.response).messages;
+            });
+
+            // Step 2: produce a human-readable summary + refinement questions.
+            const summaryModel = preflightModelSelection({
+              budgetKey,
+              model: requestedModel,
+              system: summarizerPrompt,
+              messages: [...modelMessages, ...planningMessages],
+              expectedOutputTokens: 800,
+            }).model;
+
+            await withGoldenSpan("console.chat.llm.summary", ctx, "REASONER", async (span) => {
+              span.setAttribute("ai.provider", "openai");
+              span.setAttribute("ai.model", summaryModel);
+              span.setAttribute("ai.step", "summary");
+
+              const summary = streamText(
+                {
+                  model: openai(summaryModel),
+                  system: summarizerPrompt,
+                  messages: [...modelMessages, ...planningMessages],
+                  onFinish: (result: any) => {
+                    const usage = result?.usage;
+                    const promptTokens = usage?.promptTokens ?? usage?.inputTokens ?? usage?.prompt_tokens;
+                    const completionTokens = usage?.completionTokens ?? usage?.outputTokens ?? usage?.completion_tokens;
+                    if (typeof promptTokens === "number" && typeof completionTokens === "number") {
+                      span.setAttribute("ai.usage.input_tokens", promptTokens);
+                      span.setAttribute("ai.usage.output_tokens", completionTokens);
+
+                      const entry = llmCostManager.recordUsage({
+                        budgetKey,
+                        provider: "openai",
+                        model: summaryModel,
+                        inputTokens: promptTokens,
+                        outputTokens: completionTokens,
+                      });
+                      const totals = llmCostManager.getTotals({ budgetKey });
+
+                      span.setAttribute("ai.cost.usd", entry.usd);
+                      span.setAttribute("ai.cost.total_usd", totals.usd);
+                      console.debug("[llm.cost]", { budgetKey, step: "summary", entry, totals });
+                    }
+                  },
+                } as any,
+              );
+
+              writer.merge(summary.toUIMessageStream({ sendStart: false }));
+              await summary.response;
+            });
           });
-
-          writer.merge(planning.toUIMessageStream({ sendFinish: false }));
-
-          // Step 2: produce a human-readable summary + refinement questions.
-          const planningMessages = (await planning.response).messages;
-
-          const summary = streamText({
-            model: openai(process.env.AI_MODEL_NAME || "gpt-4o"),
-            system: summarizerPrompt,
-            messages: [...modelMessages, ...planningMessages],
-          });
-
-          writer.merge(summary.toUIMessageStream({ sendStart: false }));
         } catch (err: any) {
           // Never return an empty response: emit a visible error message for the UI.
           const msg = err?.message ? String(err.message) : String(err);

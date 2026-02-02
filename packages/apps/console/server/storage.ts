@@ -258,7 +258,9 @@ export class SeedableMemoryRepository implements IActivityRepository, IProjectRe
 
   async createEvent(insertEvent: InsertEvent): Promise<Event> {
     const id = randomUUID();
-    const event: Event = { ...insertEvent, id };
+    const incidentId =
+      insertEvent.incidentId ?? (insertEvent.contextType === "incident" ? id : undefined);
+    const event: Event = { ...insertEvent, id, incidentId };
     this.events.set(id, event);
     return event;
   }

@@ -3,6 +3,8 @@
 
 export interface Event {
   id: string;
+  // Phase 6: canonical incident linkage (IMP-032)
+  incidentId?: string;
   timestamp: Date;
   source: "slack" | "jira" | "gitlab" | "bitbucket" | "pagerduty";
   type: "log" | "blocker" | "decision" | "release" | "alert";

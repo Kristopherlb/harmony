@@ -13,6 +13,7 @@ import type { Event, Comment } from "./types";
 describe("Event Mappers", () => {
   const sharedEvent = {
     id: "event-1",
+    incidentId: "event-1",
     timestamp: "2024-01-01T00:00:00Z",
     source: "slack" as const,
     type: "log" as const,
@@ -40,6 +41,7 @@ describe("Event Mappers", () => {
   it("should convert domain Event to shared Event", () => {
     const domain: Event = {
       id: "event-1",
+      incidentId: "event-1",
       timestamp: new Date("2024-01-01T00:00:00Z"),
       source: "slack",
       type: "log",

@@ -98,6 +98,7 @@ describe("WorkflowExecution Mappers", () => {
     error: undefined,
     context: {
       eventId: "11111111-1111-1111-1111-111111111111",
+      incidentId: "22222222-2222-2222-2222-222222222222",
       contextType: "incident" as const,
       serviceTags: ["api"],
     },
@@ -130,6 +131,7 @@ describe("WorkflowExecution Mappers", () => {
       error: undefined,
       context: {
         eventId: "11111111-1111-1111-1111-111111111111",
+        incidentId: "22222222-2222-2222-2222-222222222222",
         contextType: "incident",
         serviceTags: ["api"],
       },
@@ -157,6 +159,7 @@ describe("ExecuteActionRequest Mappers", () => {
     reasoning: "Need to test new feature",
     context: {
       eventId: "11111111-1111-1111-1111-111111111111",
+      incidentId: "22222222-2222-2222-2222-222222222222",
       contextType: "incident" as const,
       serviceTags: ["api"],
     },
@@ -176,6 +179,7 @@ describe("ExecuteActionRequest Mappers", () => {
       reasoning: "Need to test new feature",
       context: {
         eventId: "11111111-1111-1111-1111-111111111111",
+        incidentId: "22222222-2222-2222-2222-222222222222",
         contextType: "incident",
         serviceTags: ["api"],
       },

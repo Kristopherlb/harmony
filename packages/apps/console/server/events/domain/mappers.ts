@@ -10,6 +10,7 @@ import type { Event, Comment } from "./types";
 export function toDomainEvent(shared: SharedEvent): Event {
   return {
     id: shared.id,
+    incidentId: shared.incidentId,
     timestamp: new Date(shared.timestamp),
     source: shared.source,
     type: shared.type,
@@ -32,6 +33,7 @@ export function toDomainEvent(shared: SharedEvent): Event {
 export function toSharedEvent(domain: Event): SharedEvent {
   return {
     id: domain.id,
+    incidentId: domain.incidentId,
     timestamp: domain.timestamp.toISOString(),
     source: domain.source,
     type: domain.type,

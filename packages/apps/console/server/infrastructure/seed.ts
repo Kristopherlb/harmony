@@ -117,8 +117,12 @@ export function generateSeedData(): InitialData {
         payload.failed = Math.random() < 0.08;
       }
 
+      const id = randomUUID();
+      const incidentId = contextType === "incident" ? id : undefined;
+
       events.push({
-        id: randomUUID(),
+        id,
+        incidentId,
         timestamp: eventDate.toISOString(),
         source,
         type,

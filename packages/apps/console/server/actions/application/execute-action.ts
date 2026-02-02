@@ -39,6 +39,15 @@ export class ExecuteAction {
 
     const result = await this.workflowEngine.startWorkflow(action, request, userId, username);
 
+    const canonicalContext = request.context
+      ? {
+          ...request.context,
+          incidentId:
+            request.context.incidentId ??
+            (request.context.contextType === "incident" ? request.context.eventId : undefined),
+        }
+      : undefined;
+
     const execution = await this.actionRepository.createExecution({
       runId: result.runId,
       actionId: action.id,
@@ -50,13 +59,14 @@ export class ExecuteAction {
       executedByUsername: username,
       startedAt: new Date(),
       output: [],
-      context: request.context,
+      context: canonicalContext,
     });
 
     await this.eventIngestion.createEvent({
       timestamp: new Date().toISOString(),
       source: "slack",
       type: "log",
+      incidentId: canonicalContext?.incidentId,
       payload: {
         actionType: "workflow_execution",
         actionId: action.id,
@@ -64,15 +74,15 @@ export class ExecuteAction {
         runId: result.runId,
         status: result.status,
         riskLevel: action.riskLevel,
-        context: request.context ?? {},
+        context: canonicalContext ?? {},
       },
       severity: action.riskLevel === "critical" ? "high" : "medium",
       userId,
       username,
       message: `Action Executed: ${action.name} (${result.status})`,
       resolved: result.status === "completed",
-      contextType: request.context?.contextType ?? "general",
-      serviceTags: request.context?.serviceTags ?? [],
+      contextType: canonicalContext?.contextType ?? "general",
+      serviceTags: canonicalContext?.serviceTags ?? [],
     });
 
     return {

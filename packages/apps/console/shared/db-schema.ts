@@ -67,6 +67,8 @@ export const serviceHealthEnum = pgEnum("service_health", [
 // Events table
 export const events = pgTable("events", {
   id: uuid("id").primaryKey().defaultRandom(),
+  // Phase 6: canonical incident linkage (IMP-032)
+  incidentId: uuid("incident_id"),
   timestamp: timestamp("timestamp", { withTimezone: true }).notNull(),
   source: eventSourceEnum("source").notNull(),
   type: eventTypeEnum("type").notNull(),
@@ -82,6 +84,7 @@ export const events = pgTable("events", {
   serviceTags: jsonb("service_tags").notNull().default([]), // Array of strings stored as JSONB
 }, (table) => ({
   timestampIdx: index("events_timestamp_idx").on(table.timestamp.desc()),
+  incidentIdIdx: index("events_incident_id_idx").on(table.incidentId),
   sourceIdx: index("events_source_idx").on(table.source),
   typeIdx: index("events_type_idx").on(table.type),
   userIdIdx: index("events_user_id_idx").on(table.userId),

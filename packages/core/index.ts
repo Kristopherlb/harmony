@@ -61,6 +61,24 @@ export {
   type RunCostResult,
 } from './src/finops/cost-analyzer.js';
 
+// FinOps (LLM usage + budgets)
+export {
+  BudgetExceededError,
+  LlmCostManager,
+  calculateLlmCostUsd,
+  createInMemoryLlmCostManager,
+  getDefaultLlmPricing,
+  type LlmBudgetPolicy,
+  type LlmBudgetWindow,
+  type LlmCostInput,
+  type LlmCostResult,
+  type LlmPricingTable,
+  type LlmProvider,
+  type LlmUsageEntry,
+  type LlmUsageTotals,
+  type LlmRate,
+} from './src/finops/llm-cost.js';
+
 // WCS
 export {
   BaseBlueprint,

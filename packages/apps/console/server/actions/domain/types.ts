@@ -51,6 +51,7 @@ export interface WorkflowExecution {
   // Phase 5: optional linkage to triggering context (incident/event + service tags)
   context?: {
     eventId?: string;
+    incidentId?: string;
     contextType?: ContextType;
     serviceTags?: string[];
   };
@@ -62,6 +63,7 @@ export interface ExecuteActionRequest {
   reasoning: string;
   context?: {
     eventId?: string;
+    incidentId?: string;
     contextType?: ContextType;
     serviceTags?: string[];
   };

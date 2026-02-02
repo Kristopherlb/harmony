@@ -144,9 +144,12 @@ export class PostgresRepository
     }
 
     const id = randomUUID();
+    const incidentId =
+      insertEvent.incidentId ?? (insertEvent.contextType === "incident" ? id : undefined);
 
     const dbEvent = {
       id,
+      incidentId: incidentId ?? null,
       timestamp: new Date(insertEvent.timestamp),
       source: insertEvent.source,
       type: insertEvent.type,
@@ -186,6 +189,7 @@ export class PostgresRepository
     if (updates.externalLink !== undefined) updateValues.externalLink = updates.externalLink;
     if (updates.contextType !== undefined) updateValues.contextType = updates.contextType;
     if (updates.serviceTags !== undefined) updateValues.serviceTags = updates.serviceTags;
+    if (updates.incidentId !== undefined) updateValues.incidentId = updates.incidentId;
 
     await db.update(events).set(updateValues).where(eq(events.id, id));
 
@@ -597,6 +601,7 @@ export class PostgresRepository
 
   private mapDbEventToEvent(row: {
     id: string;
+    incidentId: string | null;
     timestamp: Date;
     source: string;
     type: string;
@@ -613,6 +618,7 @@ export class PostgresRepository
   }): Event {
     return {
       id: row.id,
+      incidentId: row.incidentId ?? undefined,
       timestamp: row.timestamp.toISOString(),
       source: row.source as EventSource,
       type: row.type as Event["type"],

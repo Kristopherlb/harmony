@@ -11,7 +11,14 @@ export function createChatRouter(deps: { mcpToolService: HarmonyMcpToolService }
       const { messages } = req.body;
       const tools = deps.mcpToolService.listTools();
 
-      const stream = await OpenAIAgentService.generateBlueprint({ messages, tools });
+      const budgetKey =
+        typeof req?.user?.id === "string"
+          ? `user:${req.user.id}`
+          : typeof req?.sessionID === "string"
+            ? `session:${req.sessionID}`
+            : "session:anonymous";
+
+      const stream = await OpenAIAgentService.generateBlueprint({ messages, tools, budgetKey });
       pipeUIMessageStreamToResponse({ response: res, stream });
     } catch (error) {
       console.error("Chat API Error:", error);

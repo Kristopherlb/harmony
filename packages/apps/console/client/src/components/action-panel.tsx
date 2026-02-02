@@ -129,7 +129,12 @@ export function ActionPanel({
       actionId: string;
       params: Record<string, any>;
       reasoning: string;
-      context?: { eventId?: string; contextType?: string; serviceTags?: string[] };
+      context?: {
+        eventId?: string;
+        incidentId?: string;
+        contextType?: string;
+        serviceTags?: string[];
+      };
     }) => {
       const res = await apiRequest("POST", "/api/actions/execute", payload);
       return res.json();
@@ -180,6 +185,8 @@ export function ActionPanel({
       context: event
         ? {
             eventId: event.id,
+            incidentId:
+              event.incidentId ?? (event.contextType === "incident" ? event.id : undefined),
             contextType: event.contextType,
             serviceTags: event.serviceTags,
           }

@@ -66,17 +66,27 @@ export class ApproveOrRejectAction {
       throw new Error("Failed to process approval");
     }
 
+    const canonicalContext = execution.context
+      ? {
+          ...execution.context,
+          incidentId:
+            execution.context.incidentId ??
+            (execution.context.contextType === "incident" ? execution.context.eventId : undefined),
+        }
+      : undefined;
+
     await this.eventIngestion.createEvent({
       timestamp: new Date().toISOString(),
       source: "slack",
       type: request.action === "approve" ? "decision" : "log",
+      incidentId: canonicalContext?.incidentId,
       payload: {
         actionType: "workflow_approval",
         executionId: request.executionId,
         runId: execution.runId,
         action: request.action,
         comment: request.comment,
-        context: execution.context ?? {},
+        context: canonicalContext ?? {},
       },
       severity: "medium",
       userId: request.userId,
@@ -84,8 +94,8 @@ export class ApproveOrRejectAction {
       message: `Action ${request.action === "approve" ? "Approved" : "Rejected"}: ${execution.actionName}`,
       resolved: true,
       resolvedAt: new Date().toISOString(),
-      contextType: execution.context?.contextType ?? "general",
-      serviceTags: execution.context?.serviceTags ?? [],
+      contextType: canonicalContext?.contextType ?? "general",
+      serviceTags: canonicalContext?.serviceTags ?? [],
     });
 
     return {

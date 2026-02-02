@@ -43,6 +43,10 @@ export type ContextType = z.infer<typeof ContextTypeSchema>;
 
 export const EventSchema = z.object({
   id: z.string().uuid(),
+  // Phase 6: canonical incident linkage (IMP-032)
+  // - For the incident event itself: incidentId === id
+  // - For derived/related events: incidentId links back to the incident event id
+  incidentId: z.string().uuid().optional(),
   timestamp: z.string().datetime(),
   source: EventSourceSchema,
   type: EventTypeSchema,
@@ -331,6 +335,7 @@ export const WorkflowExecutionSchema = z.object({
   context: z
     .object({
       eventId: z.string().uuid().optional(),
+      incidentId: z.string().uuid().optional(),
       contextType: ContextTypeSchema.optional(),
       serviceTags: z.array(z.string()).optional(),
     })
@@ -359,6 +364,7 @@ export const ExecuteActionRequestSchema = z.object({
   context: z
     .object({
       eventId: z.string().uuid().optional(),
+      incidentId: z.string().uuid().optional(),
       contextType: ContextTypeSchema.optional(),
       serviceTags: z.array(z.string()).optional(),
     })
