@@ -102,6 +102,14 @@ export function DORAMetricsDetail({
 
   const eventsQuery = useQuery<ActivityStreamResponse>({
     queryKey: ["/api/activity/stream?pageSize=200"],
+    queryFn: async () => {
+      const res = await fetch("/api/activity/stream?pageSize=200", { credentials: "include" });
+      if (!res.ok) {
+        const text = (await res.text()) || res.statusText;
+        throw new Error(`${res.status}: ${text}`);
+      }
+      return (await res.json()) as ActivityStreamResponse;
+    },
     enabled: open,
   });
 
@@ -1375,6 +1383,7 @@ function ReleaseCard({ event, onClick }: { event: Event; onClick?: () => void })
   const failed = payload.failed === true;
   const leadTimeHours = payload.leadTimeHours as number | undefined;
   const isCircleCI = event.source === "circleci";
+  const branch = payload.branch as string | undefined;
   
   // CircleCI URL construction
   const getCircleCIUrl = (): string | null => {
@@ -1427,6 +1436,11 @@ function ReleaseCard({ event, onClick }: { event: Event; onClick?: () => void })
               {payload.jobName && (
                 <Badge variant="outline" className="text-xs truncate max-w-[120px]">
                   {payload.jobName as string}
+                </Badge>
+              )}
+              {branch && (
+                <Badge variant="outline" className="text-xs">
+                  {branch}
                 </Badge>
               )}
             </div>

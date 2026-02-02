@@ -20,6 +20,15 @@ describe('generateToolManifestFromCapabilities', () => {
     expect(echo?.type).toBe('CAPABILITY');
     expect(echo?.data_classification).toBe('PUBLIC');
     expect(echo?.description).toContain('Echo');
+    // Discovery metadata should be deterministic and derived from capability definition + ID.
+    expect(echo?.domain).toBe('demo');
+    expect(echo?.subdomain).toBe('echo');
+    expect(echo?.tags).toEqual(expect.arrayContaining(['demo']));
+    expect(echo?.maintainer).toBe('platform');
+    expect(echo?.requiredScopes).toEqual([]);
+    expect(echo?.allowOutbound).toEqual([]);
+    expect(echo?.isIdempotent).toBe(true);
+    expect(echo?.costFactor).toBe('LOW');
 
     // Basic schema expectations (stability contract).
     expect(echo?.json_schema).toMatchObject({
@@ -80,6 +89,8 @@ describe('generateToolManifestFromCapabilities', () => {
     expect(echoWf).toBeDefined();
     expect(echoWf?.type).toBe('BLUEPRINT');
     expect(echoWf?.description).toContain('E2e workflow');
+    expect(echoWf?.domain).toBe('workflows');
+    expect(echoWf?.subdomain).toBe('echo');
   });
 });
 

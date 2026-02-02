@@ -9,6 +9,13 @@ import type { ErrorCategory } from '../types.js';
 /** Dagger container definition (kept abstract to avoid forcing a Dagger runtime dependency here). */
 export type DaggerContainer = unknown;
 
+/** Strict Retry Policy for idempotent operations. */
+export interface RetryPolicy {
+  maxAttempts: number;
+  initialIntervalSeconds: number;
+  backoffCoefficient: number;
+}
+
 /** OCS Capability interface. Factory is pure; no side effects during factory phase. */
 export interface Capability<
   Input = unknown,
@@ -21,6 +28,17 @@ export interface Capability<
     version: string;
     name: string;
     description: string;
+    /**
+     * Discovery taxonomy (CDM-001).
+     *
+     * NOTE: This is optional for backwards compatibility, but CI/generators
+     * should enforce/populate it for all new/updated capabilities.
+     */
+    domain?: string;
+    /**
+     * Optional finer-grained discovery taxonomy (CDM-001).
+     */
+    subdomain?: string;
     tags: string[];
     maintainer: string;
   };
@@ -43,11 +61,7 @@ export interface Capability<
 
   operations: {
     isIdempotent: boolean;
-    retryPolicy: {
-      maxAttempts: number;
-      initialIntervalSeconds: number;
-      backoffCoefficient: number;
-    };
+    retryPolicy: RetryPolicy;
     errorMap: (error: unknown) => ErrorCategory;
     metrics?: {
       name: string;

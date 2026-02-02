@@ -7,8 +7,24 @@ import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
 import syncGenerator from './generator';
 
 describe('@golden/path:sync', () => {
+  function writeMinimalToolCatalog(tree: ReturnType<typeof createTreeWithEmptyWorkspace>, toolIds: string[]) {
+    tree.write(
+      'packages/tools/mcp-server/src/manifest/tool-catalog.json',
+      JSON.stringify(
+        {
+          version: '1.0.0',
+          tools: toolIds.map((id) => ({ id })),
+        },
+        null,
+        2
+      )
+    );
+  }
+
   it('regenerates capability registry + package barrel from discovered *.capability.ts files', async () => {
     const tree = createTreeWithEmptyWorkspace();
+
+    writeMinimalToolCatalog(tree, ['golden.echo', 'golden.jira.get_issue']);
 
     tree.write(
       'packages/capabilities/src/demo/echo.capability.ts',
@@ -56,6 +72,9 @@ export function getCapability(registry: CapabilityRegistry, capId: string) { ret
 
   it('regenerates blueprint registry + workflows index from discovered descriptors and *.workflow-run.ts files', async () => {
     const tree = createTreeWithEmptyWorkspace();
+
+    // Sync validates tool-catalog presence for deterministic MCP/Console discovery.
+    writeMinimalToolCatalog(tree, ['workflows.echo', 'ops.demo']);
 
     tree.write(
       'packages/blueprints/src/descriptors/echo.descriptor.ts',

@@ -1,0 +1,40 @@
+<!--
+  docs/incidents/templates/confluence/post-mortem.storage.html
+
+  Confluence "storage" format template for incident post-mortems.
+  Intended to be used with `golden.connectors.confluence` (bodyFormat: "storage").
+
+  Note: This file is a template; replace {{placeholders}} deterministically in a workflow/capability.
+-->
+<h1>Incident Summary</h1>
+<p><strong>Incident:</strong> {{incident_id}}</p>
+<p><strong>Severity:</strong> {{incident_severity}}</p>
+<p><strong>Title:</strong> {{incident_title}}</p>
+<p><strong>Started At:</strong> {{incident_started_at}}</p>
+
+<h2>Impact</h2>
+<p>{{impact_summary}}</p>
+
+<h2>Timeline</h2>
+<p><em>TODO:</em> Populate from incident timeline events once available.</p>
+
+<h2>Root Cause</h2>
+<p>{{root_cause}}</p>
+
+<h2>Detection</h2>
+<p>{{detection}}</p>
+
+<h2>Resolution</h2>
+<p>{{resolution}}</p>
+
+<h2>Action Items</h2>
+<ul>
+  <li>{{action_item_1}}</li>
+</ul>
+
+<h2>Links</h2>
+<ul>
+  <li><a href="{{pagerduty_url}}">PagerDuty</a></li>
+  <li><a href="{{statuspage_url}}">Statuspage</a></li>
+  <li><a href="{{runbook_url}}">Runbook</a></li>
+</ul>

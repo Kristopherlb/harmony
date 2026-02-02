@@ -9,7 +9,11 @@ import OperationsHub from "@/pages/operations-hub";
 import WorkbenchPage from "@/pages/workbench-page";
 import OpsConsole, { SignalDetailPage } from "@/pages/ops-console";
 import ServiceCatalog, { ServiceDetailPage } from "@/pages/service-catalog";
+import CapabilitiesCatalogPage from "@/pages/capabilities-catalog";
 import { WorkflowListPage, WorkflowDetailPage } from "@/pages/workflows";
+import ComplianceOverview from "@/pages/compliance/overview";
+import SSPEditor from "@/pages/compliance/ssp-editor";
+import IncidentsPage, { IncidentDetailPage } from "@/pages/incidents";
 import { PageLayout } from "@/components/page-layout";
 
 // Placeholder for future lazy loading if needed
@@ -29,8 +33,13 @@ function Router() {
         <Route path="/console/signal/:id" component={SignalDetailPage} />
         <Route path="/services" component={ServiceCatalog} />
         <Route path="/services/:id" component={ServiceDetailPage} />
+        <Route path="/capabilities" component={CapabilitiesCatalogPage} />
         <Route path="/workflows" component={WorkflowListPage} />
         <Route path="/workflows/:id" component={WorkflowDetailPage} />
+        <Route path="/incidents" component={IncidentsPage} />
+        <Route path="/incidents/:id" component={IncidentDetailPage} />
+        <Route path="/compliance" component={ComplianceOverview} />
+        <Route path="/compliance/ssp" component={SSPEditor} />
         <Route component={NotFound} />
       </Switch>
     </PageLayout>

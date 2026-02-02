@@ -31,6 +31,18 @@
       "options": {
         "lintFilePatterns": ["{projectRoot}/**/*.ts"]
       }
+    },
+    "@nx/vite:test": {
+      "cache": true,
+      "inputs": ["default", "^default"]
     }
-  }
+  },
+  "plugins": [
+    {
+      "plugin": "@nx/eslint/plugin",
+      "options": {
+        "targetName": "lint"
+      }
+    }
+  ]
 }

@@ -4,6 +4,28 @@ import type { Event } from "@shared/schema";
 import type { PrepItem } from "./types";
 import { calculateAtRisk } from "./utils";
 
+function safeGetItem(key: string): string | null {
+  try {
+    if (typeof window === "undefined") return null;
+    const s: any = (window as any).localStorage;
+    if (!s || typeof s.getItem !== "function") return null;
+    return s.getItem(key) as string | null;
+  } catch {
+    return null;
+  }
+}
+
+function safeSetItem(key: string, value: string): void {
+  try {
+    if (typeof window === "undefined") return;
+    const s: any = (window as any).localStorage;
+    if (!s || typeof s.setItem !== "function") return;
+    s.setItem(key, value);
+  } catch {
+    // ignore
+  }
+}
+
 const DEFAULT_PREP_ITEMS: Omit<PrepItem, "resolver">[] = [
   { 
     id: "release-notes", 
@@ -162,7 +184,7 @@ export function usePrepItems(isOpen: boolean): UsePrepItemsReturn {
 
   // Load prep items - resolvers will be added after state is initialized
   const [prepItems, setPrepItems] = useState<PrepItem[]>(() => {
-    const stored = localStorage.getItem("release-prep-checklist");
+    const stored = safeGetItem("release-prep-checklist");
     let loadedItems: Omit<PrepItem, "resolver">[] = DEFAULT_PREP_ITEMS;
     
     if (stored) {
@@ -203,7 +225,7 @@ export function usePrepItems(isOpen: boolean): UsePrepItemsReturn {
   // Automated resolver factory
   const createAutomatedResolver = useCallback((item: Omit<PrepItem, "resolver">) => {
     return async () => {
-      const currentItems = JSON.parse(localStorage.getItem("release-prep-checklist") || "[]");
+      const currentItems = JSON.parse(safeGetItem("release-prep-checklist") || "[]");
       const currentItem = currentItems.find((p: { id?: string }) => p.id === item.id) || item;
       const isCompleted = currentItem.completed;
 
@@ -214,7 +236,7 @@ export function usePrepItems(isOpen: boolean): UsePrepItemsReturn {
               ? { ...prevItem, completed: false, atRisk: prevItem.manualAtRisk || calculateAtRisk(prevItem) }
               : prevItem
           );
-          localStorage.setItem("release-prep-checklist", JSON.stringify(
+          safeSetItem("release-prep-checklist", JSON.stringify(
             updated.map(({ resolver, ...rest }) => rest)
           ));
           return updated;
@@ -239,7 +261,7 @@ export function usePrepItems(isOpen: boolean): UsePrepItemsReturn {
               ? { ...prevItem, completed: true, atRisk: false, manualAtRisk: false }
               : prevItem
           );
-          localStorage.setItem("release-prep-checklist", JSON.stringify(
+          safeSetItem("release-prep-checklist", JSON.stringify(
             updated.map(({ resolver, ...rest }) => rest)
           ));
           return updated;
@@ -257,7 +279,7 @@ export function usePrepItems(isOpen: boolean): UsePrepItemsReturn {
   // Manual resolver factory
   const createManualResolver = useCallback((item: Omit<PrepItem, "resolver">) => {
     return () => {
-      const currentItems = JSON.parse(localStorage.getItem("release-prep-checklist") || "[]");
+      const currentItems = JSON.parse(safeGetItem("release-prep-checklist") || "[]");
       const currentItem = currentItems.find((p: { id?: string }) => p.id === item.id) || item;
       const isCompleted = currentItem.completed;
 
@@ -268,7 +290,7 @@ export function usePrepItems(isOpen: boolean): UsePrepItemsReturn {
               ? { ...prevItem, completed: false, atRisk: prevItem.manualAtRisk || calculateAtRisk(prevItem) }
               : prevItem
           );
-          localStorage.setItem("release-prep-checklist", JSON.stringify(
+          safeSetItem("release-prep-checklist", JSON.stringify(
             updated.map(({ resolver, ...rest }) => rest)
           ));
           return updated;
@@ -321,7 +343,7 @@ export function usePrepItems(isOpen: boolean): UsePrepItemsReturn {
             atRisk: item.manualAtRisk || programmaticAtRisk,
           };
         });
-        localStorage.setItem("release-prep-checklist", JSON.stringify(
+        safeSetItem("release-prep-checklist", JSON.stringify(
           updated.map(({ resolver, ...rest }) => rest)
         ));
         return updated;
@@ -339,7 +361,7 @@ export function usePrepItems(isOpen: boolean): UsePrepItemsReturn {
           ? { ...item, completed: true, atRisk: false, manualAtRisk: false }
           : item
       );
-      localStorage.setItem("release-prep-checklist", JSON.stringify(
+      safeSetItem("release-prep-checklist", JSON.stringify(
         updated.map(({ resolver, ...rest }) => rest)
       ));
       return updated;
@@ -365,7 +387,7 @@ export function usePrepItems(isOpen: boolean): UsePrepItemsReturn {
         }
         return item;
       });
-      localStorage.setItem("release-prep-checklist", JSON.stringify(
+      safeSetItem("release-prep-checklist", JSON.stringify(
         updated.map(({ resolver, ...rest }) => rest)
       ));
       return updated;

@@ -183,8 +183,6 @@ export const slackConnectorCapability: Capability<
       'sh',
       '-c',
       `
-npm install --no-save @slack/web-api 2>/dev/null && node -e '
-const { WebClient } = require("@slack/web-api");
 const fs = require("fs");
 const input = JSON.parse(process.env.INPUT_JSON);
 
@@ -200,12 +198,24 @@ async function run() {
     throw new Error("Slack bot token not mounted at " + BOT_TOKEN_PATH);
   }
 
-  const client = new WebClient(token);
+  async function slackApi(method, body, options) {
+    const res = await fetch("https://slack.com/api/" + method, {
+      method: "POST",
+      headers: {
+        authorization: "Bearer " + token,
+        ...(options && options.headers ? options.headers : {}),
+      },
+      body: options && options.body != null ? options.body : JSON.stringify(body),
+    });
+    const json = await res.json().catch(() => ({ ok: false, error: "invalid_json" }));
+    return json;
+  }
+
   let result;
 
   switch (input.operation) {
     case "sendMessage":
-      result = await client.chat.postMessage({
+      result = await slackApi("chat.postMessage", {
         channel: input.channel,
         text: input.text,
         blocks: input.blocks,
@@ -216,7 +226,7 @@ async function run() {
       break;
 
     case "updateMessage":
-      result = await client.chat.update({
+      result = await slackApi("chat.update", {
         channel: input.channel,
         ts: input.ts,
         text: input.text,
@@ -225,14 +235,14 @@ async function run() {
       break;
 
     case "deleteMessage":
-      result = await client.chat.delete({
+      result = await slackApi("chat.delete", {
         channel: input.channel,
         ts: input.ts,
       });
       break;
 
     case "addReaction":
-      result = await client.reactions.add({
+      result = await slackApi("reactions.add", {
         channel: input.channel,
         timestamp: input.ts,
         name: input.name,
@@ -240,7 +250,7 @@ async function run() {
       break;
 
     case "removeReaction":
-      result = await client.reactions.remove({
+      result = await slackApi("reactions.remove", {
         channel: input.channel,
         timestamp: input.ts,
         name: input.name,
@@ -248,24 +258,35 @@ async function run() {
       break;
 
     case "getChannelInfo":
-      result = await client.conversations.info({
+      result = await slackApi("conversations.info", {
         channel: input.channel,
       });
       break;
 
     case "listChannels":
-      result = await client.conversations.list({
+      result = await slackApi("conversations.list", {
         types: "public_channel,private_channel",
       });
       break;
 
     case "uploadFile":
-      const fileBuffer = Buffer.from(input.file, "base64");
-      result = await client.files.uploadV2({
-        channel_id: input.channel,
-        file: fileBuffer,
-        filename: input.filename || "file",
-      });
+      // Use multipart form upload (no SDK dependency).
+      if (!input.channel) throw new Error("channel is required");
+      if (!input.file) throw new Error("file is required (base64)");
+      const buf = Buffer.from(input.file, "base64");
+      const filename = input.filename || "file";
+      const form = new FormData();
+      form.set("channels", input.channel);
+      form.set("filename", filename);
+      form.set("file", new Blob([buf]), filename);
+      result = await slackApi(
+        "files.upload",
+        undefined,
+        {
+          headers: {}, // do not set content-type; fetch will set multipart boundary
+          body: form,
+        }
+      );
       break;
 
     default:

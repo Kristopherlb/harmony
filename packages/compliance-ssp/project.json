@@ -1,0 +1,29 @@
+{
+    "name": "compliance-ssp",
+    "targets": {
+        "build": {
+            "executor": "@nx/js:tsc",
+            "options": {
+                "main": "{projectRoot}/index.ts",
+                "tsConfig": "{projectRoot}/tsconfig.json",
+                "outputPath": "{projectRoot}/dist"
+            },
+            "outputs": [
+                "{options.outputPath}"
+            ]
+        },
+        "test": {
+            "options": {
+                "configFile": "packages/compliance-ssp/vitest.config.ts"
+            }
+        },
+        "lint": {
+            "options": {
+                "lintFilePatterns": [
+                    "{projectRoot}/**/*.ts",
+                    "!{projectRoot}/dist/**"
+                ]
+            }
+        }
+    }
+}

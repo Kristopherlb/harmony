@@ -46,6 +46,26 @@
       "variants": { "on": true, "off": false },
       "defaultVariant": "on"
     },
+    "cap-golden.operations.runme-runner-enabled": {
+      "state": "ENABLED",
+      "variants": { "on": true, "off": false },
+      "defaultVariant": "on"
+    },
+    "cap-golden.connectors.statuspage-enabled": {
+      "state": "ENABLED",
+      "variants": { "on": true, "off": false },
+      "defaultVariant": "on"
+    },
+    "cap-golden.connectors.confluence-enabled": {
+      "state": "ENABLED",
+      "variants": { "on": true, "off": false },
+      "defaultVariant": "on"
+    },
+    "cap-golden.observability.grafana-api-enabled": {
+      "state": "ENABLED",
+      "variants": { "on": true, "off": false },
+      "defaultVariant": "on"
+    },
     "bp-blueprints.deploy.blue-green-enabled": {
       "state": "ENABLED",
       "variants": { "on": true, "off": false },

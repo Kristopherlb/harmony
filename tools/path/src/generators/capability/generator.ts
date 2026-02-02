@@ -139,17 +139,31 @@ function updateCapabilityRegistry(tree: Tree, moduleBase: string, exportConstNam
 
 export interface CapabilityGeneratorSchema {
   name: string;
+  /**
+   * Discovery taxonomy domain (CDM-001). Used as the first segment after "golden.".
+   * Example: "security", "observability", "ci", "k8s".
+   */
+  domain: string;
+  /**
+   * Optional discovery taxonomy subdomain (CDM-001).
+   * Example: "oauth", "grafana".
+   */
+  subdomain?: string;
   pattern: 'connector' | 'transformer' | 'commander';
   classification: 'PUBLIC' | 'INTERNAL' | 'CONFIDENTIAL' | 'RESTRICTED';
 }
 
 export default async function capabilityGenerator(tree: Tree, options: CapabilityGeneratorSchema) {
   assertKebabCase(options.name);
+  assertKebabCase(options.domain);
+  if (options.subdomain) assertKebabCase(options.subdomain);
 
   const fileName = options.name;
   const base = toCamelCase(fileName);
   const exportConstName = `${base}Capability`;
-  const capId = `golden.${fileName.replace(/-/g, '.')}`;
+  const capId = `golden.${[options.domain, options.subdomain, fileName]
+    .filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
+    .join('.')}`;
   const folder = `${options.pattern}s`;
   const moduleBase = `${folder}/${fileName}.capability`;
 
@@ -180,7 +194,14 @@ export const ${exportConstName}: Capability<${base}Input, ${base}Output, ${base}
     version: '1.0.0',
     name: '${base}',
     description: 'TODO: Describe what this capability does (purpose, not effect).',
-    tags: ['generated', '${options.pattern.toLowerCase()}'],
+    domain: '${options.domain}',
+    ${options.subdomain ? `subdomain: '${options.subdomain}',` : ''}
+    tags: [
+      '${options.domain}',
+      ${options.subdomain ? `'${options.subdomain}',` : ''}
+      'generated',
+      '${options.pattern.toLowerCase()}',
+    ].filter(Boolean) as string[],
     maintainer: 'platform',
   },
   schemas: {

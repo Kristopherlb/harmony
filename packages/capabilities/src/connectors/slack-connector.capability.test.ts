@@ -76,6 +76,9 @@ describe('slackConnectorCapability', () => {
             expect(calls.from[0]).toContain('node:');
             expect(calls.env.some((e) => e.key === 'OPERATION' && e.value === 'sendMessage')).toBe(true);
             expect(calls.env.some((e) => e.key === 'CHANNEL' && e.value === '#general')).toBe(true);
+            const script = calls.exec.find((a) => a[0] === 'sh' && a[1] === '-c')?.[2] ?? '';
+            expect(script).not.toContain('npm install');
+            expect(script).not.toContain('@slack/web-api');
         });
     });
 

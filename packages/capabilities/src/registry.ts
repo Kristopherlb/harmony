@@ -7,37 +7,58 @@
 import type { Capability } from '@golden/core';
 import { jwtUtilitiesCapability } from './auth/jwt-utilities.capability.js';
 import { oauthProviderCapability } from './auth/oauth-provider.capability.js';
+import { openbaoCapability } from './auth/openbao.capability.js';
+import { certifyCapability } from './ci/certify.capability.js';
+import { containerBuilderCapability } from './ci/container-builder.capability.js';
+import { oscalGeneratorCapability } from './ci/oscal-generator.capability.js';
+import { releaseManifestCapability } from './ci/release-manifest.capability.js';
+import { kubectlCapability } from './commanders/kubectl.capability.js';
 import { terraformRunnerCapability } from './commanders/terraform-runner.capability.js';
 import { awsSdkCapability } from './connectors/aws-sdk.capability.js';
+import { confluenceCapability } from './connectors/confluence.capability.js';
+import { pagerdutyCapability } from './connectors/pagerduty.capability.js';
 import { postgresqlCapability } from './connectors/postgresql.capability.js';
 import { redisCapability } from './connectors/redis.capability.js';
-import { pagerdutyCapability } from './connectors/pagerduty.capability.js';
 import { slackConnectorCapability } from './connectors/slack-connector.capability.js';
+import { statuspageCapability } from './connectors/statuspage.capability.js';
 import { echoCapability } from './demo/echo.capability.js';
+import { autoFeatureFlagCapability } from './flags/auto-feature-flag.capability.js';
+import { flagdSyncCapability } from './flags/flagd-sync.capability.js';
 import { openfeatureProviderCapability } from './flags/openfeature-provider.capability.js';
 import { githubGraphqlQueryCapability } from './connectors/github-graphql-query.capability.js';
 import { githubRestRequestCapability } from './connectors/github-rest-request.capability.js';
+import { slackInteractiveCapability } from './integrations/slack-interactive.capability.js';
 import { jiraIssueCountCapability } from './connectors/jira-issue-count.capability.js';
 import { jiraIssueSearchCapability } from './connectors/jira-issue-search.capability.js';
+import { k8sApplyCapability } from './k8s/apply.capability.js';
 import { mathAddCapability } from './demo/math-add.capability.js';
+import { grafanaApiCapability } from './observability/grafana-api.capability.js';
 import { healthCheckProbeCapability } from './observability/health-check-probe.capability.js';
+import { runmeRunnerCapability } from './operations/runme-runner.capability.js';
 import { bomctlCapability } from './sbom/bomctl.capability.js';
 import { protobomCapability } from './sbom/protobom.capability.js';
 import { syftCapability } from './sbom/syft.capability.js';
 import { checkovCapability } from './security/checkov.capability.js';
 import { clamavScannerCapability } from './security/clamav-scanner.capability.js';
 import { gitleaksCapability } from './security/gitleaks.capability.js';
+import { gittufCapability } from './security/gittuf.capability.js';
 import { grypeCapability } from './security/grype.capability.js';
 import { guacCapability } from './security/guac.capability.js';
 import { minderCapability } from './security/minder.capability.js';
+import { modelSigningCapability } from './security/model-signing.capability.js';
 import { openvexCapability } from './security/openvex.capability.js';
 import { osvScannerCapability } from './security/osv-scanner.capability.js';
+import { packageAnalysisCapability } from './security/package-analysis.capability.js';
 import { scorecardCapability } from './security/scorecard.capability.js';
-import { semgrepScannerCapability } from './security/semgrep-scanner.capability.js';
 import { securityInsightsCapability } from './security/security-insights.capability.js';
+import { semgrepScannerCapability } from './security/semgrep-scanner.capability.js';
 import { sigstoreCapability } from './security/sigstore.capability.js';
 import { slsaVerifierCapability } from './security/slsa-verifier.capability.js';
 import { trivyScannerCapability } from './security/trivy-scanner.capability.js';
+import { tufRepositoryCapability } from './security/tuf-repository.capability.js';
+import { temporalVersionManagerCapability } from './temporal/version-manager.capability.js';
+import { canaryAnalyzerCapability } from './traffic/canary-analyzer.capability.js';
+import { meshRouterCapability } from './traffic/mesh-router.capability.js';
 import { compressionCapability } from './utilities/compression.capability.js';
 import { diffGeneratorCapability } from './utilities/diff-generator.capability.js';
 import { digitalSigningCapability } from './utilities/digital-signing.capability.js';
@@ -45,20 +66,6 @@ import { encodingCapability } from './utilities/encoding.capability.js';
 import { hashingCapability } from './utilities/hashing.capability.js';
 import { jsonYamlTransformCapability } from './utilities/json-yaml-transform.capability.js';
 import { templateRendererCapability } from './utilities/template-renderer.capability.js';
-// Phase 7: Deployment capabilities
-import { temporalVersionManagerCapability } from './temporal/version-manager.capability.js';
-import { k8sApplyCapability } from './k8s/apply.capability.js';
-import { containerBuilderCapability } from './ci/container-builder.capability.js';
-// Phase 7: Compliance capabilities
-import { certifyCapability } from './ci/certify.capability.js';
-import { oscalGeneratorCapability } from './ci/oscal-generator.capability.js';
-import { releaseManifestCapability } from './ci/release-manifest.capability.js';
-// Phase 7: Flag capabilities
-import { autoFeatureFlagCapability } from './flags/auto-feature-flag.capability.js';
-import { flagdSyncCapability } from './flags/flagd-sync.capability.js';
-// Phase 7: Traffic capabilities
-import { canaryAnalyzerCapability } from './traffic/canary-analyzer.capability.js';
-import { meshRouterCapability } from './traffic/mesh-router.capability.js';
 
 export type CapabilityRegistry = Map<string, Capability<unknown, unknown, unknown, unknown>>;
 
@@ -66,37 +73,58 @@ export function createCapabilityRegistry(): CapabilityRegistry {
   return new Map([
     [jwtUtilitiesCapability.metadata.id, jwtUtilitiesCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [oauthProviderCapability.metadata.id, oauthProviderCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [openbaoCapability.metadata.id, openbaoCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [certifyCapability.metadata.id, certifyCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [containerBuilderCapability.metadata.id, containerBuilderCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [oscalGeneratorCapability.metadata.id, oscalGeneratorCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [releaseManifestCapability.metadata.id, releaseManifestCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [kubectlCapability.metadata.id, kubectlCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [terraformRunnerCapability.metadata.id, terraformRunnerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [awsSdkCapability.metadata.id, awsSdkCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [confluenceCapability.metadata.id, confluenceCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [pagerdutyCapability.metadata.id, pagerdutyCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [postgresqlCapability.metadata.id, postgresqlCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [redisCapability.metadata.id, redisCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [slackConnectorCapability.metadata.id, slackConnectorCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
-    [pagerdutyCapability.metadata.id, pagerdutyCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [statuspageCapability.metadata.id, statuspageCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [echoCapability.metadata.id, echoCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [autoFeatureFlagCapability.metadata.id, autoFeatureFlagCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [flagdSyncCapability.metadata.id, flagdSyncCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [openfeatureProviderCapability.metadata.id, openfeatureProviderCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [githubGraphqlQueryCapability.metadata.id, githubGraphqlQueryCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [githubRestRequestCapability.metadata.id, githubRestRequestCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [slackInteractiveCapability.metadata.id, slackInteractiveCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [jiraIssueCountCapability.metadata.id, jiraIssueCountCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [jiraIssueSearchCapability.metadata.id, jiraIssueSearchCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [k8sApplyCapability.metadata.id, k8sApplyCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [mathAddCapability.metadata.id, mathAddCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [grafanaApiCapability.metadata.id, grafanaApiCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [healthCheckProbeCapability.metadata.id, healthCheckProbeCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [runmeRunnerCapability.metadata.id, runmeRunnerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [bomctlCapability.metadata.id, bomctlCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [protobomCapability.metadata.id, protobomCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [syftCapability.metadata.id, syftCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [checkovCapability.metadata.id, checkovCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [clamavScannerCapability.metadata.id, clamavScannerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [gitleaksCapability.metadata.id, gitleaksCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [gittufCapability.metadata.id, gittufCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [grypeCapability.metadata.id, grypeCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [guacCapability.metadata.id, guacCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [minderCapability.metadata.id, minderCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [modelSigningCapability.metadata.id, modelSigningCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [openvexCapability.metadata.id, openvexCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [osvScannerCapability.metadata.id, osvScannerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [packageAnalysisCapability.metadata.id, packageAnalysisCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [scorecardCapability.metadata.id, scorecardCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
-    [semgrepScannerCapability.metadata.id, semgrepScannerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [securityInsightsCapability.metadata.id, securityInsightsCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [semgrepScannerCapability.metadata.id, semgrepScannerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [sigstoreCapability.metadata.id, sigstoreCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [slsaVerifierCapability.metadata.id, slsaVerifierCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [trivyScannerCapability.metadata.id, trivyScannerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [tufRepositoryCapability.metadata.id, tufRepositoryCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [temporalVersionManagerCapability.metadata.id, temporalVersionManagerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [canaryAnalyzerCapability.metadata.id, canaryAnalyzerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [meshRouterCapability.metadata.id, meshRouterCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [compressionCapability.metadata.id, compressionCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [diffGeneratorCapability.metadata.id, diffGeneratorCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [digitalSigningCapability.metadata.id, digitalSigningCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
@@ -104,20 +132,6 @@ export function createCapabilityRegistry(): CapabilityRegistry {
     [hashingCapability.metadata.id, hashingCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [jsonYamlTransformCapability.metadata.id, jsonYamlTransformCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [templateRendererCapability.metadata.id, templateRendererCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
-    // Phase 7: Deployment capabilities
-    [temporalVersionManagerCapability.metadata.id, temporalVersionManagerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
-    [k8sApplyCapability.metadata.id, k8sApplyCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
-    [containerBuilderCapability.metadata.id, containerBuilderCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
-    // Phase 7: Compliance capabilities
-    [certifyCapability.metadata.id, certifyCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
-    [oscalGeneratorCapability.metadata.id, oscalGeneratorCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
-    [releaseManifestCapability.metadata.id, releaseManifestCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
-    // Phase 7: Flag capabilities
-    [autoFeatureFlagCapability.metadata.id, autoFeatureFlagCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
-    [flagdSyncCapability.metadata.id, flagdSyncCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
-    // Phase 7: Traffic capabilities
-    [canaryAnalyzerCapability.metadata.id, canaryAnalyzerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
-    [meshRouterCapability.metadata.id, meshRouterCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
   ]);
 }
 

@@ -5,4 +5,33 @@
 export * from './binders/oauth-broker.js';
 export * from './binders/flag-provider.js';
 export * from './types.js';
-// Export other modules as needed, but for now just the new binders and types.
+
+// Context exports
+export {
+  goldenContextSchema,
+  parseGoldenContext,
+  hasIncidentContext,
+  extractIncidentFields,
+  DATA_CLASSIFICATION,
+  INCIDENT_SEVERITY,
+  type GoldenContext,
+  type DataClassification,
+  type IncidentSeverity,
+} from './context/golden-context.js';
+
+export {
+  generateIncidentId,
+  createIncidentGoldenContext,
+  extractIncidentContext,
+  updateIncidentContext,
+  generateIncidentChannelName,
+  buildIncidentSummary,
+  isHighPriority,
+  getApprovalTimeoutForSeverity,
+  type IncidentContext,
+  type IncidentIdOptions,
+} from './context/incident-context.js';
+
+// OCS exports
+export type { Capability } from './ocs/capability.js';
+export type { CapabilityContext, ErrorCategory } from './types.js';

@@ -8,8 +8,9 @@ export default defineConfig({
       { find: /^@golden\/core\/workflow$/, replacement: path.resolve(__dirname, '../../core/src/wcs/workflow.ts') },
       { find: /^@golden\/core$/, replacement: path.resolve(__dirname, '../../core/index.ts') },
       { find: /^@golden\/schema-registry$/, replacement: path.resolve(__dirname, '../../schema-registry/index.ts') },
-      { find: /^@golden\/capabilities$/, replacement: path.resolve(__dirname, '../../capabilities/index.ts') },
-      { find: /^@golden\/blueprints$/, replacement: path.resolve(__dirname, '../../blueprints/index.ts') },
+      // Registry-only aliases avoid `.js`-suffixed ESM exports in package entrypoints during tests.
+      { find: /^@golden\/capabilities$/, replacement: path.resolve(__dirname, '../../capabilities/src/registry.ts') },
+      { find: /^@golden\/blueprints$/, replacement: path.resolve(__dirname, '../../blueprints/src/registry.ts') },
     ],
   },
   test: {

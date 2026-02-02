@@ -50,6 +50,7 @@ export class ExecuteAction {
       executedByUsername: username,
       startedAt: new Date(),
       output: [],
+      context: request.context,
     });
 
     await this.eventIngestion.createEvent({
@@ -63,14 +64,15 @@ export class ExecuteAction {
         runId: result.runId,
         status: result.status,
         riskLevel: action.riskLevel,
+        context: request.context ?? {},
       },
       severity: action.riskLevel === "critical" ? "high" : "medium",
       userId,
       username,
       message: `Action Executed: ${action.name} (${result.status})`,
       resolved: result.status === "completed",
-      contextType: "general",
-      serviceTags: [],
+      contextType: request.context?.contextType ?? "general",
+      serviceTags: request.context?.serviceTags ?? [],
     });
 
     return {

@@ -22,6 +22,12 @@
       "options": {
         "lintFilePatterns": ["{projectRoot}/**/*.ts", "!{projectRoot}/dist/**"]
       }
+    },
+    "generate-tool-catalog": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm -w exec tsx packages/tools/mcp-server/src/cli/generate-tool-catalog.ts"
+      }
     }
   }
 }

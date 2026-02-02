@@ -17,7 +17,13 @@
     "types": ["node", "vite/client"],
     "paths": {
       "@/*": ["./client/src/*"],
-      "@shared/*": ["./shared/*"]
+      "@shared/*": ["./shared/*"],
+      "@golden/blueprints": ["../../blueprints/index.ts"],
+      "@golden/capabilities": ["../../capabilities/index.ts"],
+      "@golden/core": ["../../core/index.ts"],
+      "@golden/core/workflow": ["../../core/src/wcs/workflow.ts"],
+      "@golden/mcp-server": ["../../tools/mcp-server/index.ts"],
+      "@golden/schema-registry": ["../../schema-registry/index.ts"]
     }
   }
 }

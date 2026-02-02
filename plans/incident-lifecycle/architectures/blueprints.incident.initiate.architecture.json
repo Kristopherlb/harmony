@@ -1,0 +1,80 @@
+{
+  "blueprint_metadata": {
+    "id": "blueprints.incident.initiate",
+    "version": "1.0.0",
+    "security_classification": "CONFIDENTIAL"
+  },
+  "acceptance_tests": [
+    {
+      "scenario": "Happy Path: initiate incident",
+      "expected_outcome": "Creates initial incident notifications (Slack, PagerDuty, Statuspage) and returns correlation IDs."
+    },
+    {
+      "scenario": "Slack notify fails",
+      "expected_outcome": "Workflow continues with PagerDuty/Statuspage creation and returns partial results plus warnings."
+    }
+  ],
+  "hitl_requirements": {
+    "clarification_questions": [
+      "What Slack channel should be used for incident comms (ID preferred)?",
+      "Should PagerDuty and/or Statuspage be created for all severities or only P1/P2?"
+    ],
+    "developer_actions": [
+      "Provision Slack bot token secret for golden.connectors.slack",
+      "Provision PagerDuty API token and configure default service/escalation policy if used",
+      "Provision Statuspage API key and configure default page ID if used"
+    ],
+    "runtime_approvals": []
+  },
+  "security_logic": {
+    "required_roles": [
+      "incident-commander",
+      "sre-oncall"
+    ],
+    "hitl_points": []
+  },
+  "dag": {
+    "steps": [
+      {
+        "id": "slack_announce",
+        "capability": "golden.connectors.slack",
+        "input_mapping": {
+          "blocks": "context.slackBlocks",
+          "channel": "context.slackChannel",
+          "operation": "context.slackOperation",
+          "text": "context.slackText"
+        }
+      },
+      {
+        "id": "pagerduty_create_incident",
+        "capability": "golden.connectors.pagerduty",
+        "input_mapping": {
+          "description": "context.pagerdutyDescription",
+          "operation": "context.pagerdutyOperation",
+          "serviceId": "context.pagerdutyServiceId",
+          "title": "context.pagerdutyTitle",
+          "urgency": "context.pagerdutyUrgency"
+        },
+        "is_parallel": true
+      },
+      {
+        "id": "statuspage_create_incident",
+        "capability": "golden.connectors.statuspage",
+        "input_mapping": {
+          "body": "context.statuspageBody",
+          "deliverNotifications": "context.statuspageDeliverNotifications",
+          "impact": "context.statuspageImpact",
+          "name": "context.statuspageName",
+          "operation": "context.statuspageOperation",
+          "pageId": "context.statuspagePageId",
+          "status": "context.statuspageStatus"
+        },
+        "is_parallel": true
+      }
+    ]
+  },
+  "temporal_tuning": {
+    "aps_strategy": "sequential",
+    "retry_policy_overrides": {}
+  }
+}

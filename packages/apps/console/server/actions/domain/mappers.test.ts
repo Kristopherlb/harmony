@@ -96,6 +96,11 @@ describe("WorkflowExecution Mappers", () => {
     approvedAt: undefined,
     output: ["Step 1 completed"],
     error: undefined,
+    context: {
+      eventId: "11111111-1111-1111-1111-111111111111",
+      contextType: "incident" as const,
+      serviceTags: ["api"],
+    },
   };
 
   it("should convert shared WorkflowExecution to domain WorkflowExecution", () => {
@@ -123,6 +128,11 @@ describe("WorkflowExecution Mappers", () => {
       approvedAt: undefined,
       output: ["Step 1 completed"],
       error: undefined,
+      context: {
+        eventId: "11111111-1111-1111-1111-111111111111",
+        contextType: "incident",
+        serviceTags: ["api"],
+      },
     };
 
     const shared = toSharedWorkflowExecution(domain);
@@ -145,6 +155,11 @@ describe("ExecuteActionRequest Mappers", () => {
     actionId: "action-1",
     params: { environment: "dev" },
     reasoning: "Need to test new feature",
+    context: {
+      eventId: "11111111-1111-1111-1111-111111111111",
+      contextType: "incident" as const,
+      serviceTags: ["api"],
+    },
   };
 
   it("should convert shared ExecuteActionRequest to domain ExecuteActionRequest", () => {
@@ -159,6 +174,11 @@ describe("ExecuteActionRequest Mappers", () => {
       actionId: "action-1",
       params: { environment: "dev" },
       reasoning: "Need to test new feature",
+      context: {
+        eventId: "11111111-1111-1111-1111-111111111111",
+        contextType: "incident",
+        serviceTags: ["api"],
+      },
     };
 
     const shared = toSharedExecuteActionRequest(domain);

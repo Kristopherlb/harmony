@@ -168,7 +168,12 @@ export async function runVersionedWorker(
 }
 
 // Allow running directly as a script
-if (import.meta.url.endsWith(process.argv[1] ?? '')) {
+const isMain =
+  typeof require !== 'undefined' &&
+  typeof module !== 'undefined' &&
+  (require as unknown as { main?: unknown }).main === module;
+
+if (isMain) {
   runVersionedWorker().catch((error) => {
     console.error('Failed to start worker:', error);
     process.exit(1);

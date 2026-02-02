@@ -1,0 +1,99 @@
+{
+  "blueprint_metadata": {
+    "id": "blueprints.incident.remediate",
+    "version": "1.0.0",
+    "security_classification": "CONFIDENTIAL"
+  },
+  "acceptance_tests": [
+    {
+      "scenario": "Happy Path: approved remediation via runbook",
+      "expected_outcome": "Workflow requests approval, then executes Runme runbook cells and posts remediation status to Slack."
+    },
+    {
+      "scenario": "Approval rejected",
+      "expected_outcome": "Workflow stops without executing remediation and posts rejection summary."
+    },
+    {
+      "scenario": "Runbook fails mid-execution",
+      "expected_outcome": "Workflow surfaces failure, posts error summary, and does not continue to close-out automatically."
+    }
+  ],
+  "hitl_requirements": {
+    "clarification_questions": [
+      "Are approvals expected to be granted via Slack interactions, Console UI, or both?",
+      "Which actions are considered 'sensitive' per severity (e.g., rollback, cache clear, DB pool reset)?"
+    ],
+    "developer_actions": [
+      "Ensure ApprovalNotificationActivity is configured to post to Slack (for waitForApproval notifySlackChannel)",
+      "Provision Slack bot token secret for golden.connectors.slack (status updates)",
+      "Provision Runme execution environment and any required secrets for runbooks"
+    ],
+    "runtime_approvals": [
+      "approvalGateBeforeRemediation"
+    ]
+  },
+  "security_logic": {
+    "required_roles": [
+      "incident-commander",
+      "sre-oncall"
+    ],
+    "hitl_points": [
+      "approvalGateBeforeRemediation"
+    ]
+  },
+  "dag": {
+    "steps": [
+      {
+        "id": "notify_slack_remediation_start",
+        "capability": "golden.connectors.slack",
+        "input_mapping": {
+          "blocks": "context.slackBlocks",
+          "channel": "context.slackChannel",
+          "operation": "context.slackOperation",
+          "text": "context.slackText"
+        }
+      },
+      {
+        "id": "execute_runbook",
+        "capability": "golden.operations.runme-runner",
+        "input_mapping": {
+          "cells": "context.runbookCells",
+          "env": "context.runbookEnv",
+          "source": "context.runbookSource",
+          "sourceType": "context.runbookSourceType",
+          "timeout": "context.runbookTimeout",
+          "workdir": "context.runbookWorkdir"
+        }
+      },
+      {
+        "id": "kubernetes_action_optional",
+        "capability": "golden.commanders.kubectl",
+        "input_mapping": {
+          "command": "context.kubectlCommand",
+          "container": "context.kubectlContainer",
+          "context": "context.kubectlContext",
+          "flags": "context.kubectlFlags",
+          "manifest": "context.kubectlManifest",
+          "namespace": "context.kubectlNamespace",
+          "operation": "context.kubectlOperation",
+          "resourceName": "context.kubectlResourceName"
+        }
+      },
+      {
+        "id": "notify_slack_remediation_result",
+        "capability": "golden.connectors.slack",
+        "input_mapping": {
+          "blocks": "context.slackResultBlocks",
+          "channel": "context.slackChannel",
+          "operation": "context.slackResultOperation",
+          "text": "context.slackResultText",
+          "ts": "context.slackResultTs"
+        }
+      }
+    ]
+  },
+  "temporal_tuning": {
+    "aps_strategy": "sequential",
+    "retry_policy_overrides": {}
+  }
+}

@@ -8,6 +8,14 @@
       "type": "string",
       "description": "kebab-case capability name (e.g., jira-get-issue)"
     },
+    "domain": {
+      "type": "string",
+      "description": "Discovery taxonomy domain (CDM-001) (e.g., security, observability, ci, k8s)"
+    },
+    "subdomain": {
+      "type": "string",
+      "description": "Optional discovery taxonomy subdomain (CDM-001) (e.g., oauth, grafana)"
+    },
     "pattern": {
       "type": "string",
       "description": "Capability pattern",
@@ -19,7 +27,7 @@
       "enum": ["PUBLIC", "INTERNAL", "CONFIDENTIAL", "RESTRICTED"]
     }
   },
-  "required": ["name", "pattern", "classification"],
+  "required": ["name", "domain", "pattern", "classification"],
   "additionalProperties": false
 }
 

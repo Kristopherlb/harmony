@@ -17,6 +17,11 @@ export const GOLDEN_ATTRIBUTES = {
   INITIATOR_ID: 'golden.initiator_id',
   IS_COMPENSATION: 'golden.is_compensation',
   BUSINESS_VALUE: 'golden.business_value',
+  // Incident tracking attributes
+  INCIDENT_ID: 'golden.incident_id',
+  INCIDENT_SEVERITY: 'golden.incident_severity',
+  INCIDENT_CHANNEL: 'golden.incident_channel',
+  PAGERDUTY_INCIDENT_ID: 'golden.pagerduty_incident_id',
 } as const;
 
 export type GoldenComponentType = 'ORCHESTRATOR' | 'REASONER' | 'CONTRACT' | 'EXECUTABLE';
@@ -36,6 +41,21 @@ export function getGoldenSpanAttributes(
     [GOLDEN_ATTRIBUTES.IS_COMPENSATION]: options?.isCompensation ?? false,
   };
   if (options?.businessValue != null) attrs[GOLDEN_ATTRIBUTES.BUSINESS_VALUE] = options.businessValue;
+
+  // Add incident tracking attributes when present
+  if (ctx.incident_id) {
+    attrs[GOLDEN_ATTRIBUTES.INCIDENT_ID] = ctx.incident_id;
+  }
+  if (ctx.incident_severity) {
+    attrs[GOLDEN_ATTRIBUTES.INCIDENT_SEVERITY] = ctx.incident_severity;
+  }
+  if (ctx.incident_channel) {
+    attrs[GOLDEN_ATTRIBUTES.INCIDENT_CHANNEL] = ctx.incident_channel;
+  }
+  if (ctx.pagerduty_incident_id) {
+    attrs[GOLDEN_ATTRIBUTES.PAGERDUTY_INCIDENT_ID] = ctx.pagerduty_incident_id;
+  }
+
   return attrs;
 }
 

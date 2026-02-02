@@ -1,0 +1,69 @@
+
+ >  NX   Running target build for project capabilities and 2 tasks it depends on:
+
+ 
+
+> nx run capabilities:build
+
+(node:24453) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Compiling TypeScript files for project "capabilities"...
+[1m[31m[96mpackages/capabilities/src/auth/openbao.capability.ts[0m:[93m54[0m:[93m9[0m - [91merror[0m[90m TS2322: [0mType 'ZodObject<{ operation: ZodEnum<["read", "write", "list", "delete"]>; path: ZodString; data: ZodOptional<ZodRecord<ZodString, ZodUnknown>>; engine: ZodDefault<...>; mountPoint: ZodDefault<...>; }, "strip", ZodTypeAny, { ...; }, { ...; }>' is not assignable to type 'ZodType<{ operation: "read" | "write" | "list" | "delete"; path: string; engine: string; mountPoint: string; data?: Record<string, unknown> | undefined; }, ZodTypeDef, { operation: "read" | ... 2 more ... | "delete"; path: string; engine: string; mountPoint: string; data?: Record<...> | undefined; }>'.[39m[22m
+[1m[31m  The types of '_input.engine' are incompatible between these types.[39m[22m
+[1m[31m    Type 'string | undefined' is not assignable to type 'string'.[39m[22m
+[1m[31m      Type 'undefined' is not assignable to type 'string'.[39m[22m
+[1m[31m[39m[22m
+[1m[31m[7m54[0m         input: inputSchema,[39m[22m
+[1m[31m[7m  [0m [91m        ~~~~~[0m[39m[22m
+[1m[31m[39m[22m
+[1m[31m  [96mpackages/core/dist/src/ocs/capability.d.ts[0m:[93m32[0m:[93m9[0m[39m[22m
+[1m[31m    [7m32[0m         input: z.ZodType<Input>;[39m[22m
+[1m[31m    [7m  [0m [96m        ~~~~~[0m[39m[22m
+[1m[31m    The expected type comes from property 'input' which is declared here on type '{ input: ZodType<{ operation: "read" | "write" | "list" | "delete"; path: string; engine: string; mountPoint: string; data?: Record<string, unknown> | undefined; }, ZodTypeDef, { ...; }>; output: ZodType<...>; config: ZodType<...>; secrets: ZodType<...>; }'[39m[22m
+[1m[31m[96mpackages/capabilities/src/auth/openbao.capability.ts[0m:[93m68[0m:[93m9[0m - [91merror[0m[90m TS2741: [0mProperty 'backoffCoefficient' is missing in type '{ maxAttempts: number; initialIntervalSeconds: number; }' but required in type '{ maxAttempts: number; initialIntervalSeconds: number; backoffCoefficient: number; }'.[39m[22m
+[1m[31m[39m[22m
+[1m[31m[7m68[0m         retryPolicy: { maxAttempts: 3, initialIntervalSeconds: 1 },[39m[22m
+[1m[31m[7m  [0m [91m        ~~~~~~~~~~~[0m[39m[22m
+[1m[31m[39m[22m
+[1m[31m  [96mpackages/core/dist/src/ocs/capability.d.ts[0m:[93m50[0m:[93m13[0m[39m[22m
+[1m[31m    [7m50[0m             backoffCoefficient: number;[39m[22m
+[1m[31m    [7m  [0m [96m            ~~~~~~~~~~~~~~~~~~[0m[39m[22m
+[1m[31m    'backoffCoefficient' is declared here.[39m[22m
+[1m[31m  [96mpackages/core/dist/src/ocs/capability.d.ts[0m:[93m47[0m:[93m9[0m[39m[22m
+[1m[31m    [7m47[0m         retryPolicy: {[39m[22m
+[1m[31m    [7m  [0m [96m        ~~~~~~~~~~~[0m[39m[22m
+[1m[31m    The expected type comes from property 'retryPolicy' which is declared here on type '{ isIdempotent: boolean; retryPolicy: { maxAttempts: number; initialIntervalSeconds: number; backoffCoefficient: number; }; errorMap: (error: unknown) => ErrorCategory; metrics?: { ...; }[] | undefined; costFactor: "LOW" | ... 1 more ... | "HIGH"; }'[39m[22m
+[1m[31m[96mpackages/capabilities/src/auth/openbao.capability.ts[0m:[93m76[0m:[93m9[0m - [91merror[0m[90m TS2739: [0mType '{ operation: "read"; path: string; }' is missing the following properties from type '{ operation: "read" | "write" | "list" | "delete"; path: string; engine: string; mountPoint: string; data?: Record<string, unknown> | undefined; }': engine, mountPoint[39m[22m
+[1m[31m[39m[22m
+[1m[31m[7m76[0m         exampleInput: {[39m[22m
+[1m[31m[7m  [0m [91m        ~~~~~~~~~~~~[0m[39m[22m
+[1m[31m[39m[22m
+[1m[31m  [96mpackages/core/dist/src/ocs/capability.d.ts[0m:[93m61[0m:[93m9[0m[39m[22m
+[1m[31m    [7m61[0m         exampleInput: Input;[39m[22m
+[1m[31m    [7m  [0m [96m        ~~~~~~~~~~~~[0m[39m[22m
+[1m[31m    The expected type comes from property 'exampleInput' which is declared here on type '{ exampleInput: { operation: "read" | "write" | "list" | "delete"; path: string; engine: string; mountPoint: string; data?: Record<string, unknown> | undefined; }; exampleOutput: { message: string; success: boolean; data?: Record<...> | undefined; metadata?: Record<...> | undefined; }; usageNotes?: string | undefine...'[39m[22m
+[1m[31m[96mpackages/capabilities/src/commanders/kubectl.capability.ts[0m:[93m55[0m:[93m9[0m - [91merror[0m[90m TS2741: [0mProperty 'backoffCoefficient' is missing in type '{ maxAttempts: number; initialIntervalSeconds: number; }' but required in type '{ maxAttempts: number; initialIntervalSeconds: number; backoffCoefficient: number; }'.[39m[22m
+[1m[31m[39m[22m
+[1m[31m[7m55[0m         retryPolicy: { maxAttempts: 3, initialIntervalSeconds: 2 },[39m[22m
+[1m[31m[7m  [0m [91m        ~~~~~~~~~~~[0m[39m[22m
+[1m[31m[39m[22m
+[1m[31m  [96mpackages/core/dist/src/ocs/capability.d.ts[0m:[93m50[0m:[93m13[0m[39m[22m
+[1m[31m    [7m50[0m             backoffCoefficient: number;[39m[22m
+[1m[31m    [7m  [0m [96m            ~~~~~~~~~~~~~~~~~~[0m[39m[22m
+[1m[31m    'backoffCoefficient' is declared here.[39m[22m
+[1m[31m  [96mpackages/core/dist/src/ocs/capability.d.ts[0m:[93m47[0m:[93m9[0m[39m[22m
+[1m[31m    [7m47[0m         retryPolicy: {[39m[22m
+[1m[31m    [7m  [0m [96m        ~~~~~~~~~~~[0m[39m[22m
+[1m[31m    The expected type comes from property 'retryPolicy' which is declared here on type '{ isIdempotent: boolean; retryPolicy: { maxAttempts: number; initialIntervalSeconds: number; backoffCoefficient: number; }; errorMap: (error: unknown) => ErrorCategory; metrics?: { ...; }[] | undefined; costFactor: "LOW" | ... 1 more ... | "HIGH"; }'[39m[22m
+[1m[31m[39m[22m
+
+ 
+
+ >  NX   Running target build for project capabilities and 2 tasks it depends on failed
+
+   Failed tasks:
+   
+   - capabilities:build
+   
+   Hint: run the command with --verbose for more details.
+

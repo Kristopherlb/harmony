@@ -48,12 +48,23 @@ export interface WorkflowExecution {
   approvedAt?: Date;
   output?: string[];
   error?: string;
+  // Phase 5: optional linkage to triggering context (incident/event + service tags)
+  context?: {
+    eventId?: string;
+    contextType?: ContextType;
+    serviceTags?: string[];
+  };
 }
 
 export interface ExecuteActionRequest {
   actionId: string;
   params: Record<string, unknown>;
   reasoning: string;
+  context?: {
+    eventId?: string;
+    contextType?: ContextType;
+    serviceTags?: string[];
+  };
 }
 
 export interface Permission {

@@ -8,6 +8,7 @@
  */
 import { z } from '@golden/schema-registry';
 import type { Capability, CapabilityContext, ErrorCategory } from '@golden/core';
+import { JIRA_HTTP_RUNTIME_CJS } from './jira-runtime';
 
 const inputSchema = z
   .object({
@@ -54,7 +55,14 @@ function mapHttpStatusToErrorCategory(status: number | undefined): ErrorCategory
 function extractStatus(error: unknown): number | undefined {
   const anyErr =
     error && typeof error === 'object'
-      ? (error as { status?: unknown; response?: { status?: unknown }; cause?: { status?: unknown } })
+      ? (error as {
+          status?: unknown;
+          message?: unknown;
+          exitCode?: unknown;
+          code?: unknown;
+          response?: { status?: unknown };
+          cause?: { status?: unknown; message?: unknown };
+        })
       : undefined;
   const s1 = anyErr?.status;
   if (typeof s1 === 'number') return s1;
@@ -62,6 +70,21 @@ function extractStatus(error: unknown): number | undefined {
   if (typeof s2 === 'number') return s2;
   const s3 = anyErr?.cause?.status;
   if (typeof s3 === 'number') return s3;
+
+  // Fallback: some runtimes only surface status via exit code or message text.
+  const exitCode = anyErr?.exitCode ?? anyErr?.code;
+  if (typeof exitCode === 'number' && exitCode >= 100 && exitCode <= 599) return exitCode;
+
+  const msg =
+    (typeof anyErr?.message === 'string' ? anyErr.message : undefined) ??
+    (typeof anyErr?.cause?.message === 'string' ? anyErr.cause.message : undefined);
+  if (msg) {
+    const m = msg.match(/\bHTTP\s+(\d{3})\b/i) ?? msg.match(/\b(\d{3})\b/);
+    if (m?.[1]) {
+      const n = Number(m[1]);
+      if (Number.isFinite(n)) return n;
+    }
+  }
   return undefined;
 }
 
@@ -125,21 +148,33 @@ export const jiraIssueCountCapability: Capability<
     type ContainerBuilder = {
       from(image: string): ContainerBuilder;
       withEnvVariable(key: string, value: string): ContainerBuilder;
+      withNewFile?(path: string, contents: string): ContainerBuilder;
+      withMountedSecret?(path: string, secret: unknown): ContainerBuilder;
       withExec(args: string[]): unknown;
     };
     type DaggerClient = { container(): ContainerBuilder };
     const d = dag as unknown as DaggerClient;
 
-    return d
-      .container()
-      .from('node:20-alpine')
-      .withEnvVariable('INPUT_JSON', JSON.stringify(payload))
-      .withExec([
-        'node',
-        '-e',
-        // Placeholder runtime: print stubbed count JSON. Real implementation will perform HTTP and print response JSON.
-        'process.stdout.write(JSON.stringify({count:0}))',
-      ]);
+    let container = d.container().from('node:20-alpine').withEnvVariable('INPUT_JSON', JSON.stringify(payload));
+
+    // Mount secrets (platform resolves refs to Dagger Secrets when available).
+    if (typeof (container as Record<string, unknown>).withMountedSecret === 'function') {
+      if (context.secretRefs.jiraEmail) {
+        container = container.withMountedSecret!('/run/secrets/jira_email', context.secretRefs.jiraEmail);
+      }
+      if (context.secretRefs.jiraApiToken) {
+        container = container.withMountedSecret!('/run/secrets/jira_api_token', context.secretRefs.jiraApiToken);
+      }
+      if (context.secretRefs.jiraAccessToken) {
+        container = container.withMountedSecret!('/run/secrets/jira_access_token', context.secretRefs.jiraAccessToken);
+      }
+    }
+
+    if (typeof (container as Record<string, unknown>).withNewFile === 'function') {
+      container = container.withNewFile!('/opt/jira-runtime.cjs', JIRA_HTTP_RUNTIME_CJS);
+    }
+
+    return container.withExec(['node', '/opt/jira-runtime.cjs']);
   },
 };
 

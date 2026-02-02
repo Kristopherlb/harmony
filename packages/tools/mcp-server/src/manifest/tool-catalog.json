@@ -1,0 +1,5793 @@
+{
+  "version": "1",
+  "tools": [
+    {
+      "id": "golden.auth.jwt-utilities",
+      "type": "CAPABILITY",
+      "description": "JWT signing, verification, and decoding. Supports HS256, RS256, ES256, and other standard algorithms. Pure transformer with no external network calls.",
+      "data_classification": "CONFIDENTIAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "decode",
+              "verify",
+              "sign"
+            ],
+            "description": "JWT operation to perform"
+          },
+          "token": {
+            "type": "string",
+            "description": "JWT token (required for decode/verify operations)"
+          },
+          "payload": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Claims payload (required for sign operation)"
+          },
+          "algorithm": {
+            "type": "string",
+            "enum": [
+              "HS256",
+              "HS384",
+              "HS512",
+              "RS256",
+              "RS384",
+              "RS512",
+              "ES256",
+              "ES384",
+              "ES512",
+              "PS256",
+              "PS384",
+              "PS512"
+            ],
+            "description": "Algorithm for sign/verify (defaults to HS256)"
+          },
+          "expiresIn": {
+            "type": "number",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "description": "Token expiration in seconds (for sign operation)"
+          },
+          "issuer": {
+            "type": "string",
+            "description": "Issuer claim for sign/verify"
+          },
+          "audience": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "Audience claim for sign/verify"
+          },
+          "subject": {
+            "type": "string",
+            "description": "Subject claim for sign operation"
+          },
+          "jwtId": {
+            "type": "string",
+            "description": "JWT ID claim for sign operation"
+          },
+          "notBefore": {
+            "type": "number",
+            "description": "Not before timestamp (for sign operation)"
+          },
+          "clockTolerance": {
+            "type": "number",
+            "description": "Clock tolerance in seconds (for verify operation)"
+          },
+          "ignoreExpiration": {
+            "type": "boolean",
+            "description": "Skip expiration check (for verify operation)"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "description": "JWT Utilities input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "auth",
+      "subdomain": "jwt-utilities",
+      "tags": [
+        "auth",
+        "transformer",
+        "jwt",
+        "crypto",
+        "security"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "auth:jwt"
+      ],
+      "allowOutbound": [],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.auth.oauth-provider",
+      "type": "CAPABILITY",
+      "description": "Generic OAuth 2.0/OIDC client supporting authorization_code, client_credentials, and refresh_token flows. Provides token management, refresh handling, and scope negotiation.",
+      "data_classification": "CONFIDENTIAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "grantType": {
+            "type": "string",
+            "enum": [
+              "authorization_code",
+              "client_credentials",
+              "refresh_token"
+            ],
+            "description": "OAuth 2.0 grant type to use for token acquisition"
+          },
+          "tokenUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "OAuth token endpoint URL"
+          },
+          "clientId": {
+            "type": "string",
+            "description": "OAuth client ID"
+          },
+          "code": {
+            "type": "string",
+            "description": "Authorization code (required for authorization_code grant)"
+          },
+          "redirectUri": {
+            "type": "string",
+            "format": "uri",
+            "description": "Redirect URI (required for authorization_code grant)"
+          },
+          "codeVerifier": {
+            "type": "string",
+            "description": "PKCE code verifier (optional, for authorization_code with PKCE)"
+          },
+          "refreshToken": {
+            "type": "string",
+            "description": "Refresh token (required for refresh_token grant)"
+          },
+          "scope": {
+            "type": "string",
+            "description": "Space-separated list of scopes to request"
+          },
+          "audience": {
+            "type": "string",
+            "description": "Target API audience (for Auth0-style providers)"
+          },
+          "extraParams": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Additional parameters to include in token request"
+          }
+        },
+        "required": [
+          "grantType",
+          "tokenUrl",
+          "clientId"
+        ],
+        "additionalProperties": false,
+        "description": "OAuth Provider input - token acquisition request",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "auth",
+      "subdomain": "oauth-provider",
+      "tags": [
+        "auth",
+        "connector",
+        "oauth",
+        "oidc",
+        "security"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "auth:oauth"
+      ],
+      "allowOutbound": [
+        "*.auth0.com",
+        "*.okta.com",
+        "*.googleapis.com",
+        "login.microsoftonline.com",
+        "*"
+      ],
+      "isIdempotent": false,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.auth.openbao",
+      "type": "CAPABILITY",
+      "description": "Manage secrets using OpenBao (Vault). Read, write, list, and delete secrets from KV engines.",
+      "data_classification": "CONFIDENTIAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "read",
+              "write",
+              "list",
+              "delete"
+            ],
+            "description": "OpenBao operation"
+          },
+          "path": {
+            "type": "string",
+            "description": "Secret path (e.g., secret/data/myapp/config)"
+          },
+          "engine": {
+            "type": "string",
+            "description": "Vault secret engine (default: kv)"
+          },
+          "mountPoint": {
+            "type": "string",
+            "description": "Mount point (default: secret)"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Data to write (for write/create)"
+          }
+        },
+        "required": [
+          "operation",
+          "path"
+        ],
+        "additionalProperties": false,
+        "description": "OpenBao/Vault input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "auth",
+      "subdomain": "openbao",
+      "tags": [
+        "auth",
+        "secrets",
+        "vault",
+        "openbao",
+        "hashicorp"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "secrets:read",
+        "secrets:write"
+      ],
+      "allowOutbound": [
+        "*"
+      ],
+      "isIdempotent": false,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "blueprints.ci.release-pipeline",
+      "type": "BLUEPRINT",
+      "description": "Release pipeline: certification, security scans, OSCAL generation, and release manifest bundling.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string",
+            "description": "Release version"
+          },
+          "gitSha": {
+            "type": "string",
+            "description": "Git commit SHA"
+          },
+          "contextPath": {
+            "type": "string",
+            "description": "Path to context for scanning"
+          },
+          "artifactPaths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Paths to audit"
+          },
+          "skipChecks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Checks to skip"
+          },
+          "continueOnWarning": {
+            "type": "boolean",
+            "description": "Continue on warnings"
+          }
+        },
+        "required": [
+          "version",
+          "gitSha",
+          "contextPath"
+        ],
+        "additionalProperties": false,
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "blueprints",
+      "subdomain": "ci.release-pipeline",
+      "tags": [
+        "blueprints"
+      ]
+    },
+    {
+      "id": "blueprints.deploy.blue-green",
+      "type": "BLUEPRINT",
+      "description": "Blue/green deployment with container build + K8s apply + Temporal build-id versioning, with optional drain and flag sync.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string",
+            "description": "Release version / Build ID"
+          },
+          "registry": {
+            "type": "string",
+            "description": "Container registry address"
+          },
+          "contextPath": {
+            "type": "string",
+            "description": "Build context path"
+          },
+          "taskQueue": {
+            "type": "string",
+            "default": "golden-tools",
+            "description": "Temporal task queue"
+          },
+          "previousBuildId": {
+            "type": "string",
+            "description": "Previous Build ID to drain"
+          },
+          "namespace": {
+            "type": "string",
+            "description": "Kubernetes namespace"
+          },
+          "manifestPath": {
+            "type": "string",
+            "description": "Path to K8s manifests"
+          },
+          "dockerfile": {
+            "type": "string",
+            "description": "Dockerfile path"
+          },
+          "buildArgs": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Additional build args"
+          },
+          "skipFlags": {
+            "type": "boolean",
+            "description": "Skip flag generation"
+          },
+          "waitForDrain": {
+            "type": "boolean",
+            "default": true,
+            "description": "Wait for old version drain"
+          },
+          "drainTimeoutSeconds": {
+            "type": "number",
+            "description": "Drain timeout"
+          }
+        },
+        "required": [
+          "version",
+          "registry",
+          "contextPath"
+        ],
+        "additionalProperties": false,
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "blueprints",
+      "subdomain": "deploy.blue-green",
+      "tags": [
+        "blueprints"
+      ]
+    },
+    {
+      "id": "blueprints.incident.close-out",
+      "type": "BLUEPRINT",
+      "description": "Closes out an incident by requesting approval, resolving PagerDuty/Statuspage incidents, and posting a close-out summary to Slack.",
+      "data_classification": "CONFIDENTIAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "incidentId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "P1",
+              "P2",
+              "P3",
+              "P4"
+            ]
+          },
+          "slackChannel": {
+            "type": "string",
+            "minLength": 1
+          },
+          "resolutionSummary": {
+            "type": "string",
+            "minLength": 1
+          },
+          "correlation": {
+            "type": "object",
+            "properties": {
+              "pagerdutyIncidentId": {
+                "type": "string"
+              },
+              "statuspageIncidentId": {
+                "type": "string"
+              },
+              "statuspagePageId": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "approval": {
+            "type": "object",
+            "properties": {
+              "requiredRoles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "timeout": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "incidentId",
+          "severity",
+          "slackChannel",
+          "resolutionSummary",
+          "correlation"
+        ],
+        "additionalProperties": false,
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "blueprints",
+      "subdomain": "incident.close-out",
+      "tags": [
+        "blueprints",
+        "incident",
+        "operations"
+      ]
+    },
+    {
+      "id": "blueprints.incident.initiate",
+      "type": "BLUEPRINT",
+      "description": "Initiates an incident: announces in Slack and optionally creates PagerDuty/Statuspage incidents.",
+      "data_classification": "CONFIDENTIAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "P1",
+              "P2",
+              "P3",
+              "P4"
+            ]
+          },
+          "slackChannel": {
+            "type": "string",
+            "minLength": 1
+          },
+          "summary": {
+            "type": "string"
+          },
+          "incidentId": {
+            "type": "string"
+          },
+          "sequence": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "minimum": 0
+          },
+          "notifyPagerDuty": {
+            "type": "boolean"
+          },
+          "createStatuspageIncident": {
+            "type": "boolean"
+          },
+          "pagerduty": {
+            "type": "object",
+            "properties": {
+              "serviceId": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "statuspage": {
+            "type": "object",
+            "properties": {
+              "pageId": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "slack": {
+            "type": "object",
+            "properties": {
+              "blocks": {
+                "type": "array",
+                "items": {}
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "title",
+          "severity",
+          "slackChannel"
+        ],
+        "additionalProperties": false,
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "blueprints",
+      "subdomain": "incident.initiate",
+      "tags": [
+        "blueprints",
+        "incident",
+        "operations"
+      ]
+    },
+    {
+      "id": "blueprints.incident.post-mortem",
+      "type": "BLUEPRINT",
+      "description": "Creates a post-mortem Confluence page from a template and posts the link to Slack.",
+      "data_classification": "CONFIDENTIAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "incidentId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "P1",
+              "P2",
+              "P3",
+              "P4"
+            ]
+          },
+          "slackChannel": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "confluence": {
+            "type": "object",
+            "properties": {
+              "spaceKey": {
+                "type": "string",
+                "minLength": 1
+              },
+              "parentId": {
+                "type": "string"
+              },
+              "labels": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "spaceKey"
+            ],
+            "additionalProperties": false
+          },
+          "approval": {
+            "type": "object",
+            "properties": {
+              "requiredRoles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "timeout": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "incidentId",
+          "severity",
+          "slackChannel",
+          "title",
+          "confluence"
+        ],
+        "additionalProperties": false,
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "blueprints",
+      "subdomain": "incident.post-mortem",
+      "tags": [
+        "blueprints",
+        "incident",
+        "operations"
+      ]
+    },
+    {
+      "id": "blueprints.incident.remediate",
+      "type": "BLUEPRINT",
+      "description": "Remediates an incident by requesting approval and executing a runbook (Runme), with optional kubectl actions and Slack updates.",
+      "data_classification": "CONFIDENTIAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "incidentId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "P1",
+              "P2",
+              "P3",
+              "P4"
+            ]
+          },
+          "slackChannel": {
+            "type": "string",
+            "minLength": 1
+          },
+          "remediation": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "runbook"
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "cells": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "env": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "timeout": {
+                "type": "string"
+              },
+              "workdir": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "path"
+            ],
+            "additionalProperties": false
+          },
+          "approval": {
+            "type": "object",
+            "properties": {
+              "requiredRoles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "timeout": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "kubectl": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "operation": {
+                "type": "string",
+                "enum": [
+                  "apply",
+                  "get",
+                  "delete",
+                  "logs",
+                  "exec"
+                ]
+              },
+              "manifest": {
+                "type": "string"
+              },
+              "resourceName": {
+                "type": "string"
+              },
+              "namespace": {
+                "type": "string"
+              },
+              "context": {
+                "type": "string"
+              },
+              "command": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "container": {
+                "type": "string"
+              },
+              "flags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "incidentId",
+          "severity",
+          "slackChannel",
+          "remediation"
+        ],
+        "additionalProperties": false,
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "blueprints",
+      "subdomain": "incident.remediate",
+      "tags": [
+        "blueprints",
+        "incident",
+        "operations"
+      ]
+    },
+    {
+      "id": "blueprints.traffic.progressive-rollout",
+      "type": "BLUEPRINT",
+      "description": "Progressive rollout with staged canary analysis and automatic rollback.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string",
+            "description": "New version being rolled out"
+          },
+          "baselineVersion": {
+            "type": "string",
+            "description": "Baseline version to compare against"
+          },
+          "prometheusUrl": {
+            "type": "string",
+            "description": "Prometheus URL for metrics"
+          },
+          "service": {
+            "type": "string",
+            "description": "Service name for mesh routing"
+          },
+          "stages": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "description": "Rollout stages"
+          },
+          "analysisWindowSeconds": {
+            "type": "number",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "description": "Analysis window"
+          },
+          "errorRateThreshold": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Error rate threshold"
+          },
+          "useMeshRouting": {
+            "type": "boolean",
+            "description": "Use mesh routing"
+          },
+          "namespace": {
+            "type": "string",
+            "description": "Kubernetes namespace"
+          },
+          "meshType": {
+            "type": "string",
+            "enum": [
+              "istio",
+              "linkerd"
+            ],
+            "description": "Mesh type"
+          }
+        },
+        "required": [
+          "version",
+          "baselineVersion",
+          "prometheusUrl",
+          "service"
+        ],
+        "additionalProperties": false,
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "blueprints",
+      "subdomain": "traffic.progressive-rollout",
+      "tags": [
+        "blueprints"
+      ]
+    },
+    {
+      "id": "golden.ci.certify",
+      "type": "CAPABILITY",
+      "description": "Run CAS-001 certification audits and generate CERTIFICATION.json. Validates NIS-001, VCS-001, OCS, WCS, GOS-001, ISS-001 compliance across capabilities and blueprints.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "full",
+              "naming",
+              "versioning",
+              "ocs",
+              "wcs",
+              "observability",
+              "secrets"
+            ],
+            "description": "Certification audit scope"
+          },
+          "artifactPaths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Paths to audit"
+          },
+          "gitSha": {
+            "type": "string",
+            "description": "Git commit SHA for the audit"
+          },
+          "failOnWarning": {
+            "type": "boolean",
+            "description": "Treat warnings as failures"
+          },
+          "skipChecks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Check IDs to skip"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "description": "Certification input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "ci",
+      "subdomain": "certify",
+      "tags": [
+        "ci",
+        "guardian",
+        "compliance",
+        "certification"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "ci:audit"
+      ],
+      "allowOutbound": [],
+      "isIdempotent": true,
+      "costFactor": "MEDIUM"
+    },
+    {
+      "id": "golden.ci.container-builder",
+      "type": "CAPABILITY",
+      "description": "Build OCI container images using Dagger. Supports multi-stage builds, build args, labels, caching, and registry push.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "build",
+              "build-and-push"
+            ],
+            "description": "Container builder operation"
+          },
+          "context": {
+            "type": "string",
+            "description": "Build context path (directory containing Dockerfile)"
+          },
+          "dockerfile": {
+            "type": "string",
+            "description": "Dockerfile path relative to context, defaults to Dockerfile"
+          },
+          "target": {
+            "type": "string",
+            "description": "Multi-stage build target"
+          },
+          "buildArgs": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Build arguments"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "description": "Image tags (e.g., [\"registry/image:v1.0.0\"])"
+          },
+          "registry": {
+            "type": "string",
+            "description": "Registry address for push"
+          },
+          "platform": {
+            "type": "string",
+            "description": "Target platform (e.g., linux/amd64)"
+          },
+          "labels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "OCI image labels"
+          },
+          "cacheFrom": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Cache sources for build"
+          },
+          "cacheTo": {
+            "type": "string",
+            "description": "Cache export destination"
+          },
+          "noCache": {
+            "type": "boolean",
+            "description": "Build without cache"
+          }
+        },
+        "required": [
+          "operation",
+          "context",
+          "tags"
+        ],
+        "additionalProperties": false,
+        "description": "Container Builder input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "ci",
+      "subdomain": "container-builder",
+      "tags": [
+        "ci",
+        "transformer",
+        "containers",
+        "docker",
+        "oci"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "ci:build"
+      ],
+      "allowOutbound": [
+        "ghcr.io",
+        "*.docker.io",
+        "*.gcr.io",
+        "*.azurecr.io",
+        "*.amazonaws.com",
+        "quay.io"
+      ],
+      "isIdempotent": false,
+      "costFactor": "HIGH"
+    },
+    {
+      "id": "golden.ci.oscal-generator",
+      "type": "CAPABILITY",
+      "description": "Generate NIST OSCAL Component Definition from OCS/WCS metadata. Extracts oscalControlIds from capability and blueprint security metadata to produce compliance documentation.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "generate",
+              "extract-controls",
+              "validate"
+            ],
+            "description": "OSCAL generator operation"
+          },
+          "sourcePaths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Paths to scan for OCS/WCS metadata"
+          },
+          "catalogSource": {
+            "type": "string",
+            "description": "OSCAL catalog source URL or path"
+          },
+          "title": {
+            "type": "string",
+            "description": "Component definition title"
+          },
+          "version": {
+            "type": "string",
+            "description": "Component version"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "description": "OSCAL Generator input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "ci",
+      "subdomain": "oscal-generator",
+      "tags": [
+        "ci",
+        "transformer",
+        "compliance",
+        "oscal",
+        "nist"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "ci:read"
+      ],
+      "allowOutbound": [],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.ci.release-manifest",
+      "type": "CAPABILITY",
+      "description": "Bundle all release artifacts into a single manifest with certification, OSCAL, security scans, and flag definitions. Creates release-manifest.json for deployment.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "generate",
+              "validate",
+              "bundle"
+            ],
+            "description": "Release manifest operation"
+          },
+          "version": {
+            "type": "string",
+            "description": "Release version"
+          },
+          "gitSha": {
+            "type": "string",
+            "description": "Git commit SHA"
+          },
+          "buildId": {
+            "type": "string",
+            "description": "Temporal Worker Build ID"
+          },
+          "certificationPath": {
+            "type": "string",
+            "description": "Path to CERTIFICATION.json"
+          },
+          "certificationStatus": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FAIL",
+              "UNKNOWN"
+            ],
+            "description": "Fallback certification status"
+          },
+          "oscalPath": {
+            "type": "string",
+            "description": "Path to OSCAL component definition"
+          },
+          "oscalControlsCovered": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Fallback OSCAL controlsCovered array"
+          },
+          "security": {
+            "type": "object",
+            "properties": {
+              "trivyScanPath": {
+                "type": "string",
+                "description": "Path to Trivy scan results"
+              },
+              "gitleaksScanPath": {
+                "type": "string",
+                "description": "Path to Gitleaks scan results"
+              },
+              "sbomPath": {
+                "type": "string",
+                "description": "Path to SBOM file"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Security artifact paths"
+          },
+          "securitySummary": {
+            "type": "object",
+            "properties": {
+              "vulnerabilities": {
+                "type": "number",
+                "description": "Vulnerability count (fallback if scan file not available)"
+              },
+              "secretLeaks": {
+                "type": "number",
+                "description": "Secret leak count (fallback if scan file not available)"
+              },
+              "sbomPackages": {
+                "type": "number",
+                "description": "SBOM package count (fallback if SBOM file not available)"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Fallback security summary counts"
+          },
+          "flagsConfigPath": {
+            "type": "string",
+            "description": "Path to flagd configuration"
+          },
+          "flagCount": {
+            "type": "number",
+            "description": "Fallback flag count (if flags file not available)"
+          },
+          "changelog": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "feat",
+                    "fix",
+                    "docs",
+                    "chore",
+                    "refactor",
+                    "perf",
+                    "test"
+                  ],
+                  "description": "Change type"
+                },
+                "scope": {
+                  "type": "string",
+                  "description": "Change scope"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Change description"
+                },
+                "commitSha": {
+                  "type": "string",
+                  "description": "Associated commit SHA"
+                },
+                "breaking": {
+                  "type": "boolean",
+                  "description": "Is breaking change"
+                }
+              },
+              "required": [
+                "type",
+                "description"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Changelog entries"
+          },
+          "previousVersion": {
+            "type": "string",
+            "description": "Previous version for changelog generation"
+          }
+        },
+        "required": [
+          "operation",
+          "version"
+        ],
+        "additionalProperties": false,
+        "description": "Release Manifest input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "ci",
+      "subdomain": "release-manifest",
+      "tags": [
+        "ci",
+        "transformer",
+        "compliance",
+        "release"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "ci:write"
+      ],
+      "allowOutbound": [],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.commanders.kubectl",
+      "type": "CAPABILITY",
+      "description": "Execute Kubernetes operations using kubectl CLI.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "apply",
+              "get",
+              "delete",
+              "logs",
+              "exec"
+            ],
+            "description": "Kubectl operation"
+          },
+          "manifest": {
+            "type": "string",
+            "description": "Manifest content (for apply) or resource type (for get/delete)"
+          },
+          "resourceName": {
+            "type": "string",
+            "description": "Name of resource (for get/delete/logs/exec)"
+          },
+          "namespace": {
+            "type": "string",
+            "description": "Kubernetes namespace"
+          },
+          "context": {
+            "type": "string",
+            "description": "Kubeconfig context"
+          },
+          "command": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Command to execute (for exec)"
+          },
+          "container": {
+            "type": "string",
+            "description": "Container name (for logs/exec)"
+          },
+          "flags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Additional flags"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "commanders",
+      "subdomain": "kubectl",
+      "tags": [
+        "commanders",
+        "kubernetes",
+        "k8s",
+        "infrastructure",
+        "cli"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "k8s:operator",
+        "k8s:admin"
+      ],
+      "allowOutbound": [
+        "*"
+      ],
+      "isIdempotent": false,
+      "costFactor": "MEDIUM"
+    },
+    {
+      "id": "golden.commanders.terraform-runner",
+      "type": "CAPABILITY",
+      "description": "Terraform infrastructure-as-code runner supporting init, plan, apply, destroy, and state management.",
+      "data_classification": "CONFIDENTIAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "string",
+            "enum": [
+              "init",
+              "plan",
+              "apply",
+              "destroy",
+              "output",
+              "validate",
+              "fmt",
+              "show",
+              "state"
+            ],
+            "description": "Terraform command to run"
+          },
+          "variables": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Terraform variables"
+          },
+          "varFiles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Variable files to use"
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Resource targets"
+          },
+          "autoApprove": {
+            "type": "boolean",
+            "description": "Auto-approve apply/destroy"
+          },
+          "planFile": {
+            "type": "string",
+            "description": "Plan file for apply"
+          },
+          "refresh": {
+            "type": "boolean",
+            "description": "Refresh state before plan"
+          },
+          "parallelism": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "description": "Parallelism limit"
+          },
+          "stateSubcommand": {
+            "type": "string",
+            "enum": [
+              "list",
+              "show",
+              "mv",
+              "rm",
+              "pull",
+              "push"
+            ],
+            "description": "State subcommand"
+          },
+          "stateArgs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "State subcommand arguments"
+          }
+        },
+        "required": [
+          "command"
+        ],
+        "additionalProperties": false,
+        "description": "Terraform Runner input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "commanders",
+      "subdomain": "terraform-runner",
+      "tags": [
+        "commanders",
+        "commander",
+        "terraform",
+        "iac",
+        "infrastructure"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "infra:read",
+        "infra:write"
+      ],
+      "allowOutbound": [
+        "*"
+      ],
+      "isIdempotent": false,
+      "costFactor": "HIGH"
+    },
+    {
+      "id": "golden.connectors.aws-sdk",
+      "type": "CAPABILITY",
+      "description": "AWS SDK v3 connector for cloud operations. Supports S3, STS, Lambda, DynamoDB, SQS, SNS, Secrets Manager, and all AWS services.",
+      "data_classification": "CONFIDENTIAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "service": {
+            "type": "string",
+            "description": "AWS service name (e.g., s3, sts, lambda)"
+          },
+          "operation": {
+            "type": "string",
+            "description": "SDK operation name (e.g., getObject, putItem)"
+          },
+          "params": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Operation parameters"
+          },
+          "region": {
+            "type": "string",
+            "description": "Override region for this operation"
+          }
+        },
+        "required": [
+          "service",
+          "operation",
+          "params"
+        ],
+        "additionalProperties": false,
+        "description": "AWS SDK input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "connectors",
+      "subdomain": "aws-sdk",
+      "tags": [
+        "connectors",
+        "connector",
+        "aws",
+        "cloud",
+        "s3",
+        "lambda"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "aws:read",
+        "aws:write"
+      ],
+      "allowOutbound": [
+        "*.amazonaws.com",
+        "*.aws.amazon.com"
+      ],
+      "isIdempotent": false,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.connectors.confluence",
+      "type": "CAPABILITY",
+      "description": "Confluence Cloud connector for managing pages, spaces, and content. Use for post-mortem documentation, runbook management, knowledge base automation, and collaborative documentation workflows.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "create-page",
+              "update-page",
+              "get-page",
+              "search-pages",
+              "get-page-by-title",
+              "add-attachment",
+              "get-space",
+              "list-spaces"
+            ],
+            "description": "Confluence operation"
+          },
+          "spaceKey": {
+            "type": "string",
+            "description": "Space key (e.g., \"ENG\", \"OPS\")"
+          },
+          "pageId": {
+            "type": "string",
+            "description": "Page ID for get/update operations"
+          },
+          "title": {
+            "type": "string",
+            "description": "Page title"
+          },
+          "parentId": {
+            "type": "string",
+            "description": "Parent page ID for hierarchy"
+          },
+          "body": {
+            "type": "string",
+            "description": "Page content"
+          },
+          "bodyFormat": {
+            "type": "string",
+            "enum": [
+              "storage",
+              "wiki",
+              "atlas_doc_format",
+              "markdown"
+            ],
+            "description": "Format of the body content"
+          },
+          "cql": {
+            "type": "string",
+            "description": "Confluence Query Language for search"
+          },
+          "limit": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "description": "Max results for search/list"
+          },
+          "attachmentPath": {
+            "type": "string",
+            "description": "File path for attachment"
+          },
+          "attachmentName": {
+            "type": "string",
+            "description": "Attachment filename"
+          },
+          "attachmentComment": {
+            "type": "string",
+            "description": "Comment for attachment"
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "description": "Page version for updates (required for update-page)"
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Labels to apply to page"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "description": "Confluence Connector input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "connectors",
+      "subdomain": "confluence",
+      "tags": [
+        "connectors",
+        "connector",
+        "confluence",
+        "atlassian",
+        "documentation",
+        "wiki",
+        "knowledge-base"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "confluence:read",
+        "confluence:write"
+      ],
+      "allowOutbound": [
+        "api.atlassian.com",
+        "*.atlassian.net"
+      ],
+      "isIdempotent": false,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.connectors.pagerduty",
+      "type": "CAPABILITY",
+      "description": "PagerDuty connector for incident management. Create, acknowledge, and resolve incidents. Trigger events and query on-call schedules.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "create-incident",
+              "resolve-incident",
+              "acknowledge",
+              "add-note",
+              "get-incident",
+              "list-incidents",
+              "get-oncall",
+              "trigger-event"
+            ],
+            "description": "PagerDuty operation"
+          },
+          "incidentId": {
+            "type": "string",
+            "description": "Incident ID for operations on existing incidents"
+          },
+          "title": {
+            "type": "string",
+            "description": "Incident title"
+          },
+          "description": {
+            "type": "string",
+            "description": "Incident description"
+          },
+          "serviceId": {
+            "type": "string",
+            "description": "PagerDuty service ID"
+          },
+          "urgency": {
+            "type": "string",
+            "enum": [
+              "high",
+              "low"
+            ],
+            "description": "Incident urgency"
+          },
+          "escalationPolicyId": {
+            "type": "string",
+            "description": "Escalation policy ID"
+          },
+          "note": {
+            "type": "string",
+            "description": "Note content for add-note"
+          },
+          "dedupKey": {
+            "type": "string",
+            "description": "Deduplication key for events"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "critical",
+              "error",
+              "warning",
+              "info"
+            ],
+            "description": "Event severity for trigger-event"
+          },
+          "source": {
+            "type": "string",
+            "description": "Event source"
+          },
+          "component": {
+            "type": "string",
+            "description": "Component that triggered event"
+          },
+          "customDetails": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Custom event details"
+          },
+          "scheduleId": {
+            "type": "string",
+            "description": "Schedule ID for on-call lookup"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "description": "PagerDuty Connector input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "connectors",
+      "subdomain": "pagerduty",
+      "tags": [
+        "connectors",
+        "commander",
+        "pagerduty",
+        "incidents",
+        "oncall"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "pagerduty:write"
+      ],
+      "allowOutbound": [
+        "api.pagerduty.com",
+        "events.pagerduty.com"
+      ],
+      "isIdempotent": false,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.connectors.postgresql",
+      "type": "CAPABILITY",
+      "description": "PostgreSQL database connector for queries, mutations, and transactions. Supports parameterized queries and connection pooling.",
+      "data_classification": "CONFIDENTIAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "query",
+              "execute",
+              "transaction"
+            ],
+            "description": "Database operation type"
+          },
+          "sql": {
+            "type": "string",
+            "description": "SQL query or statement"
+          },
+          "params": {
+            "type": "array",
+            "items": {},
+            "description": "Query parameters (for parameterized queries)"
+          },
+          "statements": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "sql": {
+                  "type": "string",
+                  "description": "SQL statement"
+                },
+                "params": {
+                  "type": "array",
+                  "items": {},
+                  "description": "Query parameters"
+                }
+              },
+              "required": [
+                "sql"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Statements for transaction"
+          },
+          "timeout": {
+            "type": "number",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "description": "Query timeout in milliseconds"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "description": "PostgreSQL input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "connectors",
+      "subdomain": "postgresql",
+      "tags": [
+        "connectors",
+        "connector",
+        "database",
+        "postgresql",
+        "sql"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "db:read",
+        "db:write"
+      ],
+      "allowOutbound": [
+        "*"
+      ],
+      "isIdempotent": false,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.connectors.redis",
+      "type": "CAPABILITY",
+      "description": "Redis connector for cache operations, pub/sub messaging, and data structures. Supports strings, hashes, lists, sets, and pub/sub.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "get",
+              "set",
+              "delete",
+              "exists",
+              "expire",
+              "ttl",
+              "incr",
+              "decr",
+              "hget",
+              "hset",
+              "hgetall",
+              "lpush",
+              "rpush",
+              "lpop",
+              "lrange",
+              "sadd",
+              "smembers",
+              "publish",
+              "keys"
+            ],
+            "description": "Redis operation"
+          },
+          "key": {
+            "type": "string",
+            "description": "Key name"
+          },
+          "keys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Multiple keys"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "object",
+                "additionalProperties": {}
+              }
+            ],
+            "description": "Value to set"
+          },
+          "field": {
+            "type": "string",
+            "description": "Hash field name"
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Multiple hash fields"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Multiple values for list/set"
+          },
+          "ttlSeconds": {
+            "type": "number",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "description": "TTL in seconds"
+          },
+          "start": {
+            "type": "number",
+            "description": "Start index for lrange"
+          },
+          "stop": {
+            "type": "number",
+            "description": "Stop index for lrange"
+          },
+          "pattern": {
+            "type": "string",
+            "description": "Key pattern for keys command"
+          },
+          "channel": {
+            "type": "string",
+            "description": "Pub/sub channel"
+          },
+          "message": {
+            "type": "string",
+            "description": "Message for publish"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "description": "Redis Connector input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "connectors",
+      "subdomain": "redis",
+      "tags": [
+        "connectors",
+        "commander",
+        "redis",
+        "cache",
+        "pubsub"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "redis:write"
+      ],
+      "allowOutbound": [
+        "*.redis.cache.windows.net",
+        "*.cache.amazonaws.com",
+        "*.redis.cloud"
+      ],
+      "isIdempotent": false,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.connectors.slack",
+      "type": "CAPABILITY",
+      "description": "Slack API integration for sending messages, managing reactions, and channel operations. Supports Block Kit for rich messages.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "sendMessage",
+              "updateMessage",
+              "deleteMessage",
+              "addReaction",
+              "removeReaction",
+              "getChannelInfo",
+              "listChannels",
+              "uploadFile"
+            ],
+            "description": "Slack operation to perform"
+          },
+          "channel": {
+            "type": "string",
+            "description": "Channel ID or name (e.g., #general or C12345678)"
+          },
+          "text": {
+            "type": "string",
+            "description": "Message text"
+          },
+          "blocks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {},
+              "description": "Slack Block Kit block"
+            },
+            "description": "Block Kit blocks"
+          },
+          "ts": {
+            "type": "string",
+            "description": "Message timestamp (for updates/reactions)"
+          },
+          "name": {
+            "type": "string",
+            "description": "Reaction emoji name (without colons)"
+          },
+          "threadTs": {
+            "type": "string",
+            "description": "Thread parent timestamp for replies"
+          },
+          "unfurlLinks": {
+            "type": "boolean",
+            "description": "Enable link unfurling"
+          },
+          "unfurlMedia": {
+            "type": "boolean",
+            "description": "Enable media unfurling"
+          },
+          "file": {
+            "type": "string",
+            "description": "File content (base64) for upload"
+          },
+          "filename": {
+            "type": "string",
+            "description": "Filename for upload"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "description": "Slack Connector input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "connectors",
+      "subdomain": "slack",
+      "tags": [
+        "connectors",
+        "connector",
+        "slack",
+        "messaging"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "slack:write",
+        "slack:read"
+      ],
+      "allowOutbound": [
+        "slack.com",
+        "api.slack.com",
+        "files.slack.com"
+      ],
+      "isIdempotent": false,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.connectors.statuspage",
+      "type": "CAPABILITY",
+      "description": "Atlassian Statuspage connector for managing public-facing status page incidents and component status. Use for incident communication, service health updates, and customer-facing status management.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "create-incident",
+              "update-incident",
+              "resolve-incident",
+              "get-incident",
+              "list-incidents",
+              "list-components",
+              "update-component"
+            ],
+            "description": "Statuspage operation"
+          },
+          "pageId": {
+            "type": "string",
+            "description": "Statuspage page ID (uses config default if omitted)"
+          },
+          "incidentId": {
+            "type": "string",
+            "description": "Incident ID for update/resolve/get operations"
+          },
+          "name": {
+            "type": "string",
+            "description": "Incident name/title"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "investigating",
+              "identified",
+              "monitoring",
+              "resolved"
+            ],
+            "description": "Incident status"
+          },
+          "impact": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "description": "Incident impact level"
+          },
+          "body": {
+            "type": "string",
+            "description": "Incident update message body"
+          },
+          "componentIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Affected component IDs"
+          },
+          "componentStatus": {
+            "type": "string",
+            "enum": [
+              "operational",
+              "degraded_performance",
+              "partial_outage",
+              "major_outage",
+              "under_maintenance"
+            ],
+            "description": "Status for affected components"
+          },
+          "componentId": {
+            "type": "string",
+            "description": "Single component ID for update-component"
+          },
+          "deliverNotifications": {
+            "type": "boolean",
+            "description": "Send subscriber notifications"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "description": "Statuspage Connector input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "connectors",
+      "subdomain": "statuspage",
+      "tags": [
+        "connectors",
+        "connector",
+        "statuspage",
+        "atlassian",
+        "incidents",
+        "status",
+        "communication"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "statuspage:read",
+        "statuspage:write"
+      ],
+      "allowOutbound": [
+        "api.statuspage.io"
+      ],
+      "isIdempotent": false,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.echo",
+      "type": "CAPABILITY",
+      "description": "Echo input.x to output.y (Dagger container JSON stdout).",
+      "data_classification": "PUBLIC",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "x": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "x"
+        ],
+        "additionalProperties": false,
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "demo",
+      "subdomain": "echo",
+      "tags": [
+        "demo",
+        "test"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [],
+      "allowOutbound": [],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.math_add",
+      "type": "CAPABILITY",
+      "description": "Add two numbers (a + b).",
+      "data_classification": "PUBLIC",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "number"
+          },
+          "b": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "a",
+          "b"
+        ],
+        "additionalProperties": false,
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "demo",
+      "subdomain": "math_add",
+      "tags": [
+        "demo",
+        "math"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [],
+      "allowOutbound": [],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.flags.auto-feature-flag",
+      "type": "CAPABILITY",
+      "description": "Automatic feature flag lifecycle management. Generate flags for releases, capabilities, and blueprints. Supports progressive rollout and targeting rules.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "generateReleaseFlags",
+              "generateCapabilityFlags",
+              "generateBlueprintFlags",
+              "setFlagState",
+              "rollbackRelease",
+              "getFlagStatus"
+            ],
+            "description": "AutoFeatureFlag operation"
+          },
+          "releaseVersion": {
+            "type": "string",
+            "description": "Release version (e.g., \"2.0.0\")"
+          },
+          "targetId": {
+            "type": "string",
+            "description": "Target flag key or capability/blueprint ID"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Enable or disable flag"
+          },
+          "rolloutPercentage": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Percentage for progressive rollout"
+          },
+          "targetingRules": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "attribute": {
+                  "type": "string",
+                  "description": "Context attribute to match"
+                },
+                "operator": {
+                  "type": "string",
+                  "enum": [
+                    "equals",
+                    "contains",
+                    "in",
+                    "not_equals",
+                    "starts_with",
+                    "ends_with"
+                  ],
+                  "description": "Match operator"
+                },
+                "value": {
+                  "description": "Value to match against"
+                }
+              },
+              "required": [
+                "attribute",
+                "operator"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Custom targeting rules"
+          },
+          "sourcePaths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Paths to scan for metadata"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "description": "AutoFeatureFlag input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "flags",
+      "subdomain": "auto-feature-flag",
+      "tags": [
+        "flags",
+        "commander",
+        "release",
+        "rollout"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "flags:write"
+      ],
+      "allowOutbound": [],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.flags.flagd-sync",
+      "type": "CAPABILITY",
+      "description": "Sync flag definitions to flagd via Kubernetes ConfigMap. Validates flag configuration, performs diff, and applies changes to the cluster.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "sync",
+              "validate",
+              "diff",
+              "apply"
+            ],
+            "description": "flagd sync operation"
+          },
+          "version": {
+            "type": "string",
+            "description": "Version label for ConfigMap"
+          },
+          "configPath": {
+            "type": "string",
+            "description": "Path to local flag configuration, defaults to deploy/flagd/flags.json"
+          },
+          "namespace": {
+            "type": "string",
+            "description": "Kubernetes namespace, defaults to default"
+          },
+          "configMapName": {
+            "type": "string",
+            "description": "ConfigMap name, defaults to flagd-flags"
+          },
+          "dryRun": {
+            "type": "boolean",
+            "description": "Perform dry-run without applying"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "description": "flagd Sync input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "flags",
+      "subdomain": "flagd-sync",
+      "tags": [
+        "flags",
+        "commander",
+        "kubernetes",
+        "flagd"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "flags:write",
+        "k8s:write"
+      ],
+      "allowOutbound": [
+        "kubernetes.default.svc"
+      ],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.flags.openfeature-provider",
+      "type": "CAPABILITY",
+      "description": "Vendor-agnostic feature flag evaluation using OpenFeature specification. Supports flagd, LaunchDarkly, Split, and other providers.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "evaluateBoolean",
+              "evaluateString",
+              "evaluateNumber",
+              "evaluateObject"
+            ],
+            "description": "Flag evaluation operation type"
+          },
+          "flagKey": {
+            "type": "string",
+            "description": "Feature flag key"
+          },
+          "defaultValue": {
+            "description": "Default value if flag cannot be evaluated"
+          },
+          "evaluationContext": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Context for flag targeting (user, session, etc.)"
+          }
+        },
+        "required": [
+          "operation",
+          "flagKey"
+        ],
+        "additionalProperties": false,
+        "description": "OpenFeature Provider input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "flags",
+      "subdomain": "openfeature-provider",
+      "tags": [
+        "flags",
+        "connector",
+        "feature-flags",
+        "openfeature"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "flags:read"
+      ],
+      "allowOutbound": [
+        "*.launchdarkly.com",
+        "*.split.io",
+        "*.configcat.com",
+        "*.unleash-hosted.com",
+        "localhost:8013"
+      ],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.github.graphql.query",
+      "type": "CAPABILITY",
+      "description": "TODO: Describe what this capability does (purpose, not effect).",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "GraphQL query string."
+          },
+          "variables": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "GraphQL variables."
+          }
+        },
+        "additionalProperties": false,
+        "description": "githubGraphqlQueryCapability input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "github",
+      "subdomain": "graphql.query",
+      "tags": [
+        "github",
+        "generated",
+        "connector"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [],
+      "allowOutbound": [],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.github.rest.request",
+      "type": "CAPABILITY",
+      "description": "TODO: Describe what this capability does (purpose, not effect).",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string",
+            "description": "HTTP method for GitHub REST request."
+          },
+          "path": {
+            "type": "string",
+            "description": "GitHub REST path (e.g. /repos/{owner}/{repo})."
+          },
+          "query": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "description": "Query parameters."
+          },
+          "body": {
+            "description": "Request body (JSON)."
+          }
+        },
+        "additionalProperties": false,
+        "description": "githubRestRequestCapability input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "github",
+      "subdomain": "rest.request",
+      "tags": [
+        "github",
+        "generated",
+        "connector"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [],
+      "allowOutbound": [],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.integrations.slack-interactive",
+      "type": "CAPABILITY",
+      "description": "Slack interactive operations: send approval request messages, update messages with results, open modals, and respond to interactions.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "send-approval-request",
+              "update-message-with-result",
+              "open-modal",
+              "respond-to-interaction"
+            ],
+            "description": "Slack interactive operation"
+          },
+          "channel": {
+            "type": "string",
+            "description": "Slack channel ID or name"
+          },
+          "messageTs": {
+            "type": "string",
+            "description": "Slack message timestamp (ts)"
+          },
+          "triggerId": {
+            "type": "string",
+            "description": "Slack trigger_id (for opening modals)"
+          },
+          "responseUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Slack response_url (for direct interaction responses)"
+          },
+          "text": {
+            "type": "string",
+            "description": "Fallback/primary text content"
+          },
+          "replaceOriginal": {
+            "type": "boolean",
+            "description": "Whether to replace original message (response_url)"
+          },
+          "blocks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {},
+              "description": "Slack Block Kit block"
+            },
+            "description": "Slack Block Kit blocks"
+          },
+          "workflowContext": {
+            "type": "object",
+            "properties": {
+              "workflowId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "approvalReason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "requiredRoles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "default": []
+              },
+              "timeout": {
+                "type": "string",
+                "default": "1h"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Optional workflow context for tracking/audit"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "description": "slackInteractive input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "integrations",
+      "subdomain": "slack-interactive",
+      "tags": [
+        "integrations",
+        "slack",
+        "interactive",
+        "commander"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "slack:write"
+      ],
+      "allowOutbound": [
+        "slack.com",
+        "api.slack.com"
+      ],
+      "isIdempotent": false,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.jira.issue.count",
+      "type": "CAPABILITY",
+      "description": "Return an approximate count of Jira issues that match a bounded JQL query.",
+      "data_classification": "CONFIDENTIAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "jql": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Bounded JQL query string."
+          }
+        },
+        "required": [
+          "jql"
+        ],
+        "additionalProperties": false,
+        "description": "jiraIssueCount input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "jira",
+      "subdomain": "issue.count",
+      "tags": [
+        "jira",
+        "connector",
+        "issue-search"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "read:jira-work"
+      ],
+      "allowOutbound": [],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.jira.issue.search",
+      "type": "CAPABILITY",
+      "description": "Search Jira issues using JQL via /rest/api/3/search/jql.",
+      "data_classification": "CONFIDENTIAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "jql": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Bounded JQL query string."
+          },
+          "maxResults": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5000,
+            "description": "Max issues per page."
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Fields to include (default: id)."
+          },
+          "nextPageToken": {
+            "type": "string",
+            "description": "Paging token for subsequent pages."
+          },
+          "reconcileIssues": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 50,
+            "description": "Strong consistency issue ids to reconcile."
+          },
+          "failFast": {
+            "type": "boolean",
+            "description": "Fail early if we cannot retrieve all field data."
+          },
+          "fieldsByKeys": {
+            "type": "boolean",
+            "description": "Reference fields by key rather than id."
+          },
+          "expand": {
+            "type": "string",
+            "description": "Comma-delimited expand values."
+          }
+        },
+        "required": [
+          "jql"
+        ],
+        "additionalProperties": false,
+        "description": "jiraIssueSearch input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "jira",
+      "subdomain": "issue.search",
+      "tags": [
+        "jira",
+        "connector",
+        "issue-search"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "read:jira-work"
+      ],
+      "allowOutbound": [],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.k8s.apply",
+      "type": "CAPABILITY",
+      "description": "Apply Kubernetes manifests with variable substitution. Supports apply, delete, rollout-restart, and status operations for deployment management.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "apply",
+              "delete",
+              "rollout-restart",
+              "get-status"
+            ],
+            "description": "Kubernetes operation type"
+          },
+          "manifests": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "YAML manifests to apply (inline)"
+          },
+          "manifestPath": {
+            "type": "string",
+            "description": "Path to manifest file or directory"
+          },
+          "namespace": {
+            "type": "string",
+            "description": "Kubernetes namespace, defaults to default"
+          },
+          "substitutions": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "envsubst-style variable replacements"
+          },
+          "resourceType": {
+            "type": "string",
+            "description": "Resource type for rollout-restart (e.g., deployment)"
+          },
+          "resourceName": {
+            "type": "string",
+            "description": "Resource name for rollout-restart"
+          },
+          "dryRun": {
+            "type": "boolean",
+            "description": "Perform dry-run without applying"
+          },
+          "wait": {
+            "type": "boolean",
+            "description": "Wait for resources to be ready"
+          },
+          "timeoutSeconds": {
+            "type": "number",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "description": "Timeout for wait operations"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "description": "Kubernetes Apply input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "k8s",
+      "subdomain": "apply",
+      "tags": [
+        "k8s",
+        "commander",
+        "kubernetes",
+        "deployment",
+        "infrastructure"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "k8s:write"
+      ],
+      "allowOutbound": [
+        "kubernetes.default.svc",
+        "*.eks.amazonaws.com",
+        "*.azmk8s.io",
+        "*.gke.io"
+      ],
+      "isIdempotent": true,
+      "costFactor": "MEDIUM"
+    },
+    {
+      "id": "golden.observability.grafana-api",
+      "type": "CAPABILITY",
+      "description": "Grafana HTTP API connector for managing dashboards, snapshots, and folders. Use for incident dashboard creation, automated provisioning, dashboard archival, and observability automation.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "create-dashboard",
+              "update-dashboard",
+              "get-dashboard",
+              "delete-dashboard",
+              "snapshot-dashboard",
+              "search-dashboards",
+              "create-folder",
+              "list-folders",
+              "get-datasources"
+            ],
+            "description": "Grafana API operation"
+          },
+          "dashboardUid": {
+            "type": "string",
+            "description": "Dashboard UID for get/update/delete/snapshot"
+          },
+          "dashboardJson": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Dashboard JSON model for create/update"
+          },
+          "title": {
+            "type": "string",
+            "description": "Dashboard or folder title"
+          },
+          "folderUid": {
+            "type": "string",
+            "description": "Target folder UID"
+          },
+          "folderId": {
+            "type": "integer",
+            "description": "Target folder ID"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Dashboard tags for filtering"
+          },
+          "query": {
+            "type": "string",
+            "description": "Search query for dashboards"
+          },
+          "overwrite": {
+            "type": "boolean",
+            "description": "Overwrite existing dashboard on create"
+          },
+          "message": {
+            "type": "string",
+            "description": "Commit message for dashboard save"
+          },
+          "snapshotName": {
+            "type": "string",
+            "description": "Name for snapshot"
+          },
+          "snapshotExpires": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "description": "Snapshot expiry in seconds"
+          },
+          "snapshotExternal": {
+            "type": "boolean",
+            "description": "Enable external sharing for snapshot"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "description": "Grafana API input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "observability",
+      "subdomain": "grafana-api",
+      "tags": [
+        "observability",
+        "commander",
+        "grafana",
+        "dashboards",
+        "monitoring"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "grafana:read",
+        "grafana:write"
+      ],
+      "allowOutbound": [
+        "*"
+      ],
+      "isIdempotent": false,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.observability.health-check-probe",
+      "type": "CAPABILITY",
+      "description": "Health and connectivity probes for services and endpoints. Supports HTTP, TCP, DNS, and gRPC probe types.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "probeType": {
+            "type": "string",
+            "enum": [
+              "http",
+              "tcp",
+              "dns",
+              "grpc"
+            ],
+            "description": "Type of health check probe"
+          },
+          "url": {
+            "type": "string",
+            "description": "URL for HTTP probe"
+          },
+          "host": {
+            "type": "string",
+            "description": "Host for TCP/gRPC probe"
+          },
+          "port": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "description": "Port for TCP/gRPC probe"
+          },
+          "hostname": {
+            "type": "string",
+            "description": "Hostname for DNS probe"
+          },
+          "expectedStatus": {
+            "type": "integer",
+            "description": "Expected HTTP status code"
+          },
+          "expectedBody": {
+            "type": "string",
+            "description": "Expected string in response body"
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "HTTP headers to send"
+          },
+          "timeout": {
+            "type": "number",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "description": "Probe timeout in milliseconds"
+          },
+          "retries": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of retries"
+          },
+          "retryDelay": {
+            "type": "number",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "description": "Delay between retries in ms"
+          },
+          "dnsType": {
+            "type": "string",
+            "enum": [
+              "A",
+              "AAAA",
+              "CNAME",
+              "MX",
+              "TXT",
+              "NS"
+            ],
+            "description": "DNS record type"
+          },
+          "grpcService": {
+            "type": "string",
+            "description": "gRPC service name for health check"
+          }
+        },
+        "required": [
+          "probeType"
+        ],
+        "additionalProperties": false,
+        "description": "Health Check Probe input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "observability",
+      "subdomain": "health-check-probe",
+      "tags": [
+        "observability",
+        "connector",
+        "health",
+        "monitoring"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "observability:read"
+      ],
+      "allowOutbound": [
+        "*"
+      ],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.operations.runme-runner",
+      "type": "CAPABILITY",
+      "description": "Executes markdown runbooks using Runme CLI. Supports running specific cells or entire notebooks with environment variables and timeout control. Use for operational automation, incident remediation, and documented procedures.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "description": "File path to runbook or raw markdown content"
+          },
+          "sourceType": {
+            "type": "string",
+            "enum": [
+              "file",
+              "raw"
+            ],
+            "description": "Whether source is a file path or raw markdown"
+          },
+          "cells": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Specific cell IDs or names to run (runs all if omitted)"
+          },
+          "env": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Additional environment variables for execution"
+          },
+          "timeout": {
+            "type": "string",
+            "description": "Per-cell timeout (e.g., \"5m\", \"30s\"). Default: 5m"
+          },
+          "workdir": {
+            "type": "string",
+            "description": "Working directory for execution"
+          }
+        },
+        "required": [
+          "source",
+          "sourceType"
+        ],
+        "additionalProperties": false,
+        "description": "Runme Runner input for executing markdown runbooks",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "operations",
+      "subdomain": "runme-runner",
+      "tags": [
+        "operations",
+        "commander",
+        "runme",
+        "runbook",
+        "markdown",
+        "automation"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "operations:execute"
+      ],
+      "allowOutbound": [
+        "*"
+      ],
+      "isIdempotent": false,
+      "costFactor": "MEDIUM"
+    },
+    {
+      "id": "golden.sbom.bomctl",
+      "type": "CAPABILITY",
+      "description": "SBOM manipulation using OpenSSF Bomctl. Merge, diff, and transform SBOMs between formats. Push/pull from OCI registries.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "merge",
+              "diff",
+              "fetch",
+              "push",
+              "list",
+              "import",
+              "export"
+            ],
+            "description": "Bomctl operation"
+          },
+          "sbomPaths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Paths to SBOM files"
+          },
+          "sbomUrl": {
+            "type": "string",
+            "description": "OCI URL for fetch/push"
+          },
+          "outputPath": {
+            "type": "string",
+            "description": "Output file path"
+          },
+          "outputFormat": {
+            "type": "string",
+            "enum": [
+              "spdx-json",
+              "cyclonedx-json",
+              "spdx-tv"
+            ],
+            "description": "Output format"
+          },
+          "componentName": {
+            "type": "string",
+            "description": "Component name filter"
+          },
+          "depth": {
+            "type": "number",
+            "description": "Max depth for list operation"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "description": "Bomctl input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "sbom",
+      "subdomain": "bomctl",
+      "tags": [
+        "sbom",
+        "transformer",
+        "openssf",
+        "supply-chain"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "sbom:write"
+      ],
+      "allowOutbound": [
+        "ghcr.io",
+        "*.docker.io",
+        "*.azurecr.io",
+        "*.gcr.io"
+      ],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.sbom.protobom",
+      "type": "CAPABILITY",
+      "description": "Convert between SBOM formats using OpenSSF Protobom. Supports SPDX 2.2/2.3 and CycloneDX 1.4/1.5.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "convert",
+              "validate",
+              "ingest",
+              "export"
+            ],
+            "description": "Protobom operation"
+          },
+          "sbomPath": {
+            "type": "string",
+            "description": "Path to input SBOM"
+          },
+          "sbomContent": {
+            "type": "string",
+            "description": "SBOM content string"
+          },
+          "inputFormat": {
+            "type": "string",
+            "enum": [
+              "spdx-2.3-json",
+              "spdx-2.3-tv",
+              "spdx-2.2-json",
+              "cyclonedx-1.5-json",
+              "cyclonedx-1.4-json",
+              "protobom"
+            ],
+            "description": "Input format (auto-detected if not specified)"
+          },
+          "outputFormat": {
+            "type": "string",
+            "enum": [
+              "spdx-2.3-json",
+              "spdx-2.3-tv",
+              "spdx-2.2-json",
+              "cyclonedx-1.5-json",
+              "cyclonedx-1.4-json",
+              "protobom"
+            ],
+            "description": "Output format"
+          },
+          "outputPath": {
+            "type": "string",
+            "description": "Output file path"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "description": "Protobom input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "sbom",
+      "subdomain": "protobom",
+      "tags": [
+        "sbom",
+        "transformer",
+        "openssf",
+        "spdx",
+        "cyclonedx"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "sbom:transform"
+      ],
+      "allowOutbound": [],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.sbom.syft",
+      "type": "CAPABILITY",
+      "description": "SBOM generation using Anchore Syft. Creates Software Bill of Materials from container images, filesystems, and archives in SPDX, CycloneDX, or Syft native formats.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "sourceType": {
+            "type": "string",
+            "enum": [
+              "image",
+              "directory",
+              "file",
+              "registry"
+            ],
+            "description": "Type of source to generate SBOM from"
+          },
+          "source": {
+            "type": "string",
+            "description": "Source to scan (image name, path, registry URL)"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "spdx-json",
+              "cyclonedx-json",
+              "syft-json",
+              "spdx-tag-value",
+              "cyclonedx-xml",
+              "github-json",
+              "table"
+            ],
+            "description": "Output format"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "all",
+              "os",
+              "all-layers"
+            ],
+            "description": "Scan scope for images"
+          },
+          "catalogers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Specific catalogers to use"
+          },
+          "excludePaths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Paths to exclude from scan"
+          }
+        },
+        "required": [
+          "sourceType",
+          "source"
+        ],
+        "additionalProperties": false,
+        "description": "Syft SBOM generation input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "sbom",
+      "subdomain": "syft",
+      "tags": [
+        "sbom",
+        "commander",
+        "security",
+        "supply-chain",
+        "spdx",
+        "cyclonedx"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "sbom:generate"
+      ],
+      "allowOutbound": [
+        "*.docker.io",
+        "ghcr.io",
+        "*.gcr.io",
+        "*.azurecr.io",
+        "*.amazonaws.com",
+        "quay.io"
+      ],
+      "isIdempotent": true,
+      "costFactor": "MEDIUM"
+    },
+    {
+      "id": "golden.security.checkov",
+      "type": "CAPABILITY",
+      "description": "Infrastructure-as-Code security scanning. Detect misconfigurations in Terraform, CloudFormation, Kubernetes, Helm, and Dockerfiles.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "scan",
+              "scan-plan",
+              "list-checks"
+            ],
+            "description": "Checkov operation"
+          },
+          "directory": {
+            "type": "string",
+            "description": "Directory to scan"
+          },
+          "file": {
+            "type": "string",
+            "description": "Single file to scan"
+          },
+          "planFile": {
+            "type": "string",
+            "description": "Terraform plan JSON file"
+          },
+          "framework": {
+            "type": "string",
+            "enum": [
+              "terraform",
+              "terraform_plan",
+              "cloudformation",
+              "kubernetes",
+              "helm",
+              "dockerfile",
+              "arm",
+              "bicep",
+              "serverless",
+              "all"
+            ],
+            "description": "Framework to scan, defaults to all"
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Specific checks to run (e.g., CKV_AWS_1)"
+          },
+          "skipChecks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Checks to skip"
+          },
+          "softFail": {
+            "type": "boolean",
+            "description": "Return success even if checks fail"
+          },
+          "compactOutput": {
+            "type": "boolean",
+            "description": "Compact output format"
+          },
+          "externalChecksDir": {
+            "type": "string",
+            "description": "Directory with custom checks"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "description": "Checkov input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "security",
+      "subdomain": "checkov",
+      "tags": [
+        "security",
+        "guardian",
+        "iac",
+        "terraform",
+        "kubernetes"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "security:scan"
+      ],
+      "allowOutbound": [
+        "www.bridgecrew.cloud",
+        "raw.githubusercontent.com"
+      ],
+      "isIdempotent": true,
+      "costFactor": "MEDIUM"
+    },
+    {
+      "id": "golden.security.clamav-scanner",
+      "type": "CAPABILITY",
+      "description": "Malware and virus scanning using ClamAV open-source antivirus engine. Scans files, directories, or raw data for known threats.",
+      "data_classification": "CONFIDENTIAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "scanType": {
+            "type": "string",
+            "enum": [
+              "data",
+              "path"
+            ],
+            "description": "Type of scan to perform"
+          },
+          "data": {
+            "type": "string",
+            "description": "Data to scan (for data scan type)"
+          },
+          "dataEncoding": {
+            "type": "string",
+            "enum": [
+              "base64",
+              "hex",
+              "utf8"
+            ],
+            "description": "Encoding of data"
+          },
+          "path": {
+            "type": "string",
+            "description": "File or directory path to scan (for path scan type)"
+          },
+          "recursive": {
+            "type": "boolean",
+            "description": "Scan directories recursively"
+          },
+          "maxFileSize": {
+            "type": "number",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "description": "Maximum file size to scan in bytes"
+          },
+          "maxScanSize": {
+            "type": "number",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "description": "Maximum data scanned per file in bytes"
+          },
+          "excludePatterns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Glob patterns to exclude from scan"
+          }
+        },
+        "required": [
+          "scanType"
+        ],
+        "additionalProperties": false,
+        "description": "ClamAV Scanner input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "security",
+      "subdomain": "clamav-scanner",
+      "tags": [
+        "security",
+        "commander",
+        "antivirus",
+        "malware",
+        "scanning"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "security:scan"
+      ],
+      "allowOutbound": [
+        "database.clamav.net",
+        "clamav.net"
+      ],
+      "isIdempotent": true,
+      "costFactor": "MEDIUM"
+    },
+    {
+      "id": "golden.security.gitleaks",
+      "type": "CAPABILITY",
+      "description": "Secret detection tool for git repositories. Scans commit history, staged files, and directories for leaked credentials, API keys, and sensitive data.",
+      "data_classification": "CONFIDENTIAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "detect",
+              "protect"
+            ],
+            "description": "Gitleaks operation mode"
+          },
+          "source": {
+            "type": "string",
+            "description": "Path to git repository or directory to scan"
+          },
+          "configPath": {
+            "type": "string",
+            "description": "Path to custom .gitleaks.toml config"
+          },
+          "baseline": {
+            "type": "string",
+            "description": "Path to baseline file for ignoring known issues"
+          },
+          "redact": {
+            "type": "boolean",
+            "description": "Redact secrets in output"
+          },
+          "verbose": {
+            "type": "boolean",
+            "description": "Enable verbose output"
+          },
+          "noGit": {
+            "type": "boolean",
+            "description": "Treat source as directory, not git repo"
+          },
+          "logLevel": {
+            "type": "string",
+            "enum": [
+              "debug",
+              "info",
+              "warn",
+              "error"
+            ],
+            "description": "Log level"
+          }
+        },
+        "required": [
+          "operation",
+          "source"
+        ],
+        "additionalProperties": false,
+        "description": "Gitleaks input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "security",
+      "subdomain": "gitleaks",
+      "tags": [
+        "security",
+        "commander",
+        "secrets",
+        "git",
+        "scanning"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "security:scan"
+      ],
+      "allowOutbound": [],
+      "isIdempotent": true,
+      "costFactor": "MEDIUM"
+    },
+    {
+      "id": "golden.security.gittuf",
+      "type": "CAPABILITY",
+      "description": "Security layer for Git repositories using The Update Framework (TUF).",
+      "data_classification": "PUBLIC",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "verify-ref",
+              "policy-check"
+            ],
+            "description": "Gittuf operation"
+          },
+          "repositoryUrl": {
+            "type": "string",
+            "description": "Git repository URL"
+          },
+          "ref": {
+            "type": "string",
+            "description": "Git reference (branch/tag) to verify"
+          }
+        },
+        "required": [
+          "operation",
+          "repositoryUrl"
+        ],
+        "additionalProperties": false,
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "security",
+      "subdomain": "gittuf",
+      "tags": [
+        "security",
+        "git",
+        "supply-chain",
+        "provenance"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "security:read"
+      ],
+      "allowOutbound": [
+        "github.com",
+        "bitbucket.org",
+        "gitlab.com",
+        "*"
+      ],
+      "isIdempotent": true,
+      "costFactor": "MEDIUM"
+    },
+    {
+      "id": "golden.security.grype",
+      "type": "CAPABILITY",
+      "description": "Vulnerability scanner for container images, filesystems, and SBOMs using Anchore Grype. Pairs with Syft for comprehensive supply chain security analysis.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "sourceType": {
+            "type": "string",
+            "enum": [
+              "image",
+              "directory",
+              "file",
+              "sbom",
+              "registry"
+            ],
+            "description": "Type of source to scan"
+          },
+          "source": {
+            "type": "string",
+            "description": "Source to scan (image name, path, SBOM file)"
+          },
+          "failOnSeverity": {
+            "type": "string",
+            "enum": [
+              "negligible",
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ],
+            "description": "Fail if vulnerabilities at or above this severity"
+          },
+          "onlyFixed": {
+            "type": "boolean",
+            "description": "Only show vulnerabilities with fixes available"
+          },
+          "byCve": {
+            "type": "boolean",
+            "description": "Group results by CVE instead of package"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "all",
+              "os",
+              "all-layers"
+            ],
+            "description": "Scan scope for images"
+          }
+        },
+        "required": [
+          "sourceType",
+          "source"
+        ],
+        "additionalProperties": false,
+        "description": "Grype vulnerability scan input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "security",
+      "subdomain": "grype",
+      "tags": [
+        "security",
+        "commander",
+        "vulnerability",
+        "scanning",
+        "sbom"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "security:scan"
+      ],
+      "allowOutbound": [
+        "*.docker.io",
+        "ghcr.io",
+        "*.gcr.io",
+        "*.azurecr.io",
+        "*.amazonaws.com",
+        "quay.io",
+        "toolbox-data.anchore.io"
+      ],
+      "isIdempotent": true,
+      "costFactor": "MEDIUM"
+    },
+    {
+      "id": "golden.security.guac",
+      "type": "CAPABILITY",
+      "description": "OpenSSF GUAC - Graph for Understanding Artifact Composition. Query supply chain graphs, find vulnerable paths, and certify packages.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "ingest-sbom",
+              "ingest-slsa",
+              "query-deps",
+              "query-vulns",
+              "query-path",
+              "certify-good",
+              "certify-bad"
+            ],
+            "description": "GUAC operation"
+          },
+          "sbomPath": {
+            "type": "string",
+            "description": "Path to SBOM file for ingestion"
+          },
+          "attestationPath": {
+            "type": "string",
+            "description": "Path to attestation file"
+          },
+          "purl": {
+            "type": "string",
+            "description": "Package URL for queries"
+          },
+          "sourcePurl": {
+            "type": "string",
+            "description": "Source package for path queries"
+          },
+          "targetPurl": {
+            "type": "string",
+            "description": "Target package for path queries"
+          },
+          "justification": {
+            "type": "string",
+            "description": "Justification for certification"
+          },
+          "collector": {
+            "type": "string",
+            "description": "Collector name for certification"
+          },
+          "depth": {
+            "type": "number",
+            "description": "Query depth for dependency traversal"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "description": "GUAC input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "security",
+      "subdomain": "guac",
+      "tags": [
+        "security",
+        "guardian",
+        "openssf",
+        "supply-chain",
+        "sbom"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "security:read",
+        "security:write"
+      ],
+      "allowOutbound": [
+        "*.guac.dev"
+      ],
+      "isIdempotent": true,
+      "costFactor": "MEDIUM"
+    },
+    {
+      "id": "golden.security.minder",
+      "type": "CAPABILITY",
+      "description": "OpenSSF Minder for security posture management. Enroll repositories, apply security profiles, and enforce policies.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "enroll-repo",
+              "apply-profile",
+              "evaluate",
+              "list-violations",
+              "remediate",
+              "get-status"
+            ],
+            "description": "Minder operation"
+          },
+          "repoOwner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repoName": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "profileName": {
+            "type": "string",
+            "description": "Security profile name"
+          },
+          "provider": {
+            "type": "string",
+            "description": "Git provider (github, gitlab)"
+          },
+          "remediationAction": {
+            "type": "string",
+            "enum": [
+              "none",
+              "alert",
+              "auto_fix",
+              "pull_request"
+            ],
+            "description": "Remediation action"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "description": "Minder input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "security",
+      "subdomain": "minder",
+      "tags": [
+        "security",
+        "guardian",
+        "openssf",
+        "policy",
+        "compliance"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "security:write",
+        "repos:admin"
+      ],
+      "allowOutbound": [
+        "api.stacklok.com",
+        "*.minder.dev"
+      ],
+      "isIdempotent": false,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.security.model-signing",
+      "type": "CAPABILITY",
+      "description": "Sign and verify ML models using Sigstore infrastructure (Cosign).",
+      "data_classification": "CONFIDENTIAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "sign-model",
+              "verify-model"
+            ],
+            "description": "Model signing operation"
+          },
+          "modelPath": {
+            "type": "string",
+            "description": "Path to model artifact (must be in container)"
+          },
+          "signaturePath": {
+            "type": "string",
+            "description": "Path to save/read signature"
+          },
+          "identity": {
+            "type": "string",
+            "description": "OIDC Identity for verification"
+          },
+          "issuer": {
+            "type": "string",
+            "description": "OIDC Issuer for verification"
+          },
+          "keyData": {
+            "type": "string",
+            "description": "Private key for signing if not keyless (env var usually preferred)"
+          },
+          "publicKeyData": {
+            "type": "string",
+            "description": "Public key for verification"
+          }
+        },
+        "required": [
+          "operation",
+          "modelPath"
+        ],
+        "additionalProperties": false,
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "security",
+      "subdomain": "model-signing",
+      "tags": [
+        "security",
+        "ml",
+        "ai",
+        "signing",
+        "sigstore"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "signing:read",
+        "signing:write"
+      ],
+      "allowOutbound": [
+        "oauth2.sigstore.dev",
+        "rekor.sigstore.dev",
+        "*"
+      ],
+      "isIdempotent": false,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.security.openvex",
+      "type": "CAPABILITY",
+      "description": "Create and validate VEX (Vulnerability Exploitability eXchange) documents. Document vulnerability exceptions and filter false positives from scans.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "create",
+              "add-statement",
+              "merge",
+              "validate",
+              "filter-sbom"
+            ],
+            "description": "OpenVEX operation"
+          },
+          "author": {
+            "type": "string",
+            "description": "VEX document author"
+          },
+          "role": {
+            "type": "string",
+            "description": "Author role"
+          },
+          "statements": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "vulnerability": {
+                  "type": "string",
+                  "description": "Vulnerability ID (CVE, GHSA, etc.)"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "not_affected",
+                    "affected",
+                    "fixed",
+                    "under_investigation"
+                  ],
+                  "description": "Vulnerability status"
+                },
+                "justification": {
+                  "type": "string",
+                  "enum": [
+                    "component_not_present",
+                    "vulnerable_code_not_present",
+                    "vulnerable_code_not_in_execute_path",
+                    "vulnerable_code_cannot_be_controlled_by_adversary",
+                    "inline_mitigations_already_exist"
+                  ],
+                  "description": "Justification (required for not_affected)"
+                },
+                "impactStatement": {
+                  "type": "string",
+                  "description": "Human-readable impact statement"
+                },
+                "actionStatement": {
+                  "type": "string",
+                  "description": "Recommended action"
+                },
+                "products": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Product identifiers (PURLs)"
+                }
+              },
+              "required": [
+                "vulnerability",
+                "status"
+              ],
+              "additionalProperties": false
+            },
+            "description": "VEX statements"
+          },
+          "vexPaths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Paths to VEX documents"
+          },
+          "sbomPath": {
+            "type": "string",
+            "description": "Path to SBOM for filtering"
+          },
+          "outputPath": {
+            "type": "string",
+            "description": "Output file path"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "description": "OpenVEX input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "security",
+      "subdomain": "openvex",
+      "tags": [
+        "security",
+        "transformer",
+        "vex",
+        "openssf",
+        "vulnerabilities"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "security:write"
+      ],
+      "allowOutbound": [],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.security.osv-scanner",
+      "type": "CAPABILITY",
+      "description": "Vulnerability scanner using the OSV (Open Source Vulnerabilities) database. OpenSSF project supporting all major package ecosystems.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "sourceType": {
+            "type": "string",
+            "enum": [
+              "lockfile",
+              "sbom",
+              "directory",
+              "purl"
+            ],
+            "description": "Type of source to scan"
+          },
+          "source": {
+            "type": "string",
+            "description": "Source to scan (file path, directory, or PURL)"
+          },
+          "ecosystem": {
+            "type": "string",
+            "enum": [
+              "npm",
+              "pypi",
+              "go",
+              "maven",
+              "cargo",
+              "nuget",
+              "packagist",
+              "rubygems",
+              "pub",
+              "hex"
+            ],
+            "description": "Package ecosystem (auto-detected if not specified)"
+          },
+          "recursive": {
+            "type": "boolean",
+            "description": "Recursively scan directories"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "json",
+              "table",
+              "markdown",
+              "sarif"
+            ],
+            "description": "Output format"
+          },
+          "callAnalysis": {
+            "type": "boolean",
+            "description": "Enable call graph analysis for Go"
+          }
+        },
+        "required": [
+          "sourceType",
+          "source"
+        ],
+        "additionalProperties": false,
+        "description": "OSV Scanner input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "security",
+      "subdomain": "osv-scanner",
+      "tags": [
+        "security",
+        "commander",
+        "vulnerability",
+        "osv",
+        "openssf"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "security:scan"
+      ],
+      "allowOutbound": [
+        "api.osv.dev",
+        "osv-vulnerabilities.storage.googleapis.com"
+      ],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.security.package-analysis",
+      "type": "CAPABILITY",
+      "description": "Vulnerability analysis using OSV-Scanner (static analysis).",
+      "data_classification": "PUBLIC",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "packageUrl": {
+            "type": "string",
+            "description": "Package URL (purl) or path to lockfile/directory"
+          },
+          "target": {
+            "type": "string",
+            "description": "Target file or directory to scan"
+          },
+          "ecosystem": {
+            "type": "string",
+            "enum": [
+              "npm",
+              "pypi",
+              "rubygems",
+              "auto"
+            ],
+            "description": "Package ecosystem"
+          },
+          "format": {
+            "type": "string",
+            "description": "Output format (default: json)"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "security",
+      "subdomain": "package-analysis",
+      "tags": [
+        "security",
+        "vulnerability",
+        "osv",
+        "supply-chain"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "security:read"
+      ],
+      "allowOutbound": [
+        "osv.dev",
+        "*"
+      ],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.security.scorecard",
+      "type": "CAPABILITY",
+      "description": "OpenSSF Scorecard for automated security risk assessment. Evaluates repositories against security best practices like branch protection, dependency updates, and code review.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "repository": {
+            "type": "string",
+            "description": "Repository to analyze (owner/repo or full URL)"
+          },
+          "commit": {
+            "type": "string",
+            "description": "Specific commit SHA to analyze"
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Specific checks to run"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "json",
+              "sarif",
+              "default"
+            ],
+            "description": "Output format"
+          }
+        },
+        "required": [
+          "repository"
+        ],
+        "additionalProperties": false,
+        "description": "Scorecard input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "security",
+      "subdomain": "scorecard",
+      "tags": [
+        "security",
+        "commander",
+        "openssf",
+        "scoring",
+        "best-practices"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "security:scan"
+      ],
+      "allowOutbound": [
+        "api.github.com",
+        "*.githubusercontent.com",
+        "api.securityscorecards.dev"
+      ],
+      "isIdempotent": true,
+      "costFactor": "MEDIUM"
+    },
+    {
+      "id": "golden.security.security-insights",
+      "type": "CAPABILITY",
+      "description": "Parse and generate SECURITY-INSIGHTS.yml files following the OpenSSF Security Insights spec.",
+      "data_classification": "PUBLIC",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "parse",
+              "generate",
+              "validate"
+            ],
+            "description": "Security Insights operation"
+          },
+          "filePath": {
+            "type": "string",
+            "description": "Path to SECURITY-INSIGHTS.yml"
+          },
+          "fileContent": {
+            "type": "string",
+            "description": "SECURITY-INSIGHTS.yml content"
+          },
+          "projectName": {
+            "type": "string",
+            "description": "Project name"
+          },
+          "projectUrl": {
+            "type": "string",
+            "description": "Project URL"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "concept",
+              "development",
+              "active",
+              "deprecated",
+              "archived"
+            ],
+            "description": "Project security status"
+          },
+          "securityContacts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "email",
+                    "url"
+                  ]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "value"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Security contacts"
+          },
+          "vulnerabilityReporting": {
+            "type": "object",
+            "properties": {
+              "acceptsReports": {
+                "type": "boolean"
+              },
+              "securityPolicy": {
+                "type": "string"
+              },
+              "bugBounty": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "acceptsReports"
+            ],
+            "additionalProperties": false,
+            "description": "Vulnerability reporting info"
+          },
+          "dependencies": {
+            "type": "object",
+            "properties": {
+              "sbom": {
+                "type": "boolean"
+              },
+              "sbomUrl": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Dependency information"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "description": "Security Insights input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "security",
+      "subdomain": "security-insights",
+      "tags": [
+        "security",
+        "transformer",
+        "openssf",
+        "compliance"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "security:read"
+      ],
+      "allowOutbound": [],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.security.semgrep-scanner",
+      "type": "CAPABILITY",
+      "description": "Static code analysis using Semgrep. Detects security vulnerabilities, bugs, and anti-patterns using configurable rules.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string",
+            "description": "Path to scan (directory or file)"
+          },
+          "config": {
+            "type": "string",
+            "description": "Semgrep config (registry ruleset like p/security-audit, or path to rules)"
+          },
+          "severity": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "INFO",
+                "WARNING",
+                "ERROR"
+              ],
+              "description": "Finding severity level"
+            },
+            "description": "Filter by severity levels"
+          },
+          "exclude": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Patterns to exclude from scan"
+          },
+          "include": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Patterns to include in scan"
+          },
+          "maxTargetBytes": {
+            "type": "number",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "description": "Maximum file size to scan"
+          },
+          "timeout": {
+            "type": "number",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "description": "Timeout per file in seconds"
+          },
+          "verbose": {
+            "type": "boolean",
+            "description": "Enable verbose output"
+          },
+          "autofix": {
+            "type": "boolean",
+            "description": "Apply autofixes where available"
+          },
+          "dryRun": {
+            "type": "boolean",
+            "description": "Run in dry-run mode (no fixes applied)"
+          }
+        },
+        "required": [
+          "target",
+          "config"
+        ],
+        "additionalProperties": false,
+        "description": "Semgrep Scanner input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "security",
+      "subdomain": "semgrep-scanner",
+      "tags": [
+        "security",
+        "commander",
+        "sast",
+        "static-analysis",
+        "scanning"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "security:scan"
+      ],
+      "allowOutbound": [
+        "semgrep.dev"
+      ],
+      "isIdempotent": true,
+      "costFactor": "MEDIUM"
+    },
+    {
+      "id": "golden.security.sigstore",
+      "type": "CAPABILITY",
+      "description": "Keyless signing and verification using Sigstore (Fulcio + Rekor). Sign artifacts without managing keys, with transparency log entries for auditability.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "sign",
+              "verify",
+              "attest",
+              "verify-attest"
+            ],
+            "description": "Sigstore operation"
+          },
+          "artifactPath": {
+            "type": "string",
+            "description": "Path to artifact to sign/verify"
+          },
+          "artifactDigest": {
+            "type": "string",
+            "description": "SHA256 digest of artifact (alternative to path)"
+          },
+          "signatureBundle": {
+            "type": "string",
+            "description": "Sigstore bundle for verification"
+          },
+          "signaturePath": {
+            "type": "string",
+            "description": "Path to signature file"
+          },
+          "certificatePath": {
+            "type": "string",
+            "description": "Path to certificate file"
+          },
+          "predicateType": {
+            "type": "string",
+            "description": "In-toto predicate type for attestations"
+          },
+          "predicatePath": {
+            "type": "string",
+            "description": "Path to predicate file for attestations"
+          },
+          "outputFormat": {
+            "type": "string",
+            "enum": [
+              "bundle",
+              "signature",
+              "certificate"
+            ],
+            "description": "Output format, defaults to bundle"
+          },
+          "fulcioUrl": {
+            "type": "string",
+            "description": "Fulcio server URL"
+          },
+          "rekorUrl": {
+            "type": "string",
+            "description": "Rekor transparency log URL"
+          },
+          "oidcIssuer": {
+            "type": "string",
+            "description": "OIDC issuer for identity"
+          },
+          "oidcClientId": {
+            "type": "string",
+            "description": "OIDC client ID"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "description": "Sigstore input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "security",
+      "subdomain": "sigstore",
+      "tags": [
+        "security",
+        "guardian",
+        "signing",
+        "openssf",
+        "supply-chain"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "security:sign"
+      ],
+      "allowOutbound": [
+        "fulcio.sigstore.dev",
+        "rekor.sigstore.dev",
+        "oauth2.sigstore.dev",
+        "tuf-repo-cdn.sigstore.dev",
+        "*.sigstore.dev"
+      ],
+      "isIdempotent": false,
+      "costFactor": "MEDIUM"
+    },
+    {
+      "id": "golden.security.slsa-verifier",
+      "type": "CAPABILITY",
+      "description": "Verify SLSA provenance attestations on artifacts, container images, and npm packages. Ensures software was built securely from expected sources.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "verify-artifact",
+              "verify-image",
+              "verify-npm",
+              "inspect-provenance"
+            ],
+            "description": "SLSA verifier operation"
+          },
+          "artifactPath": {
+            "type": "string",
+            "description": "Path to artifact to verify"
+          },
+          "imageRef": {
+            "type": "string",
+            "description": "Container image reference (for verify-image)"
+          },
+          "packageName": {
+            "type": "string",
+            "description": "npm package name (for verify-npm)"
+          },
+          "packageVersion": {
+            "type": "string",
+            "description": "npm package version"
+          },
+          "provenancePath": {
+            "type": "string",
+            "description": "Path to provenance file"
+          },
+          "sourceUri": {
+            "type": "string",
+            "description": "Expected source repository URI"
+          },
+          "sourceBranch": {
+            "type": "string",
+            "description": "Expected source branch"
+          },
+          "sourceTag": {
+            "type": "string",
+            "description": "Expected source tag"
+          },
+          "sourceDigest": {
+            "type": "string",
+            "description": "Expected source commit digest"
+          },
+          "builderID": {
+            "type": "string",
+            "description": "Expected builder ID"
+          },
+          "minSlsaLevel": {
+            "type": "string",
+            "enum": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "description": "Minimum required SLSA level"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "description": "SLSA Verifier input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "security",
+      "subdomain": "slsa-verifier",
+      "tags": [
+        "security",
+        "guardian",
+        "slsa",
+        "openssf",
+        "supply-chain"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "security:verify"
+      ],
+      "allowOutbound": [
+        "rekor.sigstore.dev",
+        "ghcr.io",
+        "*.docker.io",
+        "registry.npmjs.org"
+      ],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.security.trivy-scanner",
+      "type": "CAPABILITY",
+      "description": "Container image and filesystem vulnerability scanning using Trivy. Detects CVEs, misconfigurations, secrets, and license issues.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string",
+            "description": "Scan target (image name, path, or repo URL)"
+          },
+          "scanType": {
+            "type": "string",
+            "enum": [
+              "image",
+              "filesystem",
+              "repository",
+              "config",
+              "sbom"
+            ],
+            "description": "Type of scan to perform"
+          },
+          "severities": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "UNKNOWN",
+                "LOW",
+                "MEDIUM",
+                "HIGH",
+                "CRITICAL"
+              ],
+              "description": "Vulnerability severity level"
+            },
+            "description": "Filter by severity levels"
+          },
+          "ignoreUnfixed": {
+            "type": "boolean",
+            "description": "Ignore unfixed vulnerabilities"
+          },
+          "skipDirs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Directories to skip"
+          },
+          "skipFiles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Files to skip"
+          },
+          "listAllPkgs": {
+            "type": "boolean",
+            "description": "List all packages, not just vulnerable ones"
+          },
+          "securityChecks": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "vuln",
+                "config",
+                "secret",
+                "license"
+              ]
+            },
+            "description": "Security checks to run"
+          },
+          "timeout": {
+            "type": "number",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "description": "Scan timeout in seconds"
+          }
+        },
+        "required": [
+          "target",
+          "scanType"
+        ],
+        "additionalProperties": false,
+        "description": "Trivy Scanner input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "security",
+      "subdomain": "trivy-scanner",
+      "tags": [
+        "security",
+        "commander",
+        "vulnerability",
+        "container",
+        "scanning"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "security:scan"
+      ],
+      "allowOutbound": [
+        "ghcr.io",
+        "index.docker.io",
+        "*.githubusercontent.com"
+      ],
+      "isIdempotent": true,
+      "costFactor": "MEDIUM"
+    },
+    {
+      "id": "golden.security.tuf-repository",
+      "type": "CAPABILITY",
+      "description": "Manage TUF repositories for secure artifact distribution using python-tuf.",
+      "data_classification": "PUBLIC",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "init-repo",
+              "add-target",
+              "snapshot"
+            ],
+            "description": "TUF operation"
+          },
+          "repoPath": {
+            "type": "string",
+            "description": "Path to TUF repository root"
+          },
+          "targetPath": {
+            "type": "string",
+            "description": "Path to target file to add"
+          },
+          "targetName": {
+            "type": "string",
+            "description": "Name of target in repository (defaults to basename of targetPath)"
+          }
+        },
+        "required": [
+          "operation",
+          "repoPath"
+        ],
+        "additionalProperties": false,
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "security",
+      "subdomain": "tuf-repository",
+      "tags": [
+        "security",
+        "tuf",
+        "supply-chain",
+        "provenance"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "repo:write"
+      ],
+      "allowOutbound": [],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.temporal.version-manager",
+      "type": "CAPABILITY",
+      "description": "Manage Temporal Worker Build IDs for blue/green deployments. Register versions, query active executions, and wait for drain to ensure zero-downtime deployments.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "registerBuildAsDefault",
+              "getActiveExecutions",
+              "waitForDrain",
+              "listBuildIds"
+            ],
+            "description": "Temporal version manager operation"
+          },
+          "buildId": {
+            "type": "string",
+            "description": "Temporal Worker Build ID"
+          },
+          "taskQueue": {
+            "type": "string",
+            "description": "Temporal task queue name, defaults to golden-tools"
+          },
+          "timeoutSeconds": {
+            "type": "number",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "description": "Timeout for drain wait operations"
+          },
+          "pollIntervalSeconds": {
+            "type": "number",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "description": "Poll interval for drain wait"
+          }
+        },
+        "required": [
+          "operation",
+          "buildId"
+        ],
+        "additionalProperties": false,
+        "description": "Temporal Version Manager input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "temporal",
+      "subdomain": "version-manager",
+      "tags": [
+        "temporal",
+        "commander",
+        "deployment",
+        "versioning"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "temporal:admin"
+      ],
+      "allowOutbound": [
+        "temporal:7233",
+        "*.tmprl.cloud"
+      ],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.traffic.canary-analyzer",
+      "type": "CAPABILITY",
+      "description": "Compare GOS-001 Golden Signals between baseline and canary versions. Returns PROMOTE/ROLLBACK decision based on error rate delta and latency thresholds.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "analyze",
+              "compare-metrics",
+              "get-decision"
+            ],
+            "description": "Canary analyzer operation"
+          },
+          "baselineVersion": {
+            "type": "string",
+            "description": "Baseline version identifier"
+          },
+          "canaryVersion": {
+            "type": "string",
+            "description": "Canary version identifier"
+          },
+          "prometheusUrl": {
+            "type": "string",
+            "description": "Prometheus server URL"
+          },
+          "analysisWindowSeconds": {
+            "type": "number",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "description": "Time window for analysis, defaults to 600s"
+          },
+          "errorRateThreshold": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Error rate threshold (0-1), defaults to 0.05"
+          },
+          "latencyThresholdMs": {
+            "type": "number",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "description": "Latency threshold in ms"
+          },
+          "metrics": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "error_rate",
+                "latency_p50",
+                "latency_p90",
+                "latency_p99",
+                "throughput",
+                "success_rate",
+                "saturation"
+              ],
+              "description": "Metric type to analyze"
+            },
+            "description": "Metrics to analyze, defaults to error_rate"
+          },
+          "service": {
+            "type": "string",
+            "description": "Service name for metric queries"
+          },
+          "namespace": {
+            "type": "string",
+            "description": "Kubernetes namespace"
+          }
+        },
+        "required": [
+          "operation",
+          "baselineVersion",
+          "canaryVersion",
+          "prometheusUrl"
+        ],
+        "additionalProperties": false,
+        "description": "Canary Analyzer input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "traffic",
+      "subdomain": "canary-analyzer",
+      "tags": [
+        "traffic",
+        "guardian",
+        "observability",
+        "canary"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "metrics:read"
+      ],
+      "allowOutbound": [
+        "prometheus:9090",
+        "*.prometheus.io"
+      ],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.traffic.mesh-router",
+      "type": "CAPABILITY",
+      "description": "Control Istio/Linkerd traffic routing. Set weights for canary rollout, configure header-based routing for testing and gradual migration.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "set-weights",
+              "header-route",
+              "get-status",
+              "reset"
+            ],
+            "description": "Mesh router operation"
+          },
+          "service": {
+            "type": "string",
+            "description": "Service name"
+          },
+          "namespace": {
+            "type": "string",
+            "description": "Kubernetes namespace, defaults to default"
+          },
+          "meshType": {
+            "type": "string",
+            "enum": [
+              "istio",
+              "linkerd"
+            ],
+            "description": "Service mesh type, defaults to istio"
+          },
+          "weights": {
+            "type": "object",
+            "properties": {
+              "stable": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Percentage to stable subset"
+              },
+              "canary": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Percentage to canary subset"
+              }
+            },
+            "required": [
+              "stable",
+              "canary"
+            ],
+            "additionalProperties": false,
+            "description": "Traffic weights for set-weights operation"
+          },
+          "headerMatch": {
+            "type": "object",
+            "properties": {
+              "header": {
+                "type": "string",
+                "description": "Header name to match"
+              },
+              "value": {
+                "type": "string",
+                "description": "Header value to match"
+              },
+              "matchType": {
+                "type": "string",
+                "enum": [
+                  "exact",
+                  "prefix",
+                  "regex"
+                ],
+                "description": "Match type, defaults to exact"
+              },
+              "subset": {
+                "type": "string",
+                "description": "Target subset for matched traffic"
+              }
+            },
+            "required": [
+              "header",
+              "value",
+              "subset"
+            ],
+            "additionalProperties": false,
+            "description": "Header match for header-route operation"
+          },
+          "virtualServiceName": {
+            "type": "string",
+            "description": "VirtualService name (Istio)"
+          },
+          "destinationRuleName": {
+            "type": "string",
+            "description": "DestinationRule name (Istio)"
+          }
+        },
+        "required": [
+          "operation",
+          "service"
+        ],
+        "additionalProperties": false,
+        "description": "Mesh Router input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "traffic",
+      "subdomain": "mesh-router",
+      "tags": [
+        "traffic",
+        "commander",
+        "service-mesh",
+        "istio",
+        "linkerd"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "mesh:write"
+      ],
+      "allowOutbound": [
+        "kubernetes.default.svc"
+      ],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.utilities.compression",
+      "type": "CAPABILITY",
+      "description": "File compression and decompression supporting gzip, deflate, brotli, and zstd formats. Pure transformer with configurable compression levels.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "compress",
+              "decompress"
+            ],
+            "description": "Compression operation to perform"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "gzip",
+              "deflate",
+              "brotli",
+              "zstd"
+            ],
+            "description": "Compression format/algorithm"
+          },
+          "data": {
+            "type": "string",
+            "description": "Data to compress/decompress"
+          },
+          "inputEncoding": {
+            "type": "string",
+            "enum": [
+              "base64",
+              "hex",
+              "utf8"
+            ],
+            "description": "Encoding of input data"
+          },
+          "outputEncoding": {
+            "type": "string",
+            "enum": [
+              "base64",
+              "hex",
+              "utf8"
+            ],
+            "description": "Encoding for output data"
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 11,
+            "description": "Compression level (1-9 for gzip/deflate, 1-11 for brotli)"
+          }
+        },
+        "required": [
+          "operation",
+          "format",
+          "data"
+        ],
+        "additionalProperties": false,
+        "description": "Compression input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "utilities",
+      "subdomain": "compression",
+      "tags": [
+        "utilities",
+        "transformer",
+        "compression"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [],
+      "allowOutbound": [],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.utilities.diff-generator",
+      "type": "CAPABILITY",
+      "description": "Generate unified diffs between files or strings. Apply and reverse patches. Get diff statistics.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "diff",
+              "apply-patch",
+              "reverse-patch",
+              "stat"
+            ],
+            "description": "Diff operation"
+          },
+          "originalContent": {
+            "type": "string",
+            "description": "Original content string"
+          },
+          "modifiedContent": {
+            "type": "string",
+            "description": "Modified content string"
+          },
+          "originalPath": {
+            "type": "string",
+            "description": "Path to original file"
+          },
+          "modifiedPath": {
+            "type": "string",
+            "description": "Path to modified file"
+          },
+          "patchContent": {
+            "type": "string",
+            "description": "Patch to apply"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "unified",
+              "context",
+              "json",
+              "html"
+            ],
+            "description": "Output format, defaults to unified"
+          },
+          "contextLines": {
+            "type": "number",
+            "description": "Number of context lines, defaults to 3"
+          },
+          "ignoreWhitespace": {
+            "type": "boolean",
+            "description": "Ignore whitespace changes"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "File name for diff header"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "description": "Diff Generator input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "utilities",
+      "subdomain": "diff-generator",
+      "tags": [
+        "utilities",
+        "transformer",
+        "diff",
+        "patch"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "utilities:transform"
+      ],
+      "allowOutbound": [],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.utilities.digital-signing",
+      "type": "CAPABILITY",
+      "description": "Cryptographic signing and verification using RSA, ECDSA, and Ed25519. Suitable for artifact signing, code signing, and document integrity.",
+      "data_classification": "CONFIDENTIAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "sign",
+              "verify",
+              "generateKeyPair"
+            ],
+            "description": "Signing operation to perform"
+          },
+          "data": {
+            "type": "string",
+            "description": "Data to sign (base64 encoded)"
+          },
+          "signature": {
+            "type": "string",
+            "description": "Signature to verify (base64 encoded)"
+          },
+          "algorithm": {
+            "type": "string",
+            "enum": [
+              "RSA-SHA256",
+              "RSA-SHA384",
+              "RSA-SHA512",
+              "ECDSA-SHA256",
+              "ECDSA-SHA384",
+              "ECDSA-SHA512",
+              "Ed25519"
+            ],
+            "description": "Signing algorithm"
+          },
+          "keySize": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "description": "Key size for key generation"
+          },
+          "outputFormat": {
+            "type": "string",
+            "enum": [
+              "base64",
+              "hex",
+              "raw"
+            ],
+            "description": "Output format, defaults to base64"
+          }
+        },
+        "required": [
+          "operation",
+          "algorithm"
+        ],
+        "additionalProperties": false,
+        "description": "Digital Signing input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "utilities",
+      "subdomain": "digital-signing",
+      "tags": [
+        "utilities",
+        "transformer",
+        "security",
+        "signing",
+        "crypto"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "crypto:sign"
+      ],
+      "allowOutbound": [],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.utilities.encoding",
+      "type": "CAPABILITY",
+      "description": "Encoding and decoding utilities supporting Base64, hex, URL encoding, and HTML entities. Pure transformer with no side effects.",
+      "data_classification": "PUBLIC",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "base64Encode",
+              "base64Decode",
+              "hexEncode",
+              "hexDecode",
+              "urlEncode",
+              "urlDecode",
+              "htmlEncode",
+              "htmlDecode"
+            ],
+            "description": "Encoding operation to perform"
+          },
+          "data": {
+            "type": "string",
+            "description": "Data to encode or decode"
+          },
+          "urlSafe": {
+            "type": "boolean",
+            "description": "Use URL-safe Base64 variant"
+          }
+        },
+        "required": [
+          "operation",
+          "data"
+        ],
+        "additionalProperties": false,
+        "description": "Encoding input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "utilities",
+      "subdomain": "encoding",
+      "tags": [
+        "utilities",
+        "transformer",
+        "encoding",
+        "base64",
+        "hex",
+        "url"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [],
+      "allowOutbound": [],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.utilities.hashing",
+      "type": "CAPABILITY",
+      "description": "Cryptographic hashing with multiple algorithm support. Generates MD5, SHA-1, SHA-256, SHA-512, SHA-3, and BLAKE2 hashes. Supports HMAC when key is provided.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "algorithm": {
+            "type": "string",
+            "enum": [
+              "md5",
+              "sha1",
+              "sha256",
+              "sha384",
+              "sha512",
+              "sha3-256",
+              "sha3-384",
+              "sha3-512",
+              "blake2b512",
+              "blake2s256"
+            ],
+            "description": "Cryptographic hash algorithm"
+          },
+          "data": {
+            "type": "string",
+            "description": "Data to hash (string or encoded bytes)"
+          },
+          "inputEncoding": {
+            "type": "string",
+            "enum": [
+              "utf8",
+              "base64",
+              "hex",
+              "binary"
+            ],
+            "description": "Encoding of input data"
+          },
+          "outputEncoding": {
+            "type": "string",
+            "enum": [
+              "hex",
+              "base64",
+              "base64url"
+            ],
+            "description": "Encoding for output hash"
+          },
+          "hmacKey": {
+            "type": "string",
+            "description": "Key for HMAC (if provided, generates HMAC instead of plain hash)"
+          }
+        },
+        "required": [
+          "algorithm",
+          "data"
+        ],
+        "additionalProperties": false,
+        "description": "Hashing input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "utilities",
+      "subdomain": "hashing",
+      "tags": [
+        "utilities",
+        "transformer",
+        "crypto",
+        "security"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [],
+      "allowOutbound": [],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.utilities.json-yaml-transform",
+      "type": "CAPABILITY",
+      "description": "JSON/YAML transformations including format conversion, jq-style queries, deep merging, validation, and pretty formatting.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "json-to-yaml",
+              "yaml-to-json",
+              "jq-query",
+              "merge",
+              "validate",
+              "format"
+            ],
+            "description": "Transform operation to perform"
+          },
+          "data": {
+            "type": "string",
+            "description": "Input data (JSON or YAML string)"
+          },
+          "query": {
+            "type": "string",
+            "description": "jq-style query expression (required for jq-query operation)"
+          },
+          "mergeWith": {
+            "type": "string",
+            "description": "Data to merge with (required for merge operation)"
+          },
+          "deep": {
+            "type": "boolean",
+            "description": "Perform deep merge (for merge operation), defaults to true"
+          },
+          "indent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 8,
+            "description": "Indentation spaces for output, defaults to 2"
+          },
+          "sortKeys": {
+            "type": "boolean",
+            "description": "Sort object keys alphabetically, defaults to false"
+          }
+        },
+        "required": [
+          "operation",
+          "data"
+        ],
+        "additionalProperties": false,
+        "description": "JSON/YAML Transform input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "utilities",
+      "subdomain": "json-yaml-transform",
+      "tags": [
+        "utilities",
+        "transformer",
+        "json",
+        "yaml",
+        "jq"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [],
+      "allowOutbound": [],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "golden.utilities.template-renderer",
+      "type": "CAPABILITY",
+      "description": "Render templates using Handlebars, Mustache, EJS, or Nunjucks. Supports partials, helpers, and data from files or inline.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "render",
+              "validate",
+              "extract-vars"
+            ],
+            "description": "Template operation"
+          },
+          "template": {
+            "type": "string",
+            "description": "Template string"
+          },
+          "templatePath": {
+            "type": "string",
+            "description": "Path to template file"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Data to render into template"
+          },
+          "dataPath": {
+            "type": "string",
+            "description": "Path to JSON/YAML data file"
+          },
+          "engine": {
+            "type": "string",
+            "enum": [
+              "handlebars",
+              "mustache",
+              "ejs",
+              "nunjucks"
+            ],
+            "description": "Template engine, defaults to handlebars"
+          },
+          "partials": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Named partial templates"
+          },
+          "helpers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Custom helper definitions"
+          },
+          "strict": {
+            "type": "boolean",
+            "description": "Fail on missing variables"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false,
+        "description": "Template Renderer input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "utilities",
+      "subdomain": "template-renderer",
+      "tags": [
+        "utilities",
+        "transformer",
+        "template",
+        "handlebars"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "utilities:transform"
+      ],
+      "allowOutbound": [],
+      "isIdempotent": true,
+      "costFactor": "LOW"
+    },
+    {
+      "id": "workflows.echo",
+      "type": "BLUEPRINT",
+      "description": "E2e workflow",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "x": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "x"
+        ],
+        "additionalProperties": false,
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "workflows",
+      "subdomain": "echo",
+      "tags": [
+        "workflows"
+      ]
+    },
+    {
+      "id": "workflows.math_pipeline",
+      "type": "BLUEPRINT",
+      "description": "Composes demo capabilities (math_add + echo).",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "number"
+          },
+          "b": {
+            "type": "number"
+          },
+          "c": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "a",
+          "b",
+          "c"
+        ],
+        "additionalProperties": false,
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "workflows",
+      "subdomain": "math_pipeline",
+      "tags": [
+        "workflows"
+      ]
+    }
+  ]
+}

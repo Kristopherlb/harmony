@@ -11,6 +11,23 @@ export interface BlueprintDescriptor {
     id: string;
     version: string;
     description: string;
+    /**
+     * Discovery taxonomy (CDM-001).
+     *
+     * NOTE: This is optional for backwards compatibility, but CI/generators
+     * should enforce/populate it for all new/updated descriptors.
+     */
+    domain?: string;
+    /**
+     * Optional finer-grained discovery taxonomy (CDM-001).
+     */
+    subdomain?: string;
+    /**
+     * Discovery tags used by the Console palette/catalog (CDM-001).
+     *
+     * NOTE: Optional for backwards compatibility; enforced by CI/generators.
+     */
+    tags?: string[];
   };
   inputSchema: z.ZodSchema<unknown>;
   security?: {

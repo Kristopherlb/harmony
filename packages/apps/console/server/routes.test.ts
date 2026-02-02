@@ -473,4 +473,26 @@ describe("API Routes", () => {
       }
     });
   });
+
+  describe("MCP tools catalog freshness", () => {
+    it("returns a parseable generated_at timestamp", async () => {
+      const response = await api().get("/api/mcp/tools").expect(200);
+      expect(response.body).toHaveProperty("manifest");
+      expect(response.body.manifest).toHaveProperty("generated_at");
+      expect(Number.isNaN(Date.parse(response.body.manifest.generated_at))).toBe(false);
+    });
+
+    it("refresh updates generated_at", async () => {
+      const before = await api().get("/api/mcp/tools").expect(200);
+      const beforeTs = before.body.manifest.generated_at;
+
+      const refreshed = await api().post("/api/mcp/tools/refresh").send({}).expect(200);
+      const refreshedTs = refreshed.body.manifest.generated_at;
+      expect(Date.parse(refreshedTs)).toBeGreaterThan(Date.parse(beforeTs));
+
+      const after = await api().get("/api/mcp/tools").expect(200);
+      const afterTs = after.body.manifest.generated_at;
+      expect(Date.parse(afterTs)).toBeGreaterThan(Date.parse(beforeTs));
+    });
+  });
 });

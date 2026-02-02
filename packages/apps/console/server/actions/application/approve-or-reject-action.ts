@@ -76,6 +76,7 @@ export class ApproveOrRejectAction {
         runId: execution.runId,
         action: request.action,
         comment: request.comment,
+        context: execution.context ?? {},
       },
       severity: "medium",
       userId: request.userId,
@@ -83,8 +84,8 @@ export class ApproveOrRejectAction {
       message: `Action ${request.action === "approve" ? "Approved" : "Rejected"}: ${execution.actionName}`,
       resolved: true,
       resolvedAt: new Date().toISOString(),
-      contextType: "general",
-      serviceTags: [],
+      contextType: execution.context?.contextType ?? "general",
+      serviceTags: execution.context?.serviceTags ?? [],
     });
 
     return {

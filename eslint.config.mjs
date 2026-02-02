@@ -26,6 +26,11 @@ export default [
           message:
             "OCS Capabilities must define a 'metadata' block for registry discovery.",
         },
+        {
+          selector: "TemplateLiteral Identifier[name=/^[A-Z][A-Z0-9_]+$/]",
+          message:
+            "Potential mixed interpolation: Are you trying to interpolate a Shell variable? If so, escape it: \\${VAR}. If this is a TS constant, ignore.",
+        },
       ],
     },
   },

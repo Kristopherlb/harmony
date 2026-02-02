@@ -1,28 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { ReleaseDetailSheet } from "../release-detail-sheet";
 import type { Event } from "@shared/schema";
-
-// Mock the prep items utilities
-vi.mock("../prep-items", () => ({
-  usePrepItems: vi.fn(() => ({
-    prepItems: [
-      {
-        id: "test-1",
-        label: "Test Item",
-        description: "Test description",
-        completed: false,
-        atRisk: false,
-        manualAtRisk: false,
-        resolverType: "manual" as const,
-        resolver: vi.fn(),
-        deadline: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-      },
-    ],
-    toggleItem: vi.fn(),
-    toggleAtRisk: vi.fn(),
-  })),
-}));
+import { ReleaseDetailSheet } from "../release-detail-sheet";
 
 describe("ReleaseDetailSheet Prep Items", () => {
   const mockRelease: Event = {
@@ -40,7 +19,9 @@ describe("ReleaseDetailSheet Prep Items", () => {
 
   const mockEvents: Event[] = [];
 
-  it("renders prep items as interactive checkboxes", () => {
+  it("renders prep items as interactive checkboxes", async () => {
+    const prevFetch = global.fetch;
+    global.fetch = vi.fn(async () => ({ ok: true, json: async () => ({ events: [] }) }) as any) as any;
     render(
       <ReleaseDetailSheet
         release={mockRelease}
@@ -50,17 +31,24 @@ describe("ReleaseDetailSheet Prep Items", () => {
         onEventClick={vi.fn()}
       />
     );
+    global.fetch = prevFetch as any;
 
     // Switch to prep tab
     const prepTab = screen.getByRole("tab", { name: /prep/i });
+    fireEvent.mouseDown(prepTab);
     fireEvent.click(prepTab);
+    await waitFor(() => {
+      expect(prepTab).toHaveAttribute("data-state", "active");
+    });
 
     // Should show prep items
-    expect(screen.getByText("Test Item")).toBeInTheDocument();
+    expect(await screen.findByText("Release Notes")).toBeInTheDocument();
   });
 
   it("allows toggling prep items", async () => {
     const onEventClick = vi.fn();
+    const prevFetch = global.fetch;
+    global.fetch = vi.fn(async () => ({ ok: true, json: async () => ({ events: [] }) }) as any) as any;
     render(
       <ReleaseDetailSheet
         release={mockRelease}
@@ -70,20 +58,22 @@ describe("ReleaseDetailSheet Prep Items", () => {
         onEventClick={onEventClick}
       />
     );
+    global.fetch = prevFetch as any;
 
     const prepTab = screen.getByRole("tab", { name: /prep/i });
+    fireEvent.mouseDown(prepTab);
     fireEvent.click(prepTab);
+    await waitFor(() => {
+      expect(prepTab).toHaveAttribute("data-state", "active");
+    });
 
-    // Find and click the checkbox/item
-    const item = screen.getByText("Test Item").closest("div");
-    if (item) {
-      fireEvent.click(item);
-      
-      // Should trigger resolver
-      await waitFor(() => {
-        // Check that interaction occurred
-        expect(item).toBeInTheDocument();
-      });
-    }
+    // Click the checkbox for a prep item; in test env the automated check can't complete,
+    // so it should open the manual confirm dialog.
+    const checkbox = await screen.findByLabelText(/Release Notes/i);
+    fireEvent.click(checkbox);
+
+    await waitFor(() => {
+      expect(screen.getByText("Confirm Manual Completion")).toBeInTheDocument();
+    });
   });
 });

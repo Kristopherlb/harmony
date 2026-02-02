@@ -18,6 +18,10 @@ import { GetUserStats } from "../../metrics/application/get-user-stats";
 import { EventRepositoryAdapter } from "../../events/adapters/event-repository-adapter";
 import type { SlackAdapter, SourceAdapter } from "../../adapters";
 import type { ServiceClient } from "../../clients";
+import {
+  createSlackInteractiveHandler,
+  createSlackVerificationMiddleware,
+} from "./slack-interactive-handler";
 
 export interface IntegrationsRouterDeps {
   eventIngestion: EventIngestionPort;
@@ -44,6 +48,19 @@ function getRequiredEnvVars(source: string): string[] {
 
 export function createIntegrationsRouter(deps: IntegrationsRouterDeps): Router {
   const router = createRouter();
+
+  // Slack interactive messages (approval buttons)
+  const slackSigningSecret = process.env.SLACK_SIGNING_SECRET;
+  if (slackSigningSecret) {
+    router.post(
+      "/slack/interactive",
+      createSlackVerificationMiddleware(slackSigningSecret),
+      createSlackInteractiveHandler()
+    );
+  } else {
+    // Allow unauthenticated for local development
+    router.post("/slack/interactive", createSlackInteractiveHandler());
+  }
 
   // Slack events
   router.post("/slack/events", deps.createWebhookVerificationMiddleware("slack"), async (req: Request, res: Response) => {

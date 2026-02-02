@@ -69,6 +69,7 @@ export function toDomainWorkflowExecution(shared: SharedWorkflowExecution): Work
     approvedAt: shared.approvedAt ? new Date(shared.approvedAt) : undefined,
     output: shared.output,
     error: shared.error,
+    context: shared.context,
   };
 }
 
@@ -92,6 +93,7 @@ export function toSharedWorkflowExecution(domain: WorkflowExecution): SharedWork
     approvedAt: domain.approvedAt?.toISOString(),
     output: domain.output,
     error: domain.error,
+    context: domain.context,
   };
 }
 
@@ -103,6 +105,7 @@ export function toDomainExecuteActionRequest(shared: SharedExecuteActionRequest)
     actionId: shared.actionId,
     params: shared.params,
     reasoning: shared.reasoning,
+    context: shared.context,
   };
 }
 
@@ -114,5 +117,6 @@ export function toSharedExecuteActionRequest(domain: ExecuteActionRequest): Shar
     actionId: domain.actionId,
     params: domain.params,
     reasoning: domain.reasoning,
+    context: domain.context,
   };
 }

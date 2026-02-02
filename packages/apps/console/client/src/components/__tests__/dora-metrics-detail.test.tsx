@@ -98,7 +98,7 @@ describe("DeploymentFrequencyDetail - Filtering", () => {
       );
 
       // Find and click the Successful card
-      const successfulCard = screen.getByText(/successful/i).closest(".p-3");
+      const successfulCard = screen.getByText(/^Successful$/).closest(".p-3");
       expect(successfulCard).toBeInTheDocument();
       fireEvent.click(successfulCard!);
 
@@ -146,7 +146,7 @@ describe("DeploymentFrequencyDetail - Filtering", () => {
       );
 
       // Find and click the Failed card
-      const failedCard = screen.getByText(/failed/i).closest(".p-3");
+      const failedCard = screen.getByText(/^Failed$/).closest(".p-3");
       expect(failedCard).toBeInTheDocument();
       fireEvent.click(failedCard!);
 
@@ -182,7 +182,7 @@ describe("DeploymentFrequencyDetail - Filtering", () => {
       );
 
       // First filter by successful
-      const successfulCard = screen.getByText(/successful/i).closest(".p-3");
+      const successfulCard = screen.getByText(/^Successful$/).closest(".p-3");
       fireEvent.click(successfulCard!);
       
       // Verify filter is active (only successful shown)
@@ -190,7 +190,7 @@ describe("DeploymentFrequencyDetail - Filtering", () => {
       expect(screen.queryByText(/deployment 2/i)).not.toBeInTheDocument();
 
       // Then click Total to reset
-      const totalCard = screen.getByText(/total/i).closest(".p-3");
+      const totalCard = screen.getByText(/^Total$/).closest(".p-3");
       fireEvent.click(totalCard!);
 
       // Assert: all deployments should be visible again
@@ -241,8 +241,8 @@ describe("DeploymentFrequencyDetail - Filtering", () => {
       fireEvent.click(mondayBar);
 
       // Assert: filtered releases should only show Monday deployments
-      expect(screen.getByText(/monday deployment/i)).toBeInTheDocument();
-      expect(screen.getByText(/another monday deployment/i)).toBeInTheDocument();
+      expect(screen.getByText(/^Monday deployment$/i)).toBeInTheDocument();
+      expect(screen.getByText(/^Another Monday deployment$/i)).toBeInTheDocument();
       expect(screen.queryByText(/tuesday deployment/i)).not.toBeInTheDocument();
     });
 
@@ -273,7 +273,7 @@ describe("DeploymentFrequencyDetail - Filtering", () => {
       fireEvent.click(mondayBar);
 
       // Assert: Monday bar should have active styling
-      expect(mondayBar).toHaveClass("border-primary", "bg-primary/10");
+      expect(mondayBar).toHaveClass("ring-2", "ring-primary");
     });
   });
 
@@ -313,7 +313,7 @@ describe("DeploymentFrequencyDetail - Filtering", () => {
       );
 
       // Find and click the Production card
-      const productionCard = screen.getByText(/production/i).closest(".p-2");
+      const productionCard = screen.getByText(/^Production$/).closest(".p-2");
       expect(productionCard).toBeInTheDocument();
       fireEvent.click(productionCard!);
 
@@ -357,7 +357,7 @@ describe("DeploymentFrequencyDetail - Filtering", () => {
       );
 
       // Find and click the Staging card
-      const stagingCard = screen.getByText(/staging/i).closest(".p-2");
+      const stagingCard = screen.getByText(/^Staging$/).closest(".p-2");
       expect(stagingCard).toBeInTheDocument();
       fireEvent.click(stagingCard!);
 
@@ -401,7 +401,7 @@ describe("DeploymentFrequencyDetail - Filtering", () => {
       );
 
       // Find and click the Hotfix card
-      const hotfixCard = screen.getByText(/hotfix/i).closest(".p-2");
+      const hotfixCard = screen.getByText(/^Hotfix$/).closest(".p-2");
       expect(hotfixCard).toBeInTheDocument();
       fireEvent.click(hotfixCard!);
 
@@ -466,10 +466,10 @@ describe("DeploymentFrequencyDetail - Filtering", () => {
       const mondayBar = screen.getByTitle(/mon.*deploys/i);
       fireEvent.click(mondayBar);
 
-      const productionCard = screen.getByText(/production/i).closest(".p-2");
+      const productionCard = screen.getByText(/^Production$/).closest(".p-2");
       fireEvent.click(productionCard!);
 
-      const successfulCard = screen.getByText(/successful/i).closest(".p-3");
+      const successfulCard = screen.getByText(/^Successful$/).closest(".p-3");
       fireEvent.click(successfulCard!);
 
       // Assert: should only show successful Monday production deployments
@@ -507,7 +507,7 @@ describe("DeploymentFrequencyDetail - Filtering", () => {
       );
 
       // Apply a filter
-      const successfulCard = screen.getByText(/successful/i).closest(".p-3");
+      const successfulCard = screen.getByText(/^Successful$/).closest(".p-3");
       fireEvent.click(successfulCard!);
       
       // Verify filter is active
@@ -515,7 +515,7 @@ describe("DeploymentFrequencyDetail - Filtering", () => {
       expect(screen.queryByText(/deployment 2/i)).not.toBeInTheDocument();
 
       // Click deployment frequency score card to reset
-      const frequencyCard = screen.getByText(/deployment frequency/i).closest(".p-4");
+      const frequencyCard = screen.getByText(/^Deployment Frequency$/i).closest(".p-4");
       expect(frequencyCard).toBeInTheDocument();
       fireEvent.click(frequencyCard!);
 
@@ -546,7 +546,7 @@ describe("DeploymentFrequencyDetail - Filtering", () => {
       );
 
       // Apply a filter
-      const successfulCard = screen.getByText(/successful/i).closest(".p-3");
+      const successfulCard = screen.getByText(/^Successful$/).closest(".p-3");
       fireEvent.click(successfulCard!);
 
       // Assert: clear filters button should appear

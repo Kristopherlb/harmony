@@ -26,6 +26,52 @@ type WorkflowRunDiscovered = {
 
 export interface SyncGeneratorSchema {}
 
+type ToolCatalogArtifact = {
+  version?: string;
+  tools?: Array<{ id?: string }>;
+};
+
+function validateToolCatalogArtifact(tree: Tree, expectedToolIds: string[]): void {
+  const catalogPath = 'packages/tools/mcp-server/src/manifest/tool-catalog.json';
+  if (!tree.exists(catalogPath)) {
+    throw new Error(
+      [
+        `Missing tool catalog artifact: ${catalogPath}.`,
+        `Regenerate it deterministically, then re-run sync:`,
+        `  pnpm nx run mcp-server:generate-tool-catalog`,
+      ].join('\n')
+    );
+  }
+
+  const raw = readUtf8(tree, catalogPath);
+  let parsed: ToolCatalogArtifact;
+  try {
+    parsed = JSON.parse(raw) as ToolCatalogArtifact;
+  } catch (e) {
+    throw new Error(`Invalid JSON in tool catalog artifact: ${catalogPath}`);
+  }
+
+  const tools = Array.isArray(parsed.tools) ? parsed.tools : [];
+  const ids = tools
+    .map((t) => (typeof t?.id === 'string' ? t.id : ''))
+    .filter((x) => x.trim().length > 0);
+
+  const byId = new Set(ids);
+  const missing = expectedToolIds.filter((id) => !byId.has(id));
+  if (missing.length === 0) return;
+
+  throw new Error(
+    [
+      `Tool catalog artifact is missing ${missing.length} tool id(s):`,
+      ...missing.slice(0, 50).map((id) => `- ${id}`),
+      ...(missing.length > 50 ? [`- ... and ${missing.length - 50} more`] : []),
+      ``,
+      `Regenerate it deterministically, then re-run sync:`,
+      `  pnpm nx run mcp-server:generate-tool-catalog`,
+    ].join('\n')
+  );
+}
+
 function unwrapExpression(expr: ts.Expression): ts.Expression {
   let cur: ts.Expression = expr;
   // eslint-disable-next-line no-constant-condition -- iterative unwrap
@@ -394,6 +440,15 @@ export default async function syncGenerator(tree: Tree, _options: SyncGeneratorS
 
   const runs = discoverWorkflowRuns(tree);
   regenerateWorkflowsIndex(tree, runs);
+
+  // CDM-001 / drift gate: ensure the committed tool catalog contains all known tool IDs.
+  validateToolCatalogArtifact(
+    tree,
+    [
+      ...caps.map((c) => c.metadataId),
+      ...descs.map((d) => d.blueprintId),
+    ].sort((a, b) => a.localeCompare(b))
+  );
 
   return () => {};
 }

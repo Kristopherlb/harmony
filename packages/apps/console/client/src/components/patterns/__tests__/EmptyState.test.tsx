@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { EmptyState } from "../EmptyState";
 import { Server } from "lucide-react";
@@ -45,7 +45,8 @@ describe("EmptyState", () => {
       />
     );
 
-    const container = screen.getByText("Test").closest("div");
+    const title = screen.getByRole("heading", { name: "Test" });
+    const container = title.closest("div");
     expect(container).toHaveClass("custom-class");
   });
 });

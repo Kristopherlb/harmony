@@ -3,6 +3,7 @@ import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import type { McpTool } from "@golden/mcp-server";
 import type { ToolCatalogTool } from "../agent/services/harmony-mcp-tool-service";
+import { deriveDomainParts } from "../../client/src/features/capabilities/tool-taxonomy";
 
 // Define the schema for the workflow blueprint
 // This MUST match the frontend BlueprintDraft type
@@ -39,7 +40,12 @@ function summarizeToolsForPrompt(tools: Array<McpTool & Partial<ToolCatalogTool>
       const schemaHint =
         props || req ? ` (props: ${props || "-"}; required: ${req || "-"})` : "";
       const cls = (t as any).dataClassification ? ` [${(t as any).dataClassification}]` : "";
-      return `- ${t.name}${cls}: ${t.description}${schemaHint}`;
+      const domain = (t as any).domain || deriveDomainParts(t.name).domain;
+      const cost = (t as any).costFactor ? ` cost:${(t as any).costFactor}` : "";
+      const tags = Array.isArray((t as any).tags) && (t as any).tags.length > 0
+        ? ` tags:${(t as any).tags.slice(0, 6).join(",")}`
+        : "";
+      return `- ${t.name}${cls} (${domain}${cost}${tags}): ${t.description}${schemaHint}`;
     })
     .join("\n");
 }

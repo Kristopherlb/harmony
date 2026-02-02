@@ -42,6 +42,29 @@ function slugifyBlueprintId(id: string): string {
     .replace(/^-|-$/g, '');
 }
 
+function inferDiscoveryTaxonomy(id: string): { domain?: string; subdomain?: string; tags: string[] } {
+  const parts = id.split('.').filter((p) => p.trim().length > 0);
+  if (parts.length === 0) return { tags: [] };
+
+  // Convention: tools use `<family>.<domain>...` (e.g., golden.<domain>.<...>, workflows.<...>).
+  if (parts[0] === 'golden') {
+    // For modern IDs: golden.<domain>.<subdomain?>.<name>
+    if (parts.length >= 3) {
+      const domain = parts[1];
+      const subdomain = parts.length >= 4 ? parts[2] : undefined;
+      const tags = [domain, subdomain].filter((x): x is string => typeof x === 'string' && x.length > 0);
+      return { domain, subdomain, tags };
+    }
+    // Legacy: golden.<name> (domain is derived elsewhere; keep empty here).
+    return { tags: [] };
+  }
+
+  const domain = parts[0];
+  const subdomain = parts.length >= 2 ? parts.slice(1).join('.') : undefined;
+  const tags = [domain].filter((x): x is string => typeof x === 'string' && x.length > 0);
+  return { domain, subdomain, tags };
+}
+
 function toCamelCase(kebab: string): string {
   const [first, ...rest] = kebab.split('-');
   return [first, ...rest.map((p) => p.slice(0, 1).toUpperCase() + p.slice(1))].join('');
@@ -450,6 +473,7 @@ export default async function blueprintGenerator(tree: Tree, options: BlueprintG
   assertCapabilitiesExistIfRegistryPresent(tree, plan.dag.steps);
 
   const blueprintId = plan.blueprint_metadata.id;
+  const discovery = inferDiscoveryTaxonomy(blueprintId);
   const fileBase = slugifyBlueprintId(blueprintId);
   const exportName = `${toCamelCase(fileBase)}Workflow`;
   const className = `${exportName[0].toUpperCase()}${exportName.slice(1)}`;
@@ -501,7 +525,7 @@ export class ${className} extends BaseBlueprint<${className}Input, ${className}O
     description: 'TODO: Describe what this blueprint does (purpose, not effect).',
     owner: 'platform',
     costCenter: 'CC-0',
-    tags: [],
+    tags: ${JSON.stringify(discovery.tags)},
   };
 
   readonly security = {
@@ -585,6 +609,9 @@ export const ${exportName}Descriptor: BlueprintDescriptor = {
     id: ${JSON.stringify(blueprintId)},
     version: ${JSON.stringify(plan.blueprint_metadata.version)},
     description: 'TODO: Describe what this blueprint does (purpose, not effect).',
+    ${discovery.domain ? `domain: ${JSON.stringify(discovery.domain)},` : ''}
+    ${discovery.subdomain ? `subdomain: ${JSON.stringify(discovery.subdomain)},` : ''}
+    ${discovery.tags.length ? `tags: ${JSON.stringify(discovery.tags)},` : ''}
   },
   inputSchema: z.object({
 ${inputSchemaFields || '  // No context.* inputs detected from input_mapping\n'}

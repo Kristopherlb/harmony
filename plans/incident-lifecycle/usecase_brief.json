@@ -1,0 +1,49 @@
+{
+  "id": "usecase.incident.lifecycle",
+  "objective": "Orchestrate incident initiation, remediation, close-out, and post-mortem workflows with deterministic execution, auditability, and human-in-the-loop approvals for sensitive actions.",
+  "nonGoals": [
+    "Replace existing on-call scheduling or escalation policy management",
+    "Build a full incident command UI in this phase",
+    "Automatically run destructive remediation actions without explicit approval"
+  ],
+  "classification": "CONFIDENTIAL",
+  "requiredRoles": [
+    "incident-commander",
+    "platform-ops",
+    "sre-oncall"
+  ],
+  "requiredScopes": [
+    "confluence:write",
+    "k8s:admin",
+    "operations:execute",
+    "pagerduty:write",
+    "slack:write",
+    "statuspage:write"
+  ],
+  "sla": {
+    "targetDuration": "30m",
+    "maxDuration": "24h"
+  },
+  "hitl": {
+    "required": true,
+    "points": [
+      "approveCloseOut",
+      "approvePostMortemPublish",
+      "approveRemediationAction",
+      "approveStatuspageUpdate"
+    ]
+  },
+  "network": {
+    "allowOutbound": [
+      "*.atlassian.net",
+      "api.atlassian.com",
+      "api.pagerduty.com",
+      "api.slack.com",
+      "api.statuspage.io",
+      "events.pagerduty.com",
+      "files.slack.com",
+      "kubernetes.default.svc",
+      "slack.com"
+    ]
+  }
+}

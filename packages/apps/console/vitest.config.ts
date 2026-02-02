@@ -41,8 +41,17 @@ export default defineConfig({
     },
   },
   resolve: {
-    alias: {
-      "@shared": path.resolve(__dirname, "shared"),
-    },
+    alias: [
+      // Exact-match aliases to avoid prefix collisions (e.g. @golden/core vs @golden/core/workflow).
+      { find: /^@golden\/core\/workflow$/, replacement: path.resolve(__dirname, "../../core/src/wcs/workflow.ts") },
+      { find: /^@golden\/core$/, replacement: path.resolve(__dirname, "../../core/index.ts") },
+      { find: /^@golden\/schema-registry$/, replacement: path.resolve(__dirname, "../../schema-registry/index.ts") },
+      { find: /^@golden\/capabilities$/, replacement: path.resolve(__dirname, "../../capabilities/index.ts") },
+      { find: /^@golden\/blueprints$/, replacement: path.resolve(__dirname, "../../blueprints/index.ts") },
+      { find: /^@golden\/mcp-server$/, replacement: path.resolve(__dirname, "../../tools/mcp-server/index.ts") },
+      { find: /^@shared$/, replacement: path.resolve(__dirname, "shared") },
+      // Support subpath imports like "@shared/schema" and "@shared/db-schema".
+      { find: /^@shared\/(.*)$/, replacement: `${path.resolve(__dirname, "shared")}/$1` },
+    ],
   },
 });

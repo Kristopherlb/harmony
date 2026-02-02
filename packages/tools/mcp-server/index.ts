@@ -8,6 +8,8 @@ export {
   type ToolManifestEntry,
 } from './src/manifest/capabilities.js';
 
+export { generateToolCatalog, serializeToolCatalog, type ToolCatalog } from './src/manifest/tool-catalog.js';
+
 export {
   createToolSurface,
   type ToolSurface,

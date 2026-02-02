@@ -1,0 +1,69 @@
+{
+  "blueprint_metadata": {
+    "id": "blueprints.incident.post-mortem",
+    "version": "1.0.0",
+    "security_classification": "CONFIDENTIAL"
+  },
+  "acceptance_tests": [
+    {
+      "scenario": "Happy Path: generate post-mortem page",
+      "expected_outcome": "Creates a Confluence page from a template and posts the link to the incident Slack channel."
+    },
+    {
+      "scenario": "Confluence create fails",
+      "expected_outcome": "Workflow fails with actionable error message; no Slack success message is posted."
+    }
+  ],
+  "hitl_requirements": {
+    "clarification_questions": [
+      "Which Confluence space key and parent page should post-mortems live under?",
+      "Should post-mortem publishing require explicit approval (for P1/P2)?"
+    ],
+    "developer_actions": [
+      "Provision Atlassian API token and Cloud ID for golden.connectors.confluence",
+      "Provision Slack bot token secret for golden.connectors.slack"
+    ],
+    "runtime_approvals": [
+      "approvePostMortemPublish"
+    ]
+  },
+  "security_logic": {
+    "required_roles": [
+      "incident-commander",
+      "platform-ops"
+    ],
+    "hitl_points": [
+      "approvePostMortemPublish"
+    ]
+  },
+  "dag": {
+    "steps": [
+      {
+        "id": "confluence_create_page",
+        "capability": "golden.connectors.confluence",
+        "input_mapping": {
+          "body": "context.confluenceBody",
+          "bodyFormat": "context.confluenceBodyFormat",
+          "labels": "context.confluenceLabels",
+          "operation": "context.confluenceOperation",
+          "parentId": "context.confluenceParentId",
+          "spaceKey": "context.confluenceSpaceKey",
+          "title": "context.confluenceTitle"
+        }
+      },
+      {
+        "id": "notify_slack_postmortem_link",
+        "capability": "golden.connectors.slack",
+        "input_mapping": {
+          "channel": "context.slackChannel",
+          "operation": "context.slackOperation",
+          "text": "context.slackText"
+        }
+      }
+    ]
+  },
+  "temporal_tuning": {
+    "aps_strategy": "sequential",
+    "retry_policy_overrides": {}
+  }
+}

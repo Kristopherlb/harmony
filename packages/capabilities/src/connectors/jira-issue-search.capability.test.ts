@@ -19,8 +19,10 @@ describe('jiraIssueSearchCapability', () => {
     const calls: {
       from: string[];
       env: Array<{ key: string; value: string }>;
+      newFile: Array<{ path: string; contents: string }>;
+      mountedSecrets: Array<{ path: string; ref: unknown }>;
       exec: string[][];
-    } = { from: [], env: [], exec: [] };
+    } = { from: [], env: [], newFile: [], mountedSecrets: [], exec: [] };
 
     const fakeDag = {
       container() {
@@ -31,6 +33,14 @@ describe('jiraIssueSearchCapability', () => {
           },
           withEnvVariable(key: string, value: string) {
             calls.env.push({ key, value });
+            return builder;
+          },
+          withNewFile(path: string, contents: string) {
+            calls.newFile.push({ path, contents });
+            return builder;
+          },
+          withMountedSecret(path: string, ref: unknown) {
+            calls.mountedSecrets.push({ path, ref });
             return builder;
           },
           withExec(args: string[]) {
@@ -59,7 +69,9 @@ describe('jiraIssueSearchCapability', () => {
     expect(calls.from[0]).toContain('node:');
     const inputJson = calls.env.find((e) => e.key === 'INPUT_JSON')?.value;
     expect(inputJson).toContain('/rest/api/3/search/jql');
-    expect(calls.exec.length).toBe(1);
+    expect(calls.newFile.some((f) => f.path === '/opt/jira-runtime.cjs')).toBe(true);
+    expect(calls.mountedSecrets.some((s) => s.path === '/run/secrets/jira_access_token')).toBe(true);
+    expect(calls.exec).toEqual([['node', '/opt/jira-runtime.cjs']]);
   });
 
   it('maps HTTP-like errors to OCS error categories', () => {

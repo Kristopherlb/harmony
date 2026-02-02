@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: harmony-worker-${BUILD_ID}
+  labels:
+    app: harmony-worker
+    buildId: "${BUILD_ID}"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: harmony-worker
+      buildId: "${BUILD_ID}"
+  template:
+    metadata:
+      labels:
+        app: harmony-worker
+        buildId: "${BUILD_ID}"
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: harmony-worker
+          image: ${IMAGE_REF}
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: WORKER_BUILD_ID
+              value: "${BUILD_ID}"
+            - name: WORKER_VERSIONING
+              value: "true"
+            - name: TASK_QUEUE
+              value: "golden-tools"
+            - name: TEMPORAL_ADDRESS
+              value: "temporal:7233"
+            - name: TEMPORAL_NAMESPACE
+              value: "default"
+            - name: FLAGD_HOST
+              value: "flagd"
+            - name: FLAGD_PORT
+              value: "8013"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"

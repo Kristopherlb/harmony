@@ -327,6 +327,14 @@ export const WorkflowExecutionSchema = z.object({
   approvedAt: z.string().datetime().optional(),
   output: z.array(z.string()).optional(),
   error: z.string().optional(),
+  // Phase 5: workflow context for cross-incident approvals + audit views
+  context: z
+    .object({
+      eventId: z.string().uuid().optional(),
+      contextType: ContextTypeSchema.optional(),
+      serviceTags: z.array(z.string()).optional(),
+    })
+    .optional(),
 });
 export type WorkflowExecution = z.infer<typeof WorkflowExecutionSchema>;
 
@@ -347,6 +355,14 @@ export const ExecuteActionRequestSchema = z.object({
   actionId: z.string(),
   params: z.record(z.unknown()),
   reasoning: z.string().min(10, "Reasoning must be at least 10 characters"),
+  // Phase 5: propagate the triggering context (incident/event + service tags) into execution records.
+  context: z
+    .object({
+      eventId: z.string().uuid().optional(),
+      contextType: ContextTypeSchema.optional(),
+      serviceTags: z.array(z.string()).optional(),
+    })
+    .optional(),
 });
 export type ExecuteActionRequest = z.infer<typeof ExecuteActionRequestSchema>;
 

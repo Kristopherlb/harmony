@@ -182,8 +182,8 @@ export const openfeatureProviderCapability: Capability<
       .container()
       .from('node:20-alpine')
       .withEnvVariable('INPUT_JSON', JSON.stringify(payload))
-      .withEnvVariable('OPERATION', input.operation)
-      .withEnvVariable('FLAG_KEY', input.flagKey)
+      .withEnvVariable('OPERATION', input.operation as string)
+      .withEnvVariable('FLAG_KEY', input.flagKey as string)
       .withEnvVariable('PROVIDER', context.config.provider);
 
     // Mount SDK key if provided (platform resolves to Dagger Secret)

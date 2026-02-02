@@ -6,6 +6,10 @@
 export { blueGreenDeployWorkflow } from './deploy/blue-green-deploy.workflow-run';
 export { echoWorkflow } from './echo.workflow-run';
 export { executeCapabilityWorkflow } from './system/execute-capability.workflow-run';
+export { incidentCloseOutWorkflow } from './incident/incident-close-out.workflow-run';
+export { incidentInitiateWorkflow } from './incident/incident-initiate.workflow-run';
+export { incidentPostMortemWorkflow } from './incident/incident-post-mortem.workflow-run';
+export { incidentRemediateWorkflow } from './incident/incident-remediate.workflow-run';
 export { mathPipelineWorkflow } from './math-pipeline.workflow-run';
 export { progressiveRolloutWorkflow } from './traffic/progressive-rollout.workflow-run';
 export { releasePipelineWorkflow } from './ci/release-pipeline.workflow-run';

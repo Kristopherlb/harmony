@@ -1,0 +1,76 @@
+{
+  "blueprint_metadata": {
+    "id": "blueprints.incident.close-out",
+    "version": "1.0.0",
+    "security_classification": "CONFIDENTIAL"
+  },
+  "acceptance_tests": [
+    {
+      "scenario": "Happy Path: close-out with approval",
+      "expected_outcome": "Workflow requests approval, resolves Statuspage and PagerDuty incidents, and posts close-out summary to Slack."
+    },
+    {
+      "scenario": "Statuspage resolve fails",
+      "expected_outcome": "Workflow still posts Slack close-out with warnings and preserves PagerDuty resolution where possible."
+    }
+  ],
+  "hitl_requirements": {
+    "clarification_questions": [
+      "Should close-out always require approval, or only for P1/P2?",
+      "What is the canonical source of resolution summary (user-provided vs generated)?"
+    ],
+    "developer_actions": [
+      "Provision Statuspage API key and default page ID (if used)",
+      "Provision PagerDuty API token (if used)",
+      "Provision Slack bot token secret for golden.connectors.slack"
+    ],
+    "runtime_approvals": [
+      "approveCloseOut"
+    ]
+  },
+  "security_logic": {
+    "required_roles": [
+      "incident-commander"
+    ],
+    "hitl_points": [
+      "approveCloseOut"
+    ]
+  },
+  "dag": {
+    "steps": [
+      {
+        "id": "notify_slack_closeout",
+        "capability": "golden.connectors.slack",
+        "input_mapping": {
+          "blocks": "context.slackBlocks",
+          "channel": "context.slackChannel",
+          "operation": "context.slackOperation",
+          "text": "context.slackText"
+        }
+      },
+      {
+        "id": "statuspage_resolve_incident",
+        "capability": "golden.connectors.statuspage",
+        "input_mapping": {
+          "incidentId": "context.statuspageIncidentId",
+          "operation": "context.statuspageOperation",
+          "pageId": "context.statuspagePageId"
+        },
+        "is_parallel": true
+      },
+      {
+        "id": "pagerduty_resolve_incident",
+        "capability": "golden.connectors.pagerduty",
+        "input_mapping": {
+          "incidentId": "context.pagerdutyIncidentId",
+          "operation": "context.pagerdutyOperation"
+        },
+        "is_parallel": true
+      }
+    ]
+  },
+  "temporal_tuning": {
+    "aps_strategy": "sequential",
+    "retry_policy_overrides": {}
+  }
+}

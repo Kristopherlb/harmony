@@ -20,3 +20,28 @@ jobs:
           module: "./.dagger"
           call: "audit-git --repo-url https://github.com/${{ github.repository }}.git --ref ${{ github.sha }}"
 
+  tool-catalog-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "9"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Regenerate tool catalog
+        run: pnpm -w nx run mcp-server:generate-tool-catalog
+
+      - name: Fail if tool-catalog.json drifted
+        run: git diff --exit-code -- packages/tools/mcp-server/src/manifest/tool-catalog.json
+

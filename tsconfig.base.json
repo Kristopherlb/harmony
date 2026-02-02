@@ -16,6 +16,9 @@
       "@golden/core": [
         "./packages/core/index.ts"
       ],
+      "@golden/mcp-server": [
+        "./packages/tools/mcp-server/index.ts"
+      ],
       "@golden/schema-registry": [
         "./packages/schema-registry/index.ts"
       ],

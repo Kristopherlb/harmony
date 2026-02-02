@@ -66,18 +66,32 @@ describe("usePrepItems", () => {
   });
 
   it("toggles item completion", async () => {
+    // Seed localStorage so the first item starts completed=true, then resolver toggles it to false.
+    const initial = [
+      {
+        id: "release-notes",
+        completed: true,
+        manualAtRisk: false,
+        deadline: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+    ];
+    localStorageMock.setItem("release-prep-checklist", JSON.stringify(initial));
+
     const { result } = renderHook(() => usePrepItems(true));
-    
-    const initialItem = result.current.prepItems[0];
-    const initialCompleted = initialItem.completed;
+
+    // Flush effects so resolvers are initialized (placeholders replaced).
+    await act(async () => {});
+
+    const item = result.current.prepItems.find((i) => i.id === "release-notes");
+    expect(item?.completed).toBe(true);
 
     await act(async () => {
-      await initialItem.resolver();
+      await result.current.prepItems.find((i) => i.id === "release-notes")?.resolver();
     });
 
     await waitFor(() => {
-      const updatedItem = result.current.prepItems.find(item => item.id === initialItem.id);
-      expect(updatedItem?.completed).toBe(!initialCompleted);
+      const updatedItem = result.current.prepItems.find((i) => i.id === "release-notes");
+      expect(updatedItem?.completed).toBe(false);
     });
   });
 
@@ -98,11 +112,21 @@ describe("usePrepItems", () => {
   it("persists changes to localStorage", async () => {
     const { result } = renderHook(() => usePrepItems(true));
     
+    // Flush effects so resolvers are initialized (placeholders replaced).
+    await act(async () => {});
+
     const item = result.current.prepItems[0];
 
     await act(async () => {
-      await item.resolver();
+      await result.current.prepItems[0]?.resolver();
     });
+
+    // If the item could not be auto-completed, simulate user confirmation.
+    if (result.current.manualConfirmOpen) {
+      act(() => {
+        result.current.handleManualConfirm(result.current.manualConfirmOpen as string);
+      });
+    }
 
     await waitFor(() => {
       const stored = localStorageMock.getItem("release-prep-checklist");

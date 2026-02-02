@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema",
+  "cli": "nx",
+  "title": "Context extension generator",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Domain name (kebab-case) (e.g., incident, deployment)"
+    },
+    "fields": {
+      "type": "array",
+      "description": "Fields to add to GoldenContext. Pass multiple times, e.g. --fields=deployment_id:string --fields=deployment_env:string",
+      "items": {
+        "type": "string",
+        "description": "Field spec: name:type[:optional|required]. Example: deployment_id:string:optional"
+      }
+    }
+  },
+  "required": ["name", "fields"],
+  "additionalProperties": false
+}
+

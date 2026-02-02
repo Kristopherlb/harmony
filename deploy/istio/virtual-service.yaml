@@ -1,0 +1,21 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: harmony-mcp
+spec:
+  hosts:
+    - harmony-mcp.default.svc.cluster.local
+  http:
+    - match:
+        - headers:
+            x-golden-version:
+              exact: "v2"
+      route:
+        - destination:
+            host: harmony-mcp
+            subset: canary
+    - route:
+        - destination:
+            host: harmony-mcp
+            subset: stable
+          weight: 100

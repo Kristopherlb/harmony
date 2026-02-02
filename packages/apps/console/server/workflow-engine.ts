@@ -1,4 +1,10 @@
 import { v4 as uuidv4 } from "uuid";
+import { Client, Connection } from "@temporalio/client";
+import {
+  approvalSignal,
+  approvalStateQuery,
+  type ApprovalSignalPayload,
+} from "@golden/core/workflow";
 import type {
   Action,
   WorkflowExecution,
@@ -214,10 +220,24 @@ export class MockWorkflowEngine implements IWorkflowEngine {
 export class TemporalAdapter implements IWorkflowEngine {
   private temporalHost: string;
   private namespace: string;
+  private client: Client | null = null;
 
   constructor(config: { host?: string; namespace?: string } = {}) {
     this.temporalHost = config.host || process.env.TEMPORAL_HOST || "localhost:7233";
     this.namespace = config.namespace || process.env.TEMPORAL_NAMESPACE || "default";
+  }
+
+  private async getClient(): Promise<Client> {
+    if (!this.client) {
+      const connection = await Connection.connect({
+        address: this.temporalHost,
+      });
+      this.client = new Client({
+        connection,
+        namespace: this.namespace,
+      });
+    }
+    return this.client;
   }
 
   async startWorkflow(
@@ -241,23 +261,99 @@ export class TemporalAdapter implements IWorkflowEngine {
   }
 
   async getWorkflowStatus(runId: string): Promise<WorkflowProgress | null> {
-    console.log(`[TemporalAdapter] Would query workflow status: ${runId}`);
-    return null;
+    try {
+      const client = await this.getClient();
+      const handle = client.workflow.getHandle(runId);
+      const description = await handle.describe();
+
+      // Map Temporal workflow status to our WorkflowStatus
+      let status: WorkflowStatus = "running";
+      if (description.status.name === "COMPLETED") {
+        status = "completed";
+      } else if (description.status.name === "FAILED" || description.status.name === "TERMINATED") {
+        status = "failed";
+      } else if (description.status.name === "CANCELLED") {
+        status = "cancelled";
+      }
+
+      // Try to query approval state if the workflow supports it
+      try {
+        const approvalState = await handle.query(approvalStateQuery);
+        if (approvalState?.status === "pending") {
+          status = "pending_approval";
+        }
+      } catch {
+        // Workflow doesn't support approval queries - that's fine
+      }
+
+      return {
+        runId,
+        status,
+        output: [`Workflow ${description.status.name}`],
+      };
+    } catch (err) {
+      console.error(`[TemporalAdapter] Failed to get workflow status for ${runId}:`, err);
+      return null;
+    }
   }
 
   async cancelWorkflow(runId: string): Promise<boolean> {
-    console.log(`[TemporalAdapter] Would cancel workflow: ${runId}`);
-    return true;
+    try {
+      const client = await this.getClient();
+      const handle = client.workflow.getHandle(runId);
+      await handle.cancel();
+      console.log(`[TemporalAdapter] Cancelled workflow: ${runId}`);
+      return true;
+    } catch (err) {
+      console.error(`[TemporalAdapter] Failed to cancel workflow ${runId}:`, err);
+      return false;
+    }
   }
 
-  async approveWorkflow(runId: string, approverId: string): Promise<boolean> {
-    console.log(`[TemporalAdapter] Would signal approval to workflow: ${runId}`);
-    return true;
+  async approveWorkflow(runId: string, approverId: string, approverName?: string): Promise<boolean> {
+    try {
+      const client = await this.getClient();
+      const handle = client.workflow.getHandle(runId);
+
+      const payload: ApprovalSignalPayload = {
+        decision: "approved",
+        approverId,
+        approverName,
+        approverRoles: [], // TODO: Fetch from user context
+        timestamp: new Date().toISOString(),
+        source: "console",
+      };
+
+      await handle.signal(approvalSignal, payload);
+      console.log(`[TemporalAdapter] Sent approval signal to workflow: ${runId}`);
+      return true;
+    } catch (err) {
+      console.error(`[TemporalAdapter] Failed to approve workflow ${runId}:`, err);
+      return false;
+    }
   }
 
   async rejectWorkflow(runId: string, approverId: string, reason?: string): Promise<boolean> {
-    console.log(`[TemporalAdapter] Would signal rejection to workflow: ${runId}`);
-    return true;
+    try {
+      const client = await this.getClient();
+      const handle = client.workflow.getHandle(runId);
+
+      const payload: ApprovalSignalPayload = {
+        decision: "rejected",
+        approverId,
+        approverRoles: [], // TODO: Fetch from user context
+        reason: reason ?? "Rejected via console",
+        timestamp: new Date().toISOString(),
+        source: "console",
+      };
+
+      await handle.signal(approvalSignal, payload);
+      console.log(`[TemporalAdapter] Sent rejection signal to workflow: ${runId}`);
+      return true;
+    } catch (err) {
+      console.error(`[TemporalAdapter] Failed to reject workflow ${runId}:`, err);
+      return false;
+    }
   }
 }
 

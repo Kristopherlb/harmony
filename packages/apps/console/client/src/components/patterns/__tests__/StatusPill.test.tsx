@@ -70,14 +70,17 @@ describe("StatusPill", () => {
   describe("showDot prop", () => {
     it("shows dot indicator when showDot is true", () => {
       render(<StatusPill status="healthy" showDot />);
-      const dot = screen.getByRole("status");
+      const pill = screen.getByRole("status", { name: "Status: healthy" });
+      const dot = pill.querySelector('span[aria-hidden="true"]');
       expect(dot).toBeInTheDocument();
       expect(dot).toHaveClass("rounded-full");
     });
 
     it("does not show dot when showDot is false", () => {
       render(<StatusPill status="healthy" showDot={false} />);
-      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+      const pill = screen.getByRole("status", { name: "Status: healthy" });
+      const dot = pill.querySelector('span[aria-hidden="true"]');
+      expect(dot).not.toBeInTheDocument();
     });
   });
 

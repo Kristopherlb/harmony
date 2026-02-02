@@ -5,34 +5,34 @@
 import { describe, it, expect, vi } from 'vitest';
 import { z } from '@golden/schema-registry';
 
-vi.mock('@golden/blueprints', () => {
-  return {
-    createBlueprintRegistry: () =>
-      new Map([
-        [
-          'workflows.echo',
-          {
-            blueprintId: 'workflows.echo',
-            workflowType: 'echoWorkflow',
-            descriptor: {
-              blueprintId: 'workflows.echo',
-              workflowType: 'echoWorkflow',
-              metadata: { id: 'workflows.DIFFERENT', version: '1.0.0', description: 'mismatch' },
-              inputSchema: z.object({}),
-              security: { classification: 'INTERNAL' },
-            } as unknown,
-          },
-        ],
-      ]),
-  };
-});
-
-// Import after mock hoisting.
-import { createCapabilityRegistry } from '@golden/capabilities';
-import { generateToolManifestFromCapabilities } from './capabilities.js';
-
 describe('Blueprint id consistency', () => {
-  it('throws when blueprintId != workflow.metadata.id', () => {
+  it('throws when blueprintId != workflow.metadata.id', async () => {
+    vi.resetModules();
+    vi.doMock('@golden/blueprints', () => {
+      return {
+        createBlueprintRegistry: () =>
+          new Map([
+            [
+              'workflows.echo',
+              {
+                blueprintId: 'workflows.echo',
+                workflowType: 'echoWorkflow',
+                descriptor: {
+                  blueprintId: 'workflows.echo',
+                  workflowType: 'echoWorkflow',
+                  metadata: { id: 'workflows.DIFFERENT', version: '1.0.0', description: 'mismatch' },
+                  inputSchema: z.object({}),
+                  security: { classification: 'INTERNAL' },
+                } as unknown,
+              },
+            ],
+          ]),
+      };
+    });
+
+    const { createCapabilityRegistry } = await import('@golden/capabilities');
+    const { generateToolManifestFromCapabilities } = await import('./capabilities.js');
+
     expect(() =>
       generateToolManifestFromCapabilities({
         registry: createCapabilityRegistry(),

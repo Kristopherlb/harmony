@@ -1,0 +1,38 @@
+{
+  "plan": {
+    "type": "intent",
+    "description": "Improve incident on-call handoff quality by standardizing incident context capture and displaying the current incident state prominently in the console.",
+    "goals": [
+      "Define a durable incident context model shared across workflows and UI.",
+      "Render a consistent incident banner/header in the console based on the context model.",
+      "Provide a small, deterministic responder checklist and supporting runbooks."
+    ],
+    "constraints": [
+      "No secrets or credentials in the plan inputs.",
+      "Prefer generators and existing repo utilities over custom scripts.",
+      "Preserve Temporal determinism boundaries (no non-deterministic APIs in workflow bundles)."
+    ]
+  },
+  "projectContext": {
+    "name": "incident-handoff-improvements",
+    "domain": "incident-management",
+    "domainExpert": {
+      "role": "On-call incident commander",
+      "concerns": [
+        "Fast situational awareness",
+        "Clear handoff notes and ownership",
+        "Consistency between workflow state and UI"
+      ],
+      "successCriteria": [
+        "New on-call can assess incident state in under 60 seconds",
+        "Handoff includes standardized context fields"
+      ]
+    }
+  },
+  "options": {
+    "depth": "standard",
+    "outputFormat": "both",
+    "createCheckpoint": true
+  }
+}
+

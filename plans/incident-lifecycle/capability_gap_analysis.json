@@ -1,0 +1,110 @@
+{
+  "usecaseId": "usecase.incident.lifecycle",
+  "steps": [
+    {
+      "id": "notify_slack_announcement",
+      "pattern": "connector",
+      "capabilityId": "golden.connectors.slack",
+      "exists": true,
+      "classification": "CONFIDENTIAL",
+      "requiredScopes": [
+        "slack:write"
+      ],
+      "allowOutbound": [
+        "api.slack.com",
+        "files.slack.com",
+        "slack.com"
+      ]
+    },
+    {
+      "id": "notify_pagerduty_create_incident",
+      "pattern": "commander",
+      "capabilityId": "golden.connectors.pagerduty",
+      "exists": true,
+      "classification": "CONFIDENTIAL",
+      "requiredScopes": [
+        "pagerduty:write"
+      ],
+      "allowOutbound": [
+        "api.pagerduty.com",
+        "events.pagerduty.com"
+      ]
+    },
+    {
+      "id": "statuspage_create_or_update_incident",
+      "pattern": "connector",
+      "capabilityId": "golden.connectors.statuspage",
+      "exists": true,
+      "classification": "CONFIDENTIAL",
+      "requiredScopes": [
+        "statuspage:write"
+      ],
+      "allowOutbound": [
+        "api.statuspage.io"
+      ]
+    },
+    {
+      "id": "hitl_request_approval_via_slack",
+      "pattern": "commander",
+      "capabilityId": "golden.integrations.slack-interactive",
+      "exists": true,
+      "classification": "CONFIDENTIAL",
+      "requiredScopes": [
+        "slack:write"
+      ],
+      "allowOutbound": [
+        "api.slack.com",
+        "slack.com"
+      ]
+    },
+    {
+      "id": "execute_runbook_cells",
+      "pattern": "commander",
+      "capabilityId": "golden.operations.runme-runner",
+      "exists": true,
+      "classification": "CONFIDENTIAL",
+      "requiredScopes": [
+        "operations:execute"
+      ],
+      "allowOutbound": [
+        "kubernetes.default.svc"
+      ]
+    },
+    {
+      "id": "kubernetes_operational_action",
+      "pattern": "commander",
+      "capabilityId": "golden.commanders.kubectl",
+      "exists": true,
+      "classification": "CONFIDENTIAL",
+      "requiredScopes": [
+        "k8s:admin"
+      ],
+      "allowOutbound": [
+        "kubernetes.default.svc"
+      ]
+    },
+    {
+      "id": "create_postmortem_page",
+      "pattern": "connector",
+      "capabilityId": "golden.connectors.confluence",
+      "exists": true,
+      "classification": "CONFIDENTIAL",
+      "requiredScopes": [
+        "confluence:write"
+      ],
+      "allowOutbound": [
+        "*.atlassian.net",
+        "api.atlassian.com"
+      ]
+    },
+    {
+      "id": "record_incident_timeline_event",
+      "pattern": "transformer",
+      "capabilityId": "golden.transformers.incident-timeline",
+      "exists": false,
+      "classification": "CONFIDENTIAL",
+      "requiredScopes": [],
+      "allowOutbound": []
+    }
+  ]
+}

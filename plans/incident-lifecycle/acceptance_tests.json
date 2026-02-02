@@ -1,0 +1,113 @@
+{
+  "usecaseId": "usecase.incident.lifecycle",
+  "scenarios": [
+    {
+      "id": "initiateCreatesIncidentAndNotifies",
+      "input": {
+        "title": "API Outage",
+        "severity": "P1",
+        "summary": "HTTP 500 spike across core endpoints",
+        "slackChannel": "#inc-api",
+        "notifyPagerDuty": true,
+        "createStatuspageIncident": true
+      },
+      "expected": {
+        "status": "COMPLETED",
+        "incident": {
+          "id": "INC-0001",
+          "phase": "INITIATED",
+          "severity": "P1"
+        },
+        "notifications": {
+          "slackAnnouncementPosted": true,
+          "pagerDutyIncidentCreated": true,
+          "statuspageIncidentCreated": true
+        }
+      }
+    },
+    {
+      "id": "remediateRunbookRequiresApprovalForSensitiveAction",
+      "input": {
+        "incidentId": "INC-0001",
+        "severity": "P2",
+        "remediation": {
+          "kind": "runbook",
+          "path": "runbooks/rollback-deployment.md",
+          "cells": [
+            "show-history",
+            "rollback",
+            "postcheck"
+          ]
+        },
+        "approval": {
+          "requiredRoles": [
+            "incident-commander",
+            "sre-oncall"
+          ],
+          "timeout": "30m",
+          "slackChannel": "#inc-api"
+        }
+      },
+      "expected": {
+        "status": "COMPLETED",
+        "approval": {
+          "wasRequired": true,
+          "wasApproved": true
+        },
+        "remediation": {
+          "executed": true,
+          "recordedInTimeline": true
+        }
+      }
+    },
+    {
+      "id": "closeoutResolvesStatuspageAndPostsSummary",
+      "input": {
+        "incidentId": "INC-0001",
+        "severity": "P2",
+        "resolutionSummary": "Rolled back deployment and restored error rate baseline.",
+        "createStatuspageUpdate": true,
+        "approval": {
+          "requiredRoles": [
+            "incident-commander"
+          ],
+          "timeout": "1h",
+          "slackChannel": "#inc-api"
+        }
+      },
+      "expected": {
+        "status": "COMPLETED",
+        "incident": {
+          "phase": "CLOSED"
+        },
+        "notifications": {
+          "statuspageIncidentResolved": true,
+          "slackCloseoutPosted": true
+        }
+      }
+    },
+    {
+      "id": "postmortemCreatesConfluencePageFromTemplate",
+      "input": {
+        "incidentId": "INC-0001",
+        "severity": "P2",
+        "title": "Post-Mortem: API Outage",
+        "confluence": {
+          "spaceKey": "OPS",
+          "parentId": "12345678",
+          "labels": [
+            "incident",
+            "post-mortem"
+          ]
+        }
+      },
+      "expected": {
+        "status": "COMPLETED",
+        "postmortem": {
+          "confluencePageCreated": true,
+          "pageUrlReturned": true
+        }
+      }
+    }
+  ]
+}

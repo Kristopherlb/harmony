@@ -7,6 +7,21 @@
       "schema": "./src/generators/capability/schema.json",
       "description": "Scaffold an OCS capability and register it."
     },
+    "hitl-gate": {
+      "factory": "./src/generators/hitl-gate/factory.js",
+      "schema": "./src/generators/hitl-gate/schema.json",
+      "description": "Scaffold HITL gate signal contracts and Slack notification activities."
+    },
+    "context-extension": {
+      "factory": "./src/generators/context-extension/factory.js",
+      "schema": "./src/generators/context-extension/schema.json",
+      "description": "Extend GoldenContext with new domain fields and OTel attributes."
+    },
+    "webhook-handler": {
+      "factory": "./src/generators/webhook-handler/factory.js",
+      "schema": "./src/generators/webhook-handler/schema.json",
+      "description": "Scaffold verified webhook handler endpoints for integrations."
+    },
     "blueprint": {
       "factory": "./src/generators/blueprint/factory.js",
       "schema": "./src/generators/blueprint/schema.json",

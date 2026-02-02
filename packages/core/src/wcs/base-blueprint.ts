@@ -12,6 +12,16 @@ import type { CompensationFn } from '../types.js';
 import type { SecurityContext } from './security-context.js';
 import type { ExecuteCapabilityActivityInput } from './execute-capability-activity.js';
 import { createSagaManager } from './saga-manager.js';
+import {
+  approvalSignal,
+  approvalStateQuery,
+  type ApprovalSignalPayload,
+  type ApprovalState,
+  type ApprovalRequestParams,
+  type ApprovalResult,
+  ApprovalTimeoutError,
+  ApprovalRejectedError,
+} from './approval-signal.js';
 
 /** Memo key for SecurityContext (platform passes this when starting the workflow). */
 export const SECURITY_CONTEXT_MEMO_KEY = 'golden.securityContext';
@@ -55,11 +65,39 @@ export interface FlagActivity {
   evaluateFlag(input: EvaluateFlagActivityInput): Promise<boolean>;
 }
 
+/** Activity interface for approval notifications; worker implements and registers. */
+export interface ApprovalNotificationActivity {
+  /** Send approval request to Slack channel with Block Kit buttons. */
+  sendApprovalRequestToSlack(params: {
+    channel: string;
+    workflowId: string;
+    reason: string;
+    requiredRoles: string[];
+    timeout: string;
+    requestedBy: string;
+    incidentId?: string;
+    incidentSeverity?: string;
+  }): Promise<{ messageTs: string }>;
+
+  /** Update Slack message after approval decision. */
+  updateApprovalMessage(params: {
+    channel: string;
+    messageTs: string;
+    originalReason: string;
+    decision: ApprovalSignalPayload;
+    durationMs: number;
+  }): Promise<void>;
+}
+
 /**
  * BaseBlueprint contract (WCS). Use this.now(), this.uuid(), this.sleep() only; no Date/Math.random/setTimeout.
  */
 export abstract class BaseBlueprint<Input, Output, Config> {
   private readonly _saga = createSagaManager();
+  
+  // Approval state tracking
+  private _approvalState: ApprovalState | null = null;
+  private _approvalDecision: ApprovalSignalPayload | null = null;
 
   abstract readonly metadata: {
     id: string;
@@ -174,11 +212,25 @@ export abstract class BaseBlueprint<Input, Output, Config> {
    * Evaluate a feature flag via activity to maintain workflow determinism.
    * Uses OpenFeature evaluation with the current security/golden context.
    *
+   * If the security context is not available, returns the default value
+   * to avoid blocking workflows that don't have proper memo set.
+   *
    * @param flagKey - The feature flag key to evaluate
    * @param defaultValue - Default value if flag cannot be evaluated
    * @returns The evaluated flag value
    */
   protected async checkFlag(flagKey: string, defaultValue: boolean): Promise<boolean> {
+    // Try to get security context, but don't fail if not available
+    // This allows workflows to run without strict memo requirements
+    let initiatorId: string | undefined;
+    try {
+      initiatorId = this.securityContext.initiatorId;
+    } catch {
+      // Security context not set - return default value
+      // This is expected when workflows are started without memo
+      return defaultValue;
+    }
+
     const flagActivities = wf.proxyActivities<FlagActivity>({
       startToCloseTimeout: '30s',
       retry: {
@@ -189,19 +241,196 @@ export abstract class BaseBlueprint<Input, Output, Config> {
     });
 
     const ctx = this.goldenContext;
-    const secCtx = this.securityContext;
 
     return flagActivities.evaluateFlag({
       flagKey,
       defaultValue,
       context: {
         // Include context for flag targeting
-        initiatorId: secCtx.initiatorId,
+        initiatorId,
         appId: ctx?.app_id,
         environment: ctx?.environment,
         workflowId: wf.workflowInfo().workflowId,
       },
     });
+  }
+
+  /**
+   * Wait for human approval before proceeding with sensitive operations.
+   * Implements AIP/AECS HITL pattern with configurable notifications and timeout.
+   *
+   * @param params - Approval request parameters
+   * @returns ApprovalResult with decision details
+   * @throws ApprovalTimeoutError if approval times out
+   * @throws ApprovalRejectedError if approval is rejected
+   *
+   * @example
+   * ```typescript
+   * const result = await this.waitForApproval({
+   *   reason: 'Deploy to production requires approval',
+   *   requiredRoles: ['ops-lead', 'sre'],
+   *   timeout: '30m',
+   *   notifySlackChannel: '#deployments',
+   * });
+   * if (result.approved) {
+   *   // Proceed with deployment
+   * }
+   * ```
+   */
+  protected async waitForApproval(params: ApprovalRequestParams): Promise<ApprovalResult> {
+    const workflowId = wf.workflowInfo().workflowId;
+    const timeout = params.timeout ?? '1h';
+    const requiredRoles = params.requiredRoles ?? [];
+    const requestedAt = new Date(this.now).toISOString();
+    const startTime = this.now;
+
+    // Initialize approval state
+    this._approvalState = {
+      status: 'pending',
+      requestedAt,
+      requestReason: params.reason,
+      requiredRoles,
+      timeout,
+      workflowId,
+    };
+    this._approvalDecision = null;
+
+    // Set up signal handler for approval
+    wf.setHandler(approvalSignal, (payload: ApprovalSignalPayload) => {
+      // Validate approver has required role (if roles specified)
+      if (requiredRoles.length > 0) {
+        const hasRequiredRole = payload.approverRoles.some((role) =>
+          requiredRoles.includes(role)
+        );
+        if (!hasRequiredRole) {
+          // Ignore approval from unauthorized user
+          return;
+        }
+      }
+
+      this._approvalDecision = payload;
+      this._approvalState = {
+        ...this._approvalState!,
+        status: payload.decision === 'approved' ? 'approved' : 'rejected',
+        decision: payload,
+      };
+    });
+
+    // Set up query handler for approval state
+    wf.setHandler(approvalStateQuery, () => this._approvalState!);
+
+    // Send Slack notification if channel specified
+    let slackMessageTs: string | undefined;
+    if (params.notifySlackChannel) {
+      try {
+        const ctx = this.goldenContext;
+        const notificationActivities = wf.proxyActivities<ApprovalNotificationActivity>({
+          startToCloseTimeout: '30s',
+          retry: { maximumAttempts: 3, initialInterval: '1s', backoffCoefficient: 2 },
+        });
+
+        const requestedBy = ctx?.initiator_id ?? this.securityContext.initiatorId;
+        
+        const result = await notificationActivities.sendApprovalRequestToSlack({
+          channel: params.notifySlackChannel,
+          workflowId,
+          reason: params.notifyMessage ?? params.reason,
+          requiredRoles,
+          timeout,
+          requestedBy,
+          incidentId: ctx?.incident_id,
+          incidentSeverity: ctx?.incident_severity,
+        });
+
+        slackMessageTs = result.messageTs;
+        this._approvalState = {
+          ...this._approvalState!,
+          slackMessageTs,
+          slackChannel: params.notifySlackChannel,
+        };
+      } catch (err) {
+        // Log but don't fail if Slack notification fails
+        // The workflow can still be approved via console
+        console.warn('Failed to send Slack approval notification:', err);
+      }
+    }
+
+    // Parse timeout duration to milliseconds
+    const timeoutMs = parseDurationToMs(timeout);
+
+    // Wait for approval signal or timeout
+    const gotDecision = await wf.condition(
+      () => this._approvalDecision !== null,
+      timeoutMs
+    );
+
+    const durationMs = this.now - startTime;
+
+    // Handle timeout
+    if (!gotDecision) {
+      this._approvalState = {
+        ...this._approvalState!,
+        status: 'timeout',
+      };
+
+      // Update Slack message to show timeout
+      if (slackMessageTs && params.notifySlackChannel) {
+        try {
+          const notificationActivities = wf.proxyActivities<ApprovalNotificationActivity>({
+            startToCloseTimeout: '30s',
+          });
+          await notificationActivities.updateApprovalMessage({
+            channel: params.notifySlackChannel,
+            messageTs: slackMessageTs,
+            originalReason: params.reason,
+            decision: {
+              decision: 'rejected',
+              approverId: 'system',
+              approverRoles: [],
+              reason: 'Approval request timed out',
+              timestamp: new Date(this.now).toISOString(),
+              source: 'api',
+            },
+            durationMs,
+          });
+        } catch {
+          // Ignore update failure
+        }
+      }
+
+      throw new ApprovalTimeoutError(workflowId, timeout, params.reason);
+    }
+
+    const decision = this._approvalDecision!;
+
+    // Update Slack message with decision
+    if (slackMessageTs && params.notifySlackChannel) {
+      try {
+        const notificationActivities = wf.proxyActivities<ApprovalNotificationActivity>({
+          startToCloseTimeout: '30s',
+        });
+        await notificationActivities.updateApprovalMessage({
+          channel: params.notifySlackChannel,
+          messageTs: slackMessageTs,
+          originalReason: params.reason,
+          decision,
+          durationMs,
+        });
+      } catch {
+        // Ignore update failure
+      }
+    }
+
+    // Handle rejection
+    if (decision.decision === 'rejected') {
+      throw new ApprovalRejectedError(decision);
+    }
+
+    return {
+      approved: true,
+      decision,
+      durationMs,
+    };
   }
 
   /** Execute capability via platform activity; no custom activity code (WCS 2.1.3). */
@@ -223,5 +452,37 @@ export abstract class BaseBlueprint<Input, Output, Config> {
       await this._saga.runCompensations();
       throw err;
     }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper Functions
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Parse a duration string (e.g., '30m', '1h', '2d') to milliseconds.
+ * Supports: s (seconds), m (minutes), h (hours), d (days)
+ */
+function parseDurationToMs(duration: string): number {
+  const match = duration.match(/^(\d+(?:\.\d+)?)\s*(s|m|h|d)$/i);
+  if (!match) {
+    // Default to 1 hour if format not recognized
+    return 60 * 60 * 1000;
+  }
+
+  const value = parseFloat(match[1]);
+  const unit = match[2].toLowerCase();
+
+  switch (unit) {
+    case 's':
+      return value * 1000;
+    case 'm':
+      return value * 60 * 1000;
+    case 'h':
+      return value * 60 * 60 * 1000;
+    case 'd':
+      return value * 24 * 60 * 60 * 1000;
+    default:
+      return 60 * 60 * 1000; // Default to 1 hour
   }
 }

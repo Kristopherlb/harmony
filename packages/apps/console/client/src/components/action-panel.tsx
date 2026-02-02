@@ -125,7 +125,12 @@ export function ActionPanel({
   const [reasoning, setReasoning] = useState("");
 
   const executeMutation = useMutation({
-    mutationFn: async (payload: { actionId: string; params: Record<string, any>; reasoning: string }) => {
+    mutationFn: async (payload: {
+      actionId: string;
+      params: Record<string, any>;
+      reasoning: string;
+      context?: { eventId?: string; contextType?: string; serviceTags?: string[] };
+    }) => {
       const res = await apiRequest("POST", "/api/actions/execute", payload);
       return res.json();
     },
@@ -172,6 +177,13 @@ export function ActionPanel({
       actionId: selectedAction.id,
       params: actionParams,
       reasoning,
+      context: event
+        ? {
+            eventId: event.id,
+            contextType: event.contextType,
+            serviceTags: event.serviceTags,
+          }
+        : undefined,
     });
   };
 

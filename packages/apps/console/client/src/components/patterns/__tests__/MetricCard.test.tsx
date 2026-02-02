@@ -31,8 +31,8 @@ describe("MetricCard", () => {
       />
     );
 
-    let icon = screen.getByText("Test").closest("[data-testid]")?.querySelector("div");
-    expect(icon).toHaveClass("text-status-healthy");
+    let card = screen.getByTestId("metric-card-test");
+    expect(card.querySelector(".text-status-healthy")).toBeInTheDocument();
 
     rerender(
       <MetricCard
@@ -44,8 +44,8 @@ describe("MetricCard", () => {
       />
     );
 
-    icon = screen.getByText("Test").closest("[data-testid]")?.querySelector("div");
-    expect(icon).toHaveClass("text-status-critical");
+    card = screen.getByTestId("metric-card-test");
+    expect(card.querySelector(".text-status-critical")).toBeInTheDocument();
   });
 
   it("calls onClick when clicked", () => {

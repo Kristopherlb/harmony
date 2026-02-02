@@ -6,7 +6,15 @@
  * within workflows remain deterministic. The activity result is recorded
  * in Temporal history, ensuring replay consistency.
  */
-import type { EvaluateFlagActivityInput } from '@golden/core';
+export interface EvaluateFlagActivityInput {
+  flagKey: string;
+  defaultValue: boolean;
+  /**
+   * OpenFeature evaluation context (kept minimal to avoid runtime coupling in worker code).
+   * Values should be primitives to align with OpenFeature EvaluationContextValue.
+   */
+  context?: Record<string, string | number | boolean>;
+}
 
 /**
  * Flag activities interface for Temporal worker registration.
@@ -72,7 +80,7 @@ export function createFlagActivities(config?: {
         const result = await client.getBooleanValue(
           flagKey,
           defaultValue,
-          context as Record<string, unknown> | undefined
+        context
         );
 
         // Clean up provider connection

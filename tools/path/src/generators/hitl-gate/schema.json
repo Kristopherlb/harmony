@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema",
+  "cli": "nx",
+  "title": "HITL gate generator",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Gate name (kebab-case) (e.g., deployment-approval)"
+    },
+    "notificationChannel": {
+      "type": "string",
+      "description": "Notification channel(s) to scaffold",
+      "enum": ["slack", "console", "both"],
+      "default": "both"
+    },
+    "timeout": {
+      "type": "string",
+      "description": "Default timeout duration (e.g., 30m, 1h)",
+      "default": "1h"
+    }
+  },
+  "required": ["name"],
+  "additionalProperties": false
+}
+

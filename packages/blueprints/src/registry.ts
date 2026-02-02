@@ -6,6 +6,10 @@
  */
 import { releasePipelineBlueprintDescriptor } from './descriptors/release-pipeline.descriptor.js';
 import { blueGreenDeployBlueprintDescriptor } from './descriptors/blue-green-deploy.descriptor.js';
+import { incidentCloseOutBlueprintDescriptor } from './descriptors/incident-close-out.descriptor.js';
+import { incidentInitiateBlueprintDescriptor } from './descriptors/incident-initiate.descriptor.js';
+import { incidentPostMortemBlueprintDescriptor } from './descriptors/incident-post-mortem.descriptor.js';
+import { incidentRemediateBlueprintDescriptor } from './descriptors/incident-remediate.descriptor.js';
 import { progressiveRolloutBlueprintDescriptor } from './descriptors/progressive-rollout.descriptor.js';
 import { echoBlueprintDescriptor } from './descriptors/echo.descriptor.js';
 import { mathPipelineBlueprintDescriptor } from './descriptors/math-pipeline.descriptor.js';
@@ -24,6 +28,10 @@ export function createBlueprintRegistry(): BlueprintRegistry {
   return new Map<string, BlueprintRegistryEntry>([
     ['blueprints.ci.release-pipeline', { blueprintId: 'blueprints.ci.release-pipeline', workflowType: 'releasePipelineWorkflow', descriptor: releasePipelineBlueprintDescriptor }],
     ['blueprints.deploy.blue-green', { blueprintId: 'blueprints.deploy.blue-green', workflowType: 'blueGreenDeployWorkflow', descriptor: blueGreenDeployBlueprintDescriptor }],
+    ['blueprints.incident.close-out', { blueprintId: 'blueprints.incident.close-out', workflowType: 'incidentCloseOutWorkflow', descriptor: incidentCloseOutBlueprintDescriptor }],
+    ['blueprints.incident.initiate', { blueprintId: 'blueprints.incident.initiate', workflowType: 'incidentInitiateWorkflow', descriptor: incidentInitiateBlueprintDescriptor }],
+    ['blueprints.incident.post-mortem', { blueprintId: 'blueprints.incident.post-mortem', workflowType: 'incidentPostMortemWorkflow', descriptor: incidentPostMortemBlueprintDescriptor }],
+    ['blueprints.incident.remediate', { blueprintId: 'blueprints.incident.remediate', workflowType: 'incidentRemediateWorkflow', descriptor: incidentRemediateBlueprintDescriptor }],
     ['blueprints.traffic.progressive-rollout', { blueprintId: 'blueprints.traffic.progressive-rollout', workflowType: 'progressiveRolloutWorkflow', descriptor: progressiveRolloutBlueprintDescriptor }],
     ['workflows.echo', { blueprintId: 'workflows.echo', workflowType: 'echoWorkflow', descriptor: echoBlueprintDescriptor }],
     ['workflows.math_pipeline', { blueprintId: 'workflows.math_pipeline', workflowType: 'mathPipelineWorkflow', descriptor: mathPipelineBlueprintDescriptor }],

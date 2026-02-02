@@ -1,0 +1,28 @@
+<!--
+  docs/incidents/templates/confluence/incident-update.storage.html
+
+  Confluence "storage" format template for periodic incident updates / summaries.
+-->
+<h1>Incident Update</h1>
+<p><strong>Incident:</strong> {{incident_id}}</p>
+<p><strong>Severity:</strong> {{incident_severity}}</p>
+<p><strong>Title:</strong> {{incident_title}}</p>
+
+<h2>Current Status</h2>
+<p>{{current_status}}</p>
+
+<h2>What We Know</h2>
+<ul>
+  <li>{{what_we_know_1}}</li>
+</ul>
+
+<h2>Next Steps</h2>
+<ul>
+  <li>{{next_step_1}}</li>
+</ul>
+
+<h2>Links</h2>
+<ul>
+  <li><a href="{{pagerduty_url}}">PagerDuty</a></li>
+  <li><a href="{{statuspage_url}}">Statuspage</a></li>
+</ul>
