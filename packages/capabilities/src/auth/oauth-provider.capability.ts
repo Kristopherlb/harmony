@@ -67,6 +67,7 @@ export const oauthProviderCapability: Capability<
 > = {
     metadata: {
         id: 'golden.auth.oauth-provider',
+        domain: 'auth',
         version: '1.0.0',
         name: 'oauthProvider',
         description:

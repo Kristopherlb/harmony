@@ -3,13 +3,14 @@
  * Library page: browse, filter, search, and insert workflow templates (Phase 4.1.1).
  */
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useTemplates } from "@/features/workbench/library/use-templates";
 import { TemplateCard } from "@/features/workbench/library/template-card";
 import { TemplateFilters } from "@/features/workbench/library/template-filters";
 import { TemplateDetail } from "@/features/workbench/library/template-detail";
 import type { TemplateDraftLike } from "@/features/workbench/template-insertion";
+import { getLocalTemplatesUpdatedEventName, loadLocalTemplates } from "@/features/workbench/library/local-templates";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/patterns/EmptyState";
@@ -18,12 +19,31 @@ import { Library } from "lucide-react";
 export default function LibraryPage() {
   const [, setLocation] = useLocation();
   const { data, isLoading, error } = useTemplates();
+  const [localTemplatesTick, setLocalTemplatesTick] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
   const [detailTemplate, setDetailTemplate] = useState<TemplateDraftLike | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
-  const templates = data?.templates ?? [];
+  useEffect(() => {
+    const onUpdated = () => setLocalTemplatesTick((x) => x + 1);
+    const eventName = getLocalTemplatesUpdatedEventName();
+    window.addEventListener(eventName, onUpdated);
+    window.addEventListener("storage", onUpdated);
+    return () => {
+      window.removeEventListener(eventName, onUpdated);
+      window.removeEventListener("storage", onUpdated);
+    };
+  }, []);
+
+  const localTemplates = useMemo(() => loadLocalTemplates(), [localTemplatesTick]);
+  const templates = useMemo(() => {
+    const remote = data?.templates ?? [];
+    const byId = new Map<string, TemplateDraftLike>();
+    for (const t of remote) byId.set(t.id, t);
+    for (const t of localTemplates) byId.set(t.id, t);
+    return Array.from(byId.values());
+  }, [data?.templates, localTemplates]);
 
   const filteredTemplates = useMemo(() => {
     let list = templates;

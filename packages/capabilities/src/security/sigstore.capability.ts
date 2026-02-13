@@ -84,6 +84,7 @@ export const sigstoreCapability: Capability<
 > = {
   metadata: {
     id: 'golden.security.sigstore',
+    domain: 'security',
     version: '1.0.0',
     name: 'sigstore',
     description:

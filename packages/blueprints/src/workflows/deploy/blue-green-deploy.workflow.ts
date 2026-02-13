@@ -11,10 +11,20 @@ import { z } from '@golden/schema-registry';
 export interface BlueGreenDeployInput {
   /** Release version / Build ID (e.g., "2.0.0") */
   version: string;
-  /** Container registry address */
-  registry: string;
-  /** Build context path for container image */
-  contextPath: string;
+  /**
+   * Container registry address (required unless skipBuild=true).
+   * Used to compute the default image tag `${registry}/harmony-worker:${version}`.
+   */
+  registry?: string;
+  /** Build context path for container image (required unless skipBuild=true). */
+  contextPath?: string;
+  /**
+   * Skip building/pushing an image and deploy an existing `imageRef`.
+   * Intended for staging smoke where an external CI build already produced the image.
+   */
+  skipBuild?: boolean;
+  /** Image reference to deploy when skipBuild=true (e.g. nginx:1.25-alpine). */
+  imageRef?: string;
   /** Temporal task queue name */
   taskQueue?: string;
   /** Previous Build ID to drain (optional) */
@@ -23,6 +33,8 @@ export interface BlueGreenDeployInput {
   namespace?: string;
   /** Path to K8s manifests */
   manifestPath?: string;
+  /** Inline YAML manifests to apply (runtime-true, avoids repo path mounting). */
+  manifests?: string[];
   /** Dockerfile path relative to context */
   dockerfile?: string;
   /** Additional build args */
@@ -96,12 +108,15 @@ export class BlueGreenDeployWorkflow extends BaseBlueprint<
 
   readonly inputSchema = z.object({
     version: z.string().describe('Release version / Build ID'),
-    registry: z.string().describe('Container registry address'),
-    contextPath: z.string().describe('Build context path'),
+    registry: z.string().optional().describe('Container registry address (required unless skipBuild=true)'),
+    contextPath: z.string().optional().describe('Build context path (required unless skipBuild=true)'),
+    skipBuild: z.boolean().optional().describe('Skip image build/push and deploy imageRef'),
+    imageRef: z.string().optional().describe('Image reference to deploy when skipBuild=true'),
     taskQueue: z.string().optional().default('golden-tools').describe('Temporal task queue'),
     previousBuildId: z.string().optional().describe('Previous Build ID to drain'),
     namespace: z.string().optional().describe('Kubernetes namespace'),
     manifestPath: z.string().optional().describe('Path to K8s manifests'),
+    manifests: z.array(z.string()).optional().describe('Inline YAML manifests to apply (runtime-true)'),
     dockerfile: z.string().optional().describe('Dockerfile path'),
     buildArgs: z.record(z.string()).optional().describe('Additional build args'),
     skipFlags: z.boolean().optional().describe('Skip flag generation'),
@@ -121,9 +136,15 @@ export class BlueGreenDeployWorkflow extends BaseBlueprint<
     input: BlueGreenDeployInput,
     config: BlueGreenDeployConfig
   ): Promise<BlueGreenDeployOutput> {
+    const skipBuild = input.skipBuild === true;
     const registry = input.registry || config.defaultRegistry;
-    if (!registry) {
-      throw new Error('Registry is required (provide in input or config)');
+    const contextPath = input.contextPath;
+    if (!skipBuild) {
+      if (!registry) throw new Error('Registry is required (provide in input or config)');
+      if (!contextPath) throw new Error('contextPath is required (provide in input)');
+    }
+    if (skipBuild && (!input.imageRef || input.imageRef.trim().length === 0)) {
+      throw new Error('imageRef is required when skipBuild=true');
     }
 
     const namespace = input.namespace ?? config.defaultNamespace ?? 'default';
@@ -133,42 +154,45 @@ export class BlueGreenDeployWorkflow extends BaseBlueprint<
     const kubeconfigSecretRef = input.kubeconfigSecretRef;
     const k8sSecretRefs = kubeconfigSecretRef ? { kubeconfig: kubeconfigSecretRef } : undefined;
 
-    // Step 1: Build and push container image
-    const imageTag = `${registry}/harmony-worker:${input.version}`;
+    // Step 1: Build and push container image (optional)
+    const imageTag = skipBuild ? String(input.imageRef) : `${registry}/harmony-worker:${input.version}`;
     const buildArgs: Record<string, string> = {
       WORKER_BUILD_ID: input.version,
       ...input.buildArgs,
     };
 
-    const buildResult = await this.executeById<
-      {
-        operation: string;
-        context: string;
-        dockerfile?: string;
-        tags: string[];
-        registry?: string;
-        buildArgs?: Record<string, string>;
-      },
-      {
-        imageRef: string;
-        digest?: string;
-        pushed: boolean;
-        buildDuration: number;
-      }
-    >('golden.ci.container-builder', {
-      operation: 'build-and-push',
-      context: input.contextPath,
-      dockerfile: input.dockerfile,
-      tags: [imageTag],
-      registry,
-      buildArgs,
-    });
+    const buildResult = skipBuild
+      ? { imageRef: imageTag, digest: undefined as string | undefined, pushed: false, buildDuration: 0 }
+      : await this.executeById<
+          {
+            operation: string;
+            context: string;
+            dockerfile?: string;
+            tags: string[];
+            registry?: string;
+            buildArgs?: Record<string, string>;
+          },
+          {
+            imageRef: string;
+            digest?: string;
+            pushed: boolean;
+            buildDuration: number;
+          }
+        >('golden.ci.container-builder', {
+          operation: 'build-and-push',
+          context: contextPath!,
+          dockerfile: input.dockerfile,
+          tags: [imageTag],
+          registry,
+          buildArgs,
+        });
 
-    // Register compensation: can't easily "unpush" but we can note it
-    this.addCompensation(async () => {
-      // Log compensation - actual image deletion would require registry-delete capability
-      console.log(`Compensation: Image ${buildResult.imageRef} was pushed but deploy failed`);
-    });
+    if (!skipBuild) {
+      // Register compensation: can't easily "unpush" but we can note it.
+      this.addCompensation(async () => {
+        console.log(`Compensation: Image ${buildResult.imageRef} was pushed but deploy failed`);
+      });
+    }
 
     // Step 2: Generate and sync feature flags (unless skipped)
     let flagSyncStatus: 'SYNCED' | 'PENDING' | 'FAILED' | 'SKIPPED' = 'SKIPPED';
@@ -206,10 +230,27 @@ export class BlueGreenDeployWorkflow extends BaseBlueprint<
     }
 
     // Step 3: Deploy new workers to Kubernetes
+    // Compensation: best-effort rollback for partial apply (registered before apply so it runs
+    // even if apply fails mid-way).
+    this.addCompensation(async () => {
+      await this.executeById(
+        'golden.k8s.apply',
+        {
+          operation: 'rollout-restart',
+          namespace,
+          resourceType: 'deployment',
+        },
+        {
+          secretRefs: k8sSecretRefs,
+        }
+      );
+    });
+
     const k8sResult = await this.executeById<
       {
         operation: string;
-        manifestPath: string;
+        manifestPath?: string;
+        manifests?: string[];
         namespace: string;
         substitutions: Record<string, string>;
         wait: boolean;
@@ -221,7 +262,8 @@ export class BlueGreenDeployWorkflow extends BaseBlueprint<
       }
     >('golden.k8s.apply', {
       operation: 'apply',
-      manifestPath,
+      manifestPath: input.manifests && input.manifests.length > 0 ? undefined : manifestPath,
+      manifests: input.manifests && input.manifests.length > 0 ? input.manifests : undefined,
       namespace,
       substitutions: {
         BUILD_ID: input.version,
@@ -236,17 +278,6 @@ export class BlueGreenDeployWorkflow extends BaseBlueprint<
     if (!k8sResult.success) {
       throw new Error(`K8s apply failed: ${k8sResult.message}`);
     }
-
-    // Compensation: rollout-restart to previous state
-    this.addCompensation(async () => {
-      await this.executeById('golden.k8s.apply', {
-        operation: 'rollout-restart',
-        namespace,
-        resourceType: 'deployment',
-      }, {
-        secretRefs: k8sSecretRefs,
-      });
-    });
 
     // Step 4: Register new Build ID as default with Temporal
     await this.executeById<

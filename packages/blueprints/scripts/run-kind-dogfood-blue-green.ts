@@ -99,6 +99,7 @@ async function main(): Promise<void> {
   const kubectlContext = `kind-${clusterName}`;
   const namespace = process.env.DOGFOOD_NAMESPACE ?? 'default';
   const buildId = process.env.DOGFOOD_BUILD_ID ?? 'dogfood';
+  const induceFailure = process.env.DOGFOOD_INDUCE_FAILURE === '1';
 
   const baoAddr = process.env.BAO_ADDR ?? process.env.VAULT_ADDR ?? 'http://localhost:8200';
   const baoToken = process.env.BAO_TOKEN ?? process.env.VAULT_TOKEN ?? 'root';
@@ -227,6 +228,42 @@ async function main(): Promise<void> {
 
     sh(`kubectl --context ${kubectlContext} -n ${namespace} rollout status deployment/harmony-worker-${buildId} --timeout=180s`);
 
+    // 3) Induce a failure and validate compensation behavior using the same operation
+    // that `blueprints.deploy.blue-green` registers as a rollback step.
+    if (induceFailure) {
+      try {
+        throw new Error('DOGFOOD_INDUCED_FAILURE (expected)');
+      } catch {
+        await worker.runUntil(async () => {
+          const handle = await testEnv.client.workflow.start('executeCapabilityWorkflow', {
+            taskQueue: 'dogfood-exec',
+            workflowId: `dogfood-k8s-rollout-restart-${Date.now()}`,
+            args: [
+              {
+                capId: 'golden.k8s.apply',
+                args: {
+                  operation: 'rollout-restart',
+                  namespace,
+                  resourceType: 'deployment',
+                  resourceName: `harmony-worker-${buildId}`,
+                  wait: true,
+                  timeoutSeconds: 180,
+                },
+                secretRefs: { kubeconfig: kubeconfigRefPath },
+              },
+              {},
+            ],
+            memo,
+          });
+          await handle.result();
+        });
+      }
+
+      sh(
+        `kubectl --context ${kubectlContext} -n ${namespace} rollout status deployment/harmony-worker-${buildId} --timeout=180s`
+      );
+    }
+
     console.log(
       JSON.stringify(
         {
@@ -235,6 +272,7 @@ async function main(): Promise<void> {
           context: kubectlContext,
           namespace,
           buildId,
+          inducedFailure: induceFailure,
           calls: recordedCalls.map((c) => c.capId),
         },
         null,

@@ -23,6 +23,7 @@ export class DbFixture {
   async truncateTables() {
     // Truncate in correct order (respecting foreign keys)
     // Comments must be truncated before events (foreign key)
+    await this.db.execute(sql`TRUNCATE TABLE approval_logs CASCADE`);
     await this.db.execute(sql`TRUNCATE TABLE comments CASCADE`);
     await this.db.execute(sql`TRUNCATE TABLE workflow_executions CASCADE`);
     await this.db.execute(sql`TRUNCATE TABLE events CASCADE`);

@@ -146,6 +146,25 @@ export const workflowExecutions = pgTable("workflow_executions", {
   eventIdIdx: index("workflow_executions_event_id_idx").on(table.eventId),
 }));
 
+// Approval logs table (Phase 4.1.5 → IMP-044 persistence)
+export const approvalLogs = pgTable("approval_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  approverId: varchar("approver_id", { length: 255 }).notNull(),
+  timestamp: timestamp("timestamp", { withTimezone: true }).notNull().defaultNow(),
+  approvedToolIds: jsonb("approved_tool_ids").notNull().default([]),
+  context: jsonb("context").notNull().default({}),
+  // Indexed linkage for scoping queries (optional inputs from client)
+  incidentId: varchar("incident_id", { length: 255 }),
+  workflowId: varchar("workflow_id", { length: 255 }),
+  contextType: varchar("context_type", { length: 100 }),
+  draftTitle: text("draft_title"),
+}, (table) => ({
+  timestampIdx: index("approval_logs_timestamp_idx").on(table.timestamp.desc()),
+  incidentIdIdx: index("approval_logs_incident_id_idx").on(table.incidentId),
+  workflowIdIdx: index("approval_logs_workflow_id_idx").on(table.workflowId),
+  contextTypeIdx: index("approval_logs_context_type_idx").on(table.contextType),
+}));
+
 // Teams table (must exist before services due to foreign key)
 export const teams = pgTable("teams", {
   id: uuid("id").primaryKey().defaultRandom(),

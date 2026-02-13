@@ -27,7 +27,10 @@ function runbookActionFor(runbook: RunbookSummary, actions: Action[]): Action | 
 
 export default function RunbooksPage(): JSX.Element {
   const [selectedRunbookId, setSelectedRunbookId] = React.useState<string | null>(null);
-  const [query, setQuery] = React.useState("");
+  const [query, setQuery] = React.useState(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("q") ?? "";
+  });
 
   const [executeOpen, setExecuteOpen] = React.useState(false);
   const [actionParams, setActionParams] = React.useState<Record<string, any>>({});

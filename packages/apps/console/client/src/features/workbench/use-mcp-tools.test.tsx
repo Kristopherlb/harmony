@@ -13,6 +13,7 @@ function Harness() {
     <div>
       <div>version:{data?.manifest.version ?? ""}</div>
       <div>generated_at:{data?.manifest.generated_at ?? ""}</div>
+      <div>aiHints:{(data?.tools?.[0] as any)?.aiHints?.usageNotes ?? ""}</div>
       <div>refreshing:{String(refreshing)}</div>
       <button type="button" onClick={() => refresh()}>
         refresh
@@ -29,7 +30,16 @@ describe("useMcpToolCatalog", () => {
           ok: true,
           json: async () => ({
             manifest: { generated_at: "2026-02-02T00:00:00.000Z", version: "1" },
-            tools: [],
+            tools: [
+              {
+                name: "golden.echo",
+                description: "Echo",
+                inputSchema: { type: "object" },
+                type: "CAPABILITY",
+                dataClassification: "PUBLIC",
+                aiHints: { usageNotes: "Use for smoke checks." },
+              },
+            ],
           }),
         } as any;
       }
@@ -38,7 +48,16 @@ describe("useMcpToolCatalog", () => {
           ok: true,
           json: async () => ({
             manifest: { generated_at: "2026-02-02T00:00:01.000Z", version: "1" },
-            tools: [],
+            tools: [
+              {
+                name: "golden.echo",
+                description: "Echo",
+                inputSchema: { type: "object" },
+                type: "CAPABILITY",
+                dataClassification: "PUBLIC",
+                aiHints: { usageNotes: "Use for smoke checks." },
+              },
+            ],
           }),
         } as any;
       }
@@ -52,6 +71,7 @@ describe("useMcpToolCatalog", () => {
 
       await screen.findByText("version:1");
       expect(screen.getByText("generated_at:2026-02-02T00:00:00.000Z")).toBeInTheDocument();
+      expect(screen.getByText("aiHints:Use for smoke checks.")).toBeInTheDocument();
 
       fireEvent.click(screen.getByText("refresh"));
 

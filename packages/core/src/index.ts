@@ -57,3 +57,12 @@ export {
   type LlmUsageTotals,
   type LlmRate,
 } from './finops/llm-cost.js';
+
+// OpenBao shared helpers (ISS-001)
+export {
+  assertValidSecretRef,
+  extractValueFromKvData,
+  resolveOpenBaoToken,
+  readOpenBaoKvV2SecretValue,
+  type OpenBaoKvConfig,
+} from './auth/openbao-kv.js';

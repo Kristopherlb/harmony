@@ -226,7 +226,7 @@ export const strategicPlannerCapability: Capability<
     description: 'Evaluates implementation plans with multi-persona scoring, gap analysis, and pre-work identification.',
     domain: 'reasoners',
     subdomain: 'strategic-planner',
-    tags: ['reasoner', 'planning', 'strategic-planning-protocol', 'langgraph'],
+    tags: ['reasoners', 'reasoner', 'planning', 'strategic-planning-protocol', 'langgraph'],
     maintainer: 'platform',
   },
   schemas: {

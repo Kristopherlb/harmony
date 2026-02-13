@@ -7,9 +7,12 @@
  */
 import type { Request, Response } from 'express';
 import { Client, Connection } from '@temporalio/client';
-import coreWorkflow from '@golden/core/workflow';
+import * as coreWorkflow from '@golden/core/workflow';
 import type { ApprovalSignalPayload } from '@golden/core/workflow';
 import { buildSlackApprovalSignalPayload, loadSlackApproverPolicy } from './slack-approver-policy';
+import { unwrapCjsNamespace } from '../../lib/cjs-interop';
+
+const coreWorkflowPkg = unwrapCjsNamespace<typeof coreWorkflow>(coreWorkflow as any);
 
 /**
  * Slack interactive payload structure.
@@ -113,8 +116,8 @@ export function createSlackInteractiveHandler(config: SlackInteractiveHandlerCon
       // Process each action (usually just one)
       for (const action of actions) {
         // Check if this is an approval action
-        const isApprove = action.action_id === coreWorkflow.APPROVAL_ACTION_IDS.APPROVE;
-        const isReject = action.action_id === coreWorkflow.APPROVAL_ACTION_IDS.REJECT;
+        const isApprove = action.action_id === (coreWorkflowPkg as any).APPROVAL_ACTION_IDS.APPROVE;
+        const isReject = action.action_id === (coreWorkflowPkg as any).APPROVAL_ACTION_IDS.REJECT;
 
         if (!isApprove && !isReject) {
           // Not an approval action - ignore
@@ -148,7 +151,7 @@ export function createSlackInteractiveHandler(config: SlackInteractiveHandlerCon
           // Send the approval signal to the workflow
           const client = await getTemporalClient(config);
           const handle = client.workflow.getHandle(workflowId);
-          await handle.signal(coreWorkflow.approvalSignal, signalPayload);
+          await handle.signal((coreWorkflowPkg as any).approvalSignal, signalPayload);
 
           console.log(
             `[SlackInteractive] Sent ${signalPayload.decision} signal to workflow ${workflowId} from ${payload.user.username}`

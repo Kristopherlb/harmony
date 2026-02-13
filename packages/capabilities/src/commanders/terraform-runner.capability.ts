@@ -95,11 +95,12 @@ export const terraformRunnerCapability: Capability<
 > = {
     metadata: {
         id: 'golden.commanders.terraform-runner',
+        domain: 'commanders',
         version: '1.0.0',
         name: 'terraformRunner',
         description:
             'Terraform infrastructure-as-code runner supporting init, plan, apply, destroy, and state management.',
-        tags: ['commander', 'terraform', 'iac', 'infrastructure'],
+        tags: ['commander', 'commanders', 'terraform', 'iac', 'infrastructure'],
         maintainer: 'platform',
     },
     schemas: {

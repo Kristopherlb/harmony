@@ -96,6 +96,7 @@ export const jiraIssueCountCapability: Capability<
 > = {
   metadata: {
     id: 'golden.jira.issue.count',
+    domain: 'jira',
     version: '1.0.0',
     name: 'jiraIssueCount',
     description: 'Return an approximate count of Jira issues that match a bounded JQL query.',

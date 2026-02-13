@@ -25,6 +25,7 @@ export type TufRepositoryOutput = z.infer<typeof outputSchema>;
 export const tufRepositoryCapability: Capability<TufRepositoryInput, TufRepositoryOutput, void, void> = {
     metadata: {
         id: 'golden.security.tuf-repository',
+        domain: 'security',
         version: '1.0.0',
         name: 'tufRepository',
         description: 'Manage TUF repositories for secure artifact distribution using python-tuf.',

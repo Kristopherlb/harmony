@@ -74,6 +74,7 @@ export const healthCheckProbeCapability: Capability<
 > = {
     metadata: {
         id: 'golden.observability.health-check-probe',
+        domain: 'observability',
         version: '1.0.0',
         name: 'healthCheckProbe',
         description:

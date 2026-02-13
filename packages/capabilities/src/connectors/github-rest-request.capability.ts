@@ -1,23 +1,39 @@
 /**
  * packages/capabilities/src/connectors/github-rest-request.capability.ts
- * Generated OCS capability (connector) (GSS-001 / OCS-001).
+ * GitHub REST request capability (OCS connector).
  *
- * TODO: Replace placeholder schemas and factory.
+ * Purpose: make a GitHub REST API request using an ISS-001 mounted token secret
+ * and an explicit outbound allowlist.
  */
 import { z } from '@golden/schema-registry';
 import type { Capability, CapabilityContext } from '@golden/core';
+import { GITHUB_HTTP_RUNTIME_CJS } from './github-runtime.js';
 
 const inputSchema = z
   .object({
-    method: z.string().optional().describe('HTTP method for GitHub REST request.'),
-    path: z.string().optional().describe('GitHub REST path (e.g. /repos/{owner}/{repo}).'),
+    method: z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']).describe('HTTP method for GitHub REST request.'),
+    path: z.string().min(1).describe('GitHub REST path (e.g. /repos/{owner}/{repo}).'),
     query: z.record(z.union([z.string(), z.number(), z.boolean()])).optional().describe('Query parameters.'),
     body: z.unknown().optional().describe('Request body (JSON).'),
   })
   .describe('githubRestRequestCapability input');
-const outputSchema = z.record(z.unknown()).describe('githubRestRequestCapability output');
-const configSchema = z.object({}).describe('githubRestRequestCapability config');
-const secretsSchema = z.object({}).describe('githubRestRequestCapability secrets (keys only)');
+const outputSchema = z
+  .object({
+    status: z.number().describe('HTTP status code'),
+    headers: z.record(z.string()).describe('Response headers'),
+    body: z.unknown().describe('Parsed JSON body (or {text} wrapper for non-JSON)'),
+  })
+  .describe('githubRestRequestCapability output');
+const configSchema = z
+  .object({
+    baseUrl: z.string().url().optional().describe('GitHub API base URL (default: https://api.github.com)'),
+  })
+  .describe('githubRestRequestCapability config');
+const secretsSchema = z
+  .object({
+    token: z.string().describe('Secret ref/path for GitHub token (Bearer)'),
+  })
+  .describe('githubRestRequestCapability secrets (keys only)');
 
 export type githubRestRequestInput = z.infer<typeof inputSchema>;
 export type githubRestRequestOutput = z.infer<typeof outputSchema>;
@@ -27,10 +43,12 @@ export type githubRestRequestSecrets = z.infer<typeof secretsSchema>;
 export const githubRestRequestCapability: Capability<githubRestRequestInput, githubRestRequestOutput, githubRestRequestConfig, githubRestRequestSecrets> = {
   metadata: {
     id: 'golden.github.rest.request',
+    domain: 'github',
     version: '1.0.0',
     name: 'githubRestRequest',
-    description: 'TODO: Describe what this capability does (purpose, not effect).',
-    tags: ['generated', 'connector'],
+    description:
+      'Perform a GitHub REST API request using a mounted token secret and an explicit outbound allowlist. Use for safe, composable GitHub automation.',
+    tags: ['connector', 'github', 'rest'],
     maintainer: 'platform',
   },
   schemas: {
@@ -44,7 +62,7 @@ export const githubRestRequestCapability: Capability<githubRestRequestInput, git
     dataClassification: 'INTERNAL',
     networkAccess: {
       // Explicit allowOutbound required by OCS/ISS (can be empty, but must be explicit).
-      allowOutbound: [],
+      allowOutbound: ['api.github.com'],
     },
   },
   operations: {
@@ -53,36 +71,46 @@ export const githubRestRequestCapability: Capability<githubRestRequestInput, git
     errorMap: () => 'FATAL',
     costFactor: 'LOW',
   },
-  aiHints: { exampleInput: {}, exampleOutput: {} },
+  aiHints: {
+    exampleInput: {
+      method: 'GET',
+      path: '/repos/octocat/hello-world',
+      query: { per_page: 1 },
+    },
+    exampleOutput: { status: 200, headers: {}, body: {} },
+    usageNotes:
+      'Provide a token via `secretRefs.token` (an OpenBao path). The worker resolves and mounts it; the container reads /run/secrets/github_token.',
+  },
   factory: (dag, context: CapabilityContext<githubRestRequestConfig, githubRestRequestSecrets>, input: githubRestRequestInput) => {
-    void context;
-    const token = (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env?.GITHUB_TOKEN;
-    if (!token) {
-      throw new Error('GITHUB_TOKEN is required');
-    }
-    // Dagger client is provided by the worker at runtime.
     type ContainerBuilder = {
       from(image: string): ContainerBuilder;
       withEnvVariable(key: string, value: string): ContainerBuilder;
+      withMountedSecret?(path: string, secret: unknown): ContainerBuilder;
+      withNewFile?(path: string, contents: string): ContainerBuilder;
       withExec(args: string[]): unknown;
     };
     type DaggerClient = { container(): ContainerBuilder };
     const d = dag as unknown as DaggerClient;
+
     const payload = {
-      method: input?.method ?? 'GET',
-      path: input?.path ?? '',
-      query: input?.query ?? {},
-      body: input?.body ?? null,
+      mode: 'rest',
+      baseUrl: context.config.baseUrl ?? 'https://api.github.com',
+      allowOutbound: githubRestRequestCapability.security.networkAccess.allowOutbound,
+      method: input.method,
+      path: input.path,
+      query: input.query ?? {},
+      body: input.body ?? undefined,
     };
-    return d
-      .container()
-      .from('node:20-alpine')
-      .withEnvVariable('GITHUB_TOKEN', token)
-      .withEnvVariable('INPUT_JSON', JSON.stringify(payload))
-      .withExec([
-      'node',
-      '-e',
-      'process.stdout.write(JSON.stringify({}))',
-    ]);
+
+    let c = d.container().from('node:20-alpine').withEnvVariable('INPUT_JSON', JSON.stringify(payload));
+
+    if (typeof (c as any).withMountedSecret === 'function') {
+      c = c.withMountedSecret!('/run/secrets/github_token', (context.secretRefs as any).token);
+    }
+    if (typeof (c as any).withNewFile === 'function') {
+      c = c.withNewFile!('/opt/github-runtime.cjs', GITHUB_HTTP_RUNTIME_CJS);
+    }
+
+    return c.withExec(['node', '/opt/github-runtime.cjs']);
   },
 };

@@ -1,0 +1,27 @@
+{
+  "id": "workbench-basic",
+  "description": "Basic multi-turn eval: proposeWorkflow tool returns a deterministic draft.",
+  "messages": [
+    { "id": "u1", "role": "user", "content": "Create a simple workflow with 3 steps." },
+    { "id": "u2", "role": "user", "content": "Make the second step a log message." }
+  ],
+  "draft": {
+    "title": "Fixture workflow",
+    "summary": "Eval fixture draft.",
+    "nodes": [
+      { "id": "n1", "label": "Start", "type": "start" },
+      { "id": "n2", "label": "Log", "type": "log", "properties": { "message": "hello" } },
+      { "id": "n3", "label": "Sleep", "type": "sleep", "properties": { "seconds": 1 } }
+    ],
+    "edges": [
+      { "source": "n1", "target": "n2" },
+      { "source": "n2", "target": "n3" }
+    ]
+  },
+  "expect": {
+    "tool": "proposeWorkflow",
+    "nodes": 3,
+    "edges": 2
+  }
+}
+

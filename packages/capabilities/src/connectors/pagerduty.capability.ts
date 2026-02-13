@@ -103,6 +103,7 @@ export const pagerdutyCapability: Capability<
 > = {
     metadata: {
         id: 'golden.connectors.pagerduty',
+        domain: 'connectors',
         version: '1.0.0',
         name: 'pagerduty',
         description:

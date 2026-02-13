@@ -88,7 +88,7 @@ export function SourceBreakdown({ events, className }: SourceBreakdownProps) {
     };
 
     events.forEach((event) => {
-      counts[event.source]++;
+      if (event.source in counts) counts[event.source]++;
     });
 
     const total = events.length || 1;
@@ -130,7 +130,7 @@ export function SourceBreakdown({ events, className }: SourceBreakdownProps) {
       >
         <div className="flex items-center justify-between mb-4">
           <span className="text-sm font-semibold">Source Breakdown</span>
-          <span className="text-xs text-muted-foreground">{total} total events</span>
+          <span className="text-xs text-muted-foreground">{Number(total) || 0} total events</span>
         </div>
 
         <div className="h-3 flex rounded-full overflow-hidden bg-muted mb-4">
@@ -139,7 +139,7 @@ export function SourceBreakdown({ events, className }: SourceBreakdownProps) {
               <button
                 key={item.source}
                 className={cn("h-full transition-all cursor-pointer hover:opacity-80", item.bgColor)}
-                style={{ width: `${item.percentage}%` }}
+                style={{ width: `${Number(item.percentage) || 0}%` }}
                 title={`${item.label}: ${item.count} - Click to view`}
                 onClick={() => handleSourceClick(item.source)}
                 data-testid={`source-bar-${item.source}`}
@@ -161,8 +161,8 @@ export function SourceBreakdown({ events, className }: SourceBreakdownProps) {
                 <span>{item.label}</span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-muted-foreground">{item.count}</span>
-                <span className="w-12 text-right">{item.percentage.toFixed(0)}%</span>
+                <span className="text-muted-foreground">{Number(item.count) || 0}</span>
+                <span className="w-12 text-right">{((Number(item.percentage) || 0)).toFixed(0)}%</span>
                 <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </button>

@@ -115,6 +115,7 @@ export const grafanaApiCapability: Capability<
 > = {
     metadata: {
         id: 'golden.observability.grafana-api',
+        domain: 'observability',
         version: '1.0.0',
         name: 'grafanaApi',
         description:

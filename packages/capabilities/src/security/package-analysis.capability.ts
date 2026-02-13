@@ -26,6 +26,7 @@ export type PackageAnalysisOutput = z.infer<typeof outputSchema>;
 export const packageAnalysisCapability: Capability<PackageAnalysisInput, PackageAnalysisOutput, void, void> = {
     metadata: {
         id: 'golden.security.package-analysis',
+        domain: 'security',
         version: '1.0.0',
         name: 'packageAnalysis',
         description: 'Vulnerability analysis using OSV-Scanner (static analysis).',

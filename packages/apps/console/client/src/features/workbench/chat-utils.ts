@@ -21,6 +21,25 @@ export function getMessageText(message: any): string {
   return "";
 }
 
+function isSafeTemplateId(id: string): boolean {
+  // Template IDs are repo-defined; keep parsing conservative to avoid accidental injection.
+  return /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$/.test(id);
+}
+
+/**
+ * Extract a suggested templateId marker from an assistant message.
+ * Marker format: <templateId>some-template-id</templateId>
+ */
+export function getSuggestedTemplateIdFromMessage(message: any): string | null {
+  const text = getMessageText(message);
+  if (!text) return null;
+  const match = text.match(/<templateId>([^<]+)<\/templateId>/i);
+  const raw = match?.[1]?.trim() ?? "";
+  if (!raw) return null;
+  if (!isSafeTemplateId(raw)) return null;
+  return raw;
+}
+
 export function coerceBlueprintDraft(value: unknown): BlueprintDraft | null {
   if (isBlueprintDraft(value)) return value;
   if (typeof value !== "object" || value === null) return null;
@@ -77,6 +96,26 @@ export function coerceBlueprintDraft(value: unknown): BlueprintDraft | null {
   };
 
   return isBlueprintDraft(draft) ? draft : null;
+}
+
+/** Extract explainStep tool output from an assistant message (Phase 4.2.3). */
+export function getExplainStepFromMessage(message: any): { nodeId: string; explanation: string } | null {
+  if (!message?.parts || !Array.isArray(message.parts)) return null;
+  for (const part of message.parts as any[]) {
+    if (part?.type === "tool-explainStep" && part?.state === "output-available" && part?.output) {
+      const o = part.output as { nodeId?: string; explanation?: string };
+      if (typeof o.nodeId === "string" && typeof o.explanation === "string") {
+        return { nodeId: o.nodeId, explanation: o.explanation };
+      }
+    }
+    if (part?.type === "dynamic-tool" && part?.toolName === "explainStep" && part?.state === "output-available" && part?.output) {
+      const o = part.output as { nodeId?: string; explanation?: string };
+      if (typeof o.nodeId === "string" && typeof o.explanation === "string") {
+        return { nodeId: o.nodeId, explanation: o.explanation };
+      }
+    }
+  }
+  return null;
 }
 
 export function getDraftFromAssistantMessage(message: any): BlueprintDraft | null {

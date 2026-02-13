@@ -65,6 +65,7 @@ export const scorecardCapability: Capability<
 > = {
     metadata: {
         id: 'golden.security.scorecard',
+        domain: 'security',
         version: '1.0.0',
         name: 'scorecard',
         description:

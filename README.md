@@ -9,6 +9,8 @@ This monorepo is managed by **Nx** and **pnpm**. It is organized into distinct l
 ## Docs
 
 - **Architecture & flows**: [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md)
+- **Workbench agent readiness**: [`docs/workbench/workbench-agent-readiness.md`](docs/workbench/workbench-agent-readiness.md)
+- **Workbench agent golden path (operator playbook)**: [`docs/workbench/workbench-agent-golden-path.md`](docs/workbench/workbench-agent-golden-path.md)
 
 ## Quickstart (Persona A: tool caller)
 
@@ -83,6 +85,29 @@ Notes:
 - `harmony:dev-worker` uses a **deterministic stub** for `executeDaggerCapability` so this demo does **not** require Dagger.
 - Temporal UI (dashboard) runs at `http://localhost:8233` (from `temporalio/ui`).
 
+## Console UI (Workbench, Account, Services)
+
+Goal: run the Console **UI + API** locally (Workbench, Account, Service Catalog, etc.).
+
+From the repo root:
+
+```bash
+pnpm install
+pnpm nx serve console
+```
+
+Then open:
+
+- UI: `http://localhost:5000`
+- Workbench: `http://localhost:5000/workbench`
+- Account: `http://localhost:5000/account`
+- Services: `http://localhost:5000/services`
+
+Notes:
+
+- The Console server serves **both** UI and API. If you run a standalone Vite dev server, `/api/*` may return HTML or fail unless you have a working proxy to the Console server.
+- Alternate start (same result): `pnpm -C packages/apps/console dev`
+
 ## PR / CI checks
 
 Before opening a PR, run:
@@ -92,6 +117,51 @@ pnpm nx run harmony:audit
 ```
 
 This runs a determinism gate (`@golden/path:sync --dry-run`) plus affected lint/test. If it fails due to generated drift, run `pnpm nx g @golden/path:sync` and commit the result.
+
+## Golden Path Starter Kit (release/deploy projects)
+
+Use this sequence for future cross-package release/deploy work:
+
+1. **Preflight guardrails**
+
+```bash
+pnpm nx run console:lint-interop
+pnpm -w vitest run packages/tools/mcp-server/src/manifest/cdm-001-strict-domain.test.ts
+pnpm -w vitest run packages/tools/mcp-server/src/manifest/metadata-taxonomy-validator.test.ts
+```
+
+2. **Deterministic regeneration**
+
+```bash
+pnpm tools:regen-sync
+pnpm -w vitest run packages/tools/mcp-server/src/manifest/tool-catalog.test.ts
+```
+
+3. **One-command consolidated gate**
+
+```bash
+pnpm nx run harmony:release-deploy-certify
+```
+
+4. **Runtime/staging validation templates**
+
+- Release webhook/idempotency template:
+  - `tools/scripts/release-staging-validate.mjs`
+  - `runbooks/release-staging-validation.md`
+- Deploy staging template:
+  - `tools/scripts/deploy-staging-blue-green-validate.mjs`
+  - `runbooks/deploy-staging-validation.md`
+- Local runtime smoke (Kind + compensation path):
+  - `packages/blueprints/scripts/run-kind-dogfood-blue-green.ts`
+  - `runbooks/dogfooding-blue-green-deploy.md`
+
+5. **ISS-001 least-priv scaffolding**
+
+```bash
+node tools/scripts/generate-iss-001-policy-scaffold.mjs --out /tmp/openbao-scaffold.md
+```
+
+Use `runbooks/openbao-least-priv-staging.md` for staging AppRole and policy setup.
 
 ### Troubleshooting (high-signal)
 

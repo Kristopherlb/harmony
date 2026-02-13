@@ -73,6 +73,7 @@ export const temporalVersionManagerCapability: Capability<
 > = {
   metadata: {
     id: 'golden.temporal.version-manager',
+    domain: 'temporal',
     version: '1.0.0',
     name: 'temporalVersionManager',
     description:

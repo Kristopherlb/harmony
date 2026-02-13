@@ -82,11 +82,12 @@ export const openfeatureProviderCapability: Capability<
 > = {
   metadata: {
     id: 'golden.flags.openfeature-provider',
+    domain: 'flags',
     version: '1.0.0',
     name: 'openFeatureProvider',
     description:
       'Vendor-agnostic feature flag evaluation using OpenFeature specification. Supports flagd, LaunchDarkly, Split, and other providers.',
-    tags: ['connector', 'feature-flags', 'openfeature'],
+    tags: ['connector', 'flags', 'feature-flags', 'openfeature'],
     maintainer: 'platform',
   },
   schemas: {

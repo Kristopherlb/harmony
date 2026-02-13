@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { convertToModelMessages } from "ai";
-import { buildBlueprintPlanningPrompt, normalizeIncomingMessages } from "./openai-agent-service";
+import { buildBlueprintPlanningPrompt } from "../agent/prompts/blueprint-generation";
+import {
+  buildCatalogGroundedDiscoveryResponse,
+  normalizeIncomingMessages,
+  summarizeToolsForPrompt,
+} from "./openai-agent-service";
 
 describe("OpenAIAgentService prompt normalization", () => {
   it("normalizes mixed {content} + {parts} shapes without throwing", async () => {
@@ -51,5 +56,57 @@ describe("OpenAIAgentService prompt normalization", () => {
     expect(prompt).toContain("<workbench_node_refinement>");
     expect(prompt).toContain("NODE REFINEMENT MODE");
   });
+
+  it("includes aiHints constraints and negative examples in tool summaries", () => {
+    const summary = summarizeToolsForPrompt(
+      [
+        {
+          name: "golden.jira.issue.search",
+          description: "Search Jira issues",
+          inputSchema: { type: "object", properties: { jql: { type: "string" } }, required: ["jql"] },
+          aiHints: {
+            usageNotes: "Use bounded JQL for faster responses.",
+            constraints: ["JQL must include a project key", "Avoid unbounded date ranges"],
+            negativeExamples: ["Do not query all projects without filters"],
+          },
+        } as any,
+      ],
+      10
+    );
+
+    expect(summary).toContain("constraints:JQL must include a project key");
+    expect(summary).toContain("avoid:Do not query all projects without filters");
+    expect(summary).toContain("note:Use bounded JQL for faster responses.");
+  });
+
+  it("returns explicit no-tools guidance for discovery when catalog is empty", () => {
+    const response = buildCatalogGroundedDiscoveryResponse({
+      tools: [],
+      userQuestion: "What security tools are available?",
+    });
+
+    expect(response).toContain("No tools discovered");
+    expect(response).toContain("/api/mcp/tools/refresh");
+  });
+
+  it("grounds discovery responses in catalog tool ids and avoids workflow generation", () => {
+    const response = buildCatalogGroundedDiscoveryResponse({
+      tools: [
+        {
+          name: "golden.security.trivy_scanner",
+          description: "Scan container images for vulnerabilities.",
+          inputSchema: { type: "object" },
+          domain: "security",
+          tags: ["security", "scanner"],
+        } as any,
+      ],
+      userQuestion: "What security tools do we have available?",
+    });
+
+    expect(response).toContain("golden.security.trivy_scanner");
+    expect(response).toContain("Discovery mode only");
+    expect(response).not.toContain("proposeWorkflow");
+  });
+
 });
 

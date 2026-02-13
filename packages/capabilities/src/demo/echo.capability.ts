@@ -20,10 +20,11 @@ export type EchoSecrets = z.infer<typeof secretsSchema>;
 const echoCapabilityImpl: Capability<EchoInput, EchoOutput, EchoConfig, EchoSecrets> = {
   metadata: {
     id: 'golden.echo',
+    domain: 'demo',
     version: '1.0.0',
     name: 'Echo',
     description: 'Echo input.x to output.y (Dagger container JSON stdout).',
-    tags: ['demo', 'test'],
+    tags: ['demo', 'test', 'echo'],
     maintainer: 'platform',
   },
   schemas: {

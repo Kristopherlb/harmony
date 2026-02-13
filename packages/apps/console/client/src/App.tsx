@@ -7,6 +7,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import Dashboard from "@/pages/dashboard";
 import OperationsHub from "@/pages/operations-hub";
 import WorkbenchPage from "@/pages/workbench-page";
+import LibraryPage from "@/pages/library-page";
+import WorkbenchSharedPage from "@/pages/workbench-shared-page";
 import OpsConsole, { SignalDetailPage } from "@/pages/ops-console";
 import ServiceCatalog, { ServiceDetailPage } from "@/pages/service-catalog";
 import CapabilitiesCatalogPage from "@/pages/capabilities-catalog";
@@ -17,6 +19,7 @@ import IncidentsPage, { IncidentDetailPage } from "@/pages/incidents";
 import RunbooksPage from "@/pages/runbooks";
 import TimelinePage from "@/pages/timeline";
 import { PageLayout } from "@/components/page-layout";
+import AccountPage from "@/pages/account-page";
 
 // Placeholder for future lazy loading if needed
 // const WorkflowListPage = lazy(() => import("@golden/workflows").then(m => ({ default: m.WorkflowListPage })));
@@ -31,12 +34,14 @@ function Router() {
         <Route path="/operations" component={OperationsHub} />
         <Route path="/workbench" component={WorkbenchPage} />
         <Route path="/workbench/library" component={LibraryPage} />
+        <Route path="/workbench/shared" component={WorkbenchSharedPage} />
         {/* Kept for backward compat or signal view if needed, though 'Console' tab is gone */}
         <Route path="/console" component={OpsConsole} />
         <Route path="/console/signal/:id" component={SignalDetailPage} />
         <Route path="/services" component={ServiceCatalog} />
         <Route path="/services/:id" component={ServiceDetailPage} />
         <Route path="/capabilities" component={CapabilitiesCatalogPage} />
+        <Route path="/account" component={AccountPage} />
         <Route path="/workflows" component={WorkflowListPage} />
         <Route path="/workflows/:id" component={WorkflowDetailPage} />
         <Route path="/incidents" component={IncidentsPage} />

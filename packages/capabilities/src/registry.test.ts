@@ -18,6 +18,12 @@ describe('Capability registry', () => {
     expect(cap.metadata.id).toBe('golden.math_add');
   });
 
+  it('resolves golden.demo.secret-present', () => {
+    const reg = createCapabilityRegistry();
+    const cap = getCapability(reg, 'golden.demo.secret-present');
+    expect(cap.metadata.id).toBe('golden.demo.secret-present');
+  });
+
   it('throws on unknown capId', () => {
     const reg = createCapabilityRegistry();
     expect(() => getCapability(reg, 'nope')).toThrow('Capability not found');

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { WorkbenchToolExploration } from "@shared/schema";
 
 export interface McpTool {
   name: string;
@@ -14,6 +15,19 @@ export interface McpTool {
   allowOutbound?: string[];
   isIdempotent?: boolean;
   costFactor?: "LOW" | "MEDIUM" | "HIGH";
+  aiHints?: {
+    exampleInput?: unknown;
+    exampleOutput?: unknown;
+    usageNotes?: string;
+    constraints?: string[];
+    negativeExamples?: string[];
+  };
+  /**
+   * Exploration affordance metadata for Workbench playground buttons.
+   * - kind: which interactive API surface exists for this tool/provider
+   * - connectionType: which integration/credential context the explorer uses
+   */
+  exploration?: WorkbenchToolExploration;
 }
 
 export interface McpToolCatalogResponse {

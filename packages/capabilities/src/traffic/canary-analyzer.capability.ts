@@ -97,6 +97,7 @@ export const canaryAnalyzerCapability: Capability<
 > = {
   metadata: {
     id: 'golden.traffic.canary-analyzer',
+    domain: 'traffic',
     version: '1.0.0',
     name: 'canaryAnalyzer',
     description:

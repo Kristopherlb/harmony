@@ -114,11 +114,12 @@ export const confluenceCapability: Capability<
 > = {
     metadata: {
         id: 'golden.connectors.confluence',
+        domain: 'connectors',
         version: '1.0.0',
         name: 'confluenceConnector',
         description:
             'Confluence Cloud connector for managing pages, spaces, and content. Use for post-mortem documentation, runbook management, knowledge base automation, and collaborative documentation workflows.',
-        tags: ['connector', 'confluence', 'atlassian', 'documentation', 'wiki', 'knowledge-base'],
+        tags: ['connector', 'connectors', 'confluence', 'atlassian', 'documentation', 'wiki', 'knowledge-base'],
         maintainer: 'platform',
     },
     schemas: {

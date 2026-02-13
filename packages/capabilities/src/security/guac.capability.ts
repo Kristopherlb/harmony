@@ -94,6 +94,7 @@ export const guacCapability: Capability<
 > = {
     metadata: {
         id: 'golden.security.guac',
+        domain: 'security',
         version: '1.0.0',
         name: 'guac',
         description:

@@ -92,6 +92,7 @@ export const osvScannerCapability: Capability<
 > = {
     metadata: {
         id: 'golden.security.osv-scanner',
+        domain: 'security',
         version: '1.0.0',
         name: 'osvScanner',
         description:

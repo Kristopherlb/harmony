@@ -84,6 +84,7 @@ export const diffGeneratorCapability: Capability<
 > = {
   metadata: {
     id: 'golden.utilities.diff-generator',
+    domain: 'utilities',
     version: '1.0.0',
     name: 'diffGenerator',
     description:

@@ -71,6 +71,7 @@ export const protobomCapability: Capability<
 > = {
   metadata: {
     id: 'golden.sbom.protobom',
+    domain: 'sbom',
     version: '1.0.0',
     name: 'protobom',
     description:

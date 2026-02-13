@@ -75,6 +75,7 @@ export const digitalSigningCapability: Capability<
 > = {
   metadata: {
     id: 'golden.utilities.digital-signing',
+    domain: 'utilities',
     version: '1.0.0',
     name: 'digitalSigning',
     description:

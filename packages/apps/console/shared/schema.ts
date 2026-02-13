@@ -546,6 +546,48 @@ export const ServiceCatalogResponseSchema = z.object({
 export type ServiceCatalogResponse = z.infer<typeof ServiceCatalogResponseSchema>;
 
 // ============================================
+// Phase 4.1+: Workbench capability exploration surfaces
+// ============================================
+
+export const WorkbenchExplorerKindSchema = z.enum(["openapi", "graphql", "none"]);
+export type WorkbenchExplorerKind = z.infer<typeof WorkbenchExplorerKindSchema>;
+
+export const WorkbenchExplorerConnectionTypeSchema = z.enum(["github", "jira", "gitlab", "none"]);
+export type WorkbenchExplorerConnectionType = z.infer<typeof WorkbenchExplorerConnectionTypeSchema>;
+
+export const WorkbenchToolExplorationSchema = z.object({
+  kind: WorkbenchExplorerKindSchema,
+  connectionType: WorkbenchExplorerConnectionTypeSchema,
+});
+export type WorkbenchToolExploration = z.infer<typeof WorkbenchToolExplorationSchema>;
+
+// ============================================
+// Phase 4.1.5+: Workbench approvals (audit log)
+// ============================================
+
+export const WorkbenchApprovalLogContextSchema = z.object({
+  incidentId: z.string().optional(),
+  workflowId: z.string().optional(),
+  draftTitle: z.string().optional(),
+  contextType: z.string().optional(),
+});
+export type WorkbenchApprovalLogContext = z.infer<typeof WorkbenchApprovalLogContextSchema>;
+
+export const WorkbenchApprovalLogEntrySchema = z.object({
+  id: z.string(),
+  approverId: z.string(),
+  timestamp: z.string().datetime(),
+  approvedToolIds: z.array(z.string()).min(1),
+  context: WorkbenchApprovalLogContextSchema.optional(),
+});
+export type WorkbenchApprovalLogEntry = z.infer<typeof WorkbenchApprovalLogEntrySchema>;
+
+export const WorkbenchApprovalLogListResponseSchema = z.object({
+  entries: z.array(WorkbenchApprovalLogEntrySchema),
+});
+export type WorkbenchApprovalLogListResponse = z.infer<typeof WorkbenchApprovalLogListResponseSchema>;
+
+// ============================================
 // AI Agent Chat Schemas
 // ============================================
 

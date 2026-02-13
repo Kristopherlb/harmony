@@ -31,7 +31,10 @@ function matchesQuery(item: TimelineItem, q: string): boolean {
 }
 
 export default function TimelinePage(): JSX.Element {
-  const [query, setQuery] = React.useState("");
+  const [query, setQuery] = React.useState(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("q") ?? "";
+  });
 
   const streamQuery = useQuery<ActivityStreamResponse>({
     queryKey: ["/api/activity/stream?page=1&pageSize=200"],

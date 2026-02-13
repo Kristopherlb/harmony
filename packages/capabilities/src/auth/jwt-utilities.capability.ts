@@ -86,6 +86,7 @@ export const jwtUtilitiesCapability: Capability<
 > = {
   metadata: {
     id: 'golden.auth.jwt-utilities',
+    domain: 'auth',
     version: '1.0.0',
     name: 'jwtUtilities',
     description:

@@ -1,0 +1,75 @@
+# Workbench UX Alerting Rules
+# GOS-001 aligned - Golden Path Console Workbench UX
+
+groups:
+  - name: workbench-ux-slos
+    interval: 30s
+    rules:
+      - alert: WorkbenchChatLatencyP95SLOBreach
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(golden_contract_workbench_event_duration_seconds_bucket{
+              event="workbench.chat_tool_invoked"
+              ,environment="$environment"
+            }[10m])) by (le)
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          golden_component_type: CONTRACT
+        annotations:
+          summary: "Workbench chat p95 latency exceeds 2s"
+          description: "Workbench propose-workflow chat turns have p95 latency > 2s for 10m. Check Console load, LLM latency, and error logs."
+          dashboard_url: "https://grafana.internal/d/workbench-ux-gos001"
+          runbook_url: "/runbooks/console-metrics-scrape.md"
+
+      - alert: WorkbenchDraftAcceptanceRateDrop
+        expr: |
+          (
+            sum(increase(golden_contract_workbench_events_total{
+              event="workbench.draft_accepted"
+              ,environment="$environment"
+            }[1h]))
+            /
+            clamp_min(
+              sum(increase(golden_contract_workbench_events_total{
+                event=~"workbench.draft_accepted|workbench.draft_rejected"
+                ,environment="$environment"
+              }[1h])),
+              1
+            )
+          ) < 0.95
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+          golden_component_type: CONTRACT
+        annotations:
+          summary: "Workbench draft acceptance rate below 95%"
+          description: "Draft acceptance ratio dropped below 95% over 1h. Investigate prompt drift, tool availability, and UX regressions."
+          dashboard_url: "https://grafana.internal/d/workbench-ux-gos001"
+          runbook_url: "/runbooks/console-metrics-scrape.md"
+
+      - alert: WorkbenchRunSuccessRateDrop
+        expr: |
+          (
+            sum(increase(golden_contract_workbench_runs_total{status="completed", environment="$environment"}[6h]))
+            /
+            clamp_min(
+              sum(increase(golden_contract_workbench_runs_total{status=~"completed|failed|cancelled", environment="$environment"}[6h])),
+              1
+            )
+          ) < 0.90
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+          golden_component_type: CONTRACT
+        annotations:
+          summary: "Workbench-triggered run success rate below 90%"
+          description: "Workbench run completion ratio dropped below 90% over 6h. Check Temporal health, blueprint failures, and capability error rates."
+          dashboard_url: "https://grafana.internal/d/workbench-ux-gos001"
+          runbook_url: "/runbooks/console-metrics-scrape.md"
+

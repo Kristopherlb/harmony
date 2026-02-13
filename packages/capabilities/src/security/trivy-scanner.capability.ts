@@ -110,6 +110,7 @@ export const trivyScannerCapability: Capability<
 > = {
     metadata: {
         id: 'golden.security.trivy-scanner',
+        domain: 'security',
         version: '1.0.0',
         name: 'trivyScanner',
         description:

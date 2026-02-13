@@ -31,10 +31,11 @@ export type KubectlOutput = z.infer<typeof outputSchema>;
 export const kubectlCapability: Capability<KubectlInput, KubectlOutput, void, void> = {
     metadata: {
         id: 'golden.commanders.kubectl',
+        domain: 'commanders',
         version: '1.0.0',
         name: 'kubectl',
         description: 'Execute Kubernetes operations using kubectl CLI.',
-        tags: ['kubernetes', 'k8s', 'infrastructure', 'cli'],
+        tags: ['commanders', 'kubernetes', 'k8s', 'infrastructure', 'cli'],
         maintainer: 'platform',
     },
     schemas: {

@@ -121,6 +121,26 @@ _What should change in the plan so the next run is easier and less error-prone?_
 
 ---
 
+## Reflection-to-Action (Mandatory)
+
+_Answer these directly, then capture what was implemented now._
+
+1. Is there anything you know now that if you knew when you started you would do differently?
+2. Any decisions you would change?
+3. Any of that actionable that you would do now given the opportunity?
+
+### Do Now action implemented + test command used (mini snippet)
+
+```md
+**Do Now Action Implemented:** [refactor/process/function change completed in this session]
+**Why now:** [short reason this reduces repeated friction]
+**Files touched:** [`path/a`, `path/b`]
+**Validation command used:** `pnpm <target-or-script>`
+**Validation result:** [pass/fail + short note]
+```
+
+---
+
 ## Improvements / Capabilities That Would Help Next
 
 _What tools/skills/generators/capabilities would have reduced friction or prevented mistakes?_

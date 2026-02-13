@@ -93,6 +93,7 @@ export const redisCapability: Capability<
 > = {
   metadata: {
     id: 'golden.connectors.redis',
+    domain: 'connectors',
     version: '1.0.0',
     name: 'redis',
     description:

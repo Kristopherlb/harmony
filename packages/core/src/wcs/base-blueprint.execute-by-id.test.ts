@@ -57,7 +57,14 @@ import {
 } from './base-blueprint.js';
 
 class TestBlueprint extends BaseBlueprint<
-  { capId: string; args: unknown; config?: unknown; secretRefs?: unknown; skipFlagCheck?: boolean },
+  {
+    capId: string;
+    args: unknown;
+    config?: unknown;
+    secretRefs?: unknown;
+    skipFlagCheck?: boolean;
+    correlation?: { nodeId: string };
+  },
   unknown,
   object
 > {
@@ -84,9 +91,17 @@ class TestBlueprint extends BaseBlueprint<
       config: z.unknown().optional(),
       secretRefs: z.unknown().optional(),
       skipFlagCheck: z.boolean().optional(),
+      correlation: z.object({ nodeId: z.string() }).optional(),
     })
     .describe('TestBlueprint input') as BaseBlueprint<
-    { capId: string; args: unknown; config?: unknown; secretRefs?: unknown; skipFlagCheck?: boolean },
+    {
+      capId: string;
+      args: unknown;
+      config?: unknown;
+      secretRefs?: unknown;
+      skipFlagCheck?: boolean;
+      correlation?: { nodeId: string };
+    },
     unknown,
     object
   >['inputSchema'];
@@ -99,11 +114,13 @@ class TestBlueprint extends BaseBlueprint<
     config?: unknown;
     secretRefs?: unknown;
     skipFlagCheck?: boolean;
+    correlation?: { nodeId: string };
   }): Promise<unknown> {
     return this.executeById(input.capId, input.args, {
       config: input.config,
       secretRefs: input.secretRefs,
       skipFlagCheck: input.skipFlagCheck,
+      correlation: input.correlation,
     });
   }
 }
@@ -151,6 +168,28 @@ describe('BaseBlueprint.executeById', () => {
       config: { host: 'x', authMode: 'basic' },
       secretRefs: { jiraApiToken: 's' },
     });
+  });
+
+  it('includes correlation metadata when provided', async () => {
+    const wf = await getWorkflowMock();
+    setupMemo(wf);
+    wf.__resetFlagCalls();
+
+    const b = new TestBlueprint();
+    await b.main(
+      {
+        capId: 'golden.jira.issue.search',
+        args: { jql: 'project = X' },
+        config: { host: 'x', authMode: 'basic' },
+        secretRefs: { jiraApiToken: 's' },
+        correlation: { nodeId: 'node-1' },
+      },
+      {}
+    );
+
+    const captured = wf.__getCaptured() as any;
+    // BaseBlueprint should forward correlation verbatim.
+    expect(captured.correlation).toEqual({ nodeId: 'node-1' });
   });
 
   it('checks capability flag before execution', async () => {

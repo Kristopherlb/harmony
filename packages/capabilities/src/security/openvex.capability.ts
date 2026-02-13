@@ -87,6 +87,7 @@ export const openvexCapability: Capability<
 > = {
     metadata: {
         id: 'golden.security.openvex',
+        domain: 'security',
         version: '1.0.0',
         name: 'openvex',
         description:

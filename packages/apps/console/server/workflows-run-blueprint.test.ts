@@ -10,6 +10,8 @@ import { GOLDEN_CONTEXT_MEMO_KEY, SECURITY_CONTEXT_MEMO_KEY } from "@golden/core
 
 vi.mock("./services/temporal/temporal-client.js", () => {
   const lastStartOptions: { current: any } = { current: null };
+  const lastSignal: { current: any } = { current: null };
+  const approvalState: { current: any } = { current: { status: "pending" } };
   const start = vi.fn(async (_workflowType: string, opts: any) => {
     lastStartOptions.current = opts;
     return { workflowId: opts.workflowId, firstExecutionRunId: "run-1" };
@@ -27,11 +29,23 @@ vi.mock("./services/temporal/temporal-client.js", () => {
         historyLength: 3,
       })),
       result: vi.fn(async () => ({ ok: true })),
+      terminate: vi.fn(async () => undefined),
+      query: vi.fn(async () => approvalState.current),
+      signal: vi.fn(async (_sig: any, payload: any) => {
+        lastSignal.current = payload;
+      }),
     };
   });
 
   const list = vi.fn(async function* () {
-    // empty
+    yield {
+      workflowId: "wf-pending-1",
+      runId: "run-pending-1",
+      type: "workbenchDraftRunWorkflow",
+      status: { name: "RUNNING" },
+      startTime: new Date().toISOString(),
+      closeTime: undefined,
+    };
   });
 
   return {
@@ -40,7 +54,7 @@ vi.mock("./services/temporal/temporal-client.js", () => {
       getHandle,
       list,
     })),
-    __test: { lastStartOptions },
+    __test: { lastStartOptions, lastSignal, approvalState },
   };
 });
 
@@ -98,6 +112,51 @@ describe("Workflows router - run blueprint", () => {
       runId: "run-1",
       result: { ok: true },
     });
+  });
+
+  it("cancels workflow with POST /:id/cancel (Phase 4.3.3)", async () => {
+    const res = await request(app)
+      .post("/api/workflows/wf-1/cancel")
+      .expect(200);
+
+    expect(res.body).toMatchObject({ ok: true, workflowId: "wf-1" });
+  });
+
+  it("returns approval state via GET /:id/approval", async () => {
+    const res = await request(app)
+      .get("/api/workflows/wf-1/approval")
+      .expect(200);
+    expect(res.body).toMatchObject({ workflowId: "wf-1", state: { status: "pending" } });
+  });
+
+  it("signals approval via POST /:id/approval", async () => {
+    const temporal = await import("./services/temporal/temporal-client.js");
+
+    await request(app)
+      .post("/api/workflows/wf-1/approval")
+      .send({ decision: "approved", approverId: "user:test", approverRoles: ["sre"] })
+      .expect(200);
+
+    const last = (temporal as any).__test.lastSignal.current;
+    expect(last).toMatchObject({
+      decision: "approved",
+      approverId: "user:test",
+      approverRoles: ["sre"],
+      source: "console",
+    });
+  });
+
+  it("lists pending approvals via GET /pending-approvals", async () => {
+    const res = await request(app)
+      .get("/api/workflows/pending-approvals?type=workbenchDraftRunWorkflow")
+      .expect(200);
+    expect(res.body.workflows).toEqual([
+      expect.objectContaining({
+        workflowId: "wf-pending-1",
+        type: "workbenchDraftRunWorkflow",
+        state: { status: "pending" },
+      }),
+    ]);
   });
 });
 

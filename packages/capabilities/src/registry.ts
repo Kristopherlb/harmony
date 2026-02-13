@@ -21,19 +21,23 @@ import { postgresqlCapability } from './connectors/postgresql.capability.js';
 import { redisCapability } from './connectors/redis.capability.js';
 import { slackConnectorCapability } from './connectors/slack-connector.capability.js';
 import { statuspageCapability } from './connectors/statuspage.capability.js';
+import { secretPresentCapability } from './demo/secret-present.capability.js';
 import { echoCapability } from './demo/echo.capability.js';
 import { autoFeatureFlagCapability } from './flags/auto-feature-flag.capability.js';
 import { flagdSyncCapability } from './flags/flagd-sync.capability.js';
 import { openfeatureProviderCapability } from './flags/openfeature-provider.capability.js';
+import { githubActionsDispatchCapability } from './connectors/github-actions-dispatch.capability.js';
 import { githubGraphqlQueryCapability } from './connectors/github-graphql-query.capability.js';
 import { githubRestRequestCapability } from './connectors/github-rest-request.capability.js';
 import { slackInteractiveCapability } from './integrations/slack-interactive.capability.js';
 import { jiraIssueCountCapability } from './connectors/jira-issue-count.capability.js';
+import { jiraIssueCreateCapability } from './connectors/jira-issue-create.capability.js';
 import { jiraIssueSearchCapability } from './connectors/jira-issue-search.capability.js';
 import { k8sApplyCapability } from './k8s/apply.capability.js';
 import { mathAddCapability } from './demo/math-add.capability.js';
 import { grafanaApiCapability } from './observability/grafana-api.capability.js';
 import { healthCheckProbeCapability } from './observability/health-check-probe.capability.js';
+import { mcpReadinessCapability } from './observability/mcp-readiness.capability.js';
 import { runmeRunnerCapability } from './operations/runme-runner.capability.js';
 import { strategicPlannerCapability } from './reasoners/strategic-planner.capability.js';
 import { bomctlCapability } from './sbom/bomctl.capability.js';
@@ -89,19 +93,23 @@ export function createCapabilityRegistry(): CapabilityRegistry {
     [redisCapability.metadata.id, redisCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [slackConnectorCapability.metadata.id, slackConnectorCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [statuspageCapability.metadata.id, statuspageCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [secretPresentCapability.metadata.id, secretPresentCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [echoCapability.metadata.id, echoCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [autoFeatureFlagCapability.metadata.id, autoFeatureFlagCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [flagdSyncCapability.metadata.id, flagdSyncCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [openfeatureProviderCapability.metadata.id, openfeatureProviderCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [githubActionsDispatchCapability.metadata.id, githubActionsDispatchCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [githubGraphqlQueryCapability.metadata.id, githubGraphqlQueryCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [githubRestRequestCapability.metadata.id, githubRestRequestCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [slackInteractiveCapability.metadata.id, slackInteractiveCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [jiraIssueCountCapability.metadata.id, jiraIssueCountCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [jiraIssueCreateCapability.metadata.id, jiraIssueCreateCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [jiraIssueSearchCapability.metadata.id, jiraIssueSearchCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [k8sApplyCapability.metadata.id, k8sApplyCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [mathAddCapability.metadata.id, mathAddCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [grafanaApiCapability.metadata.id, grafanaApiCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [healthCheckProbeCapability.metadata.id, healthCheckProbeCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
+    [mcpReadinessCapability.metadata.id, mcpReadinessCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [runmeRunnerCapability.metadata.id, runmeRunnerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [strategicPlannerCapability.metadata.id, strategicPlannerCapability as unknown as Capability<unknown, unknown, unknown, unknown>],
     [bomctlCapability.metadata.id, bomctlCapability as unknown as Capability<unknown, unknown, unknown, unknown>],

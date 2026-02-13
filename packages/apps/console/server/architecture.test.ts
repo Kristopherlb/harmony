@@ -142,4 +142,19 @@ describe("Architecture: domain/application import rules", () => {
     expect(v.length).toBeGreaterThan(0);
     expect(v[0].message).toMatch(/import type|@shared\/schema/);
   });
+
+  it("keeps approval context validation in audit boundary, not router adapters", () => {
+    const routerPath = join(SERVER_ROOT, "routers", "workbench-router.ts");
+    const auditPath = join(SERVER_ROOT, "audit", "approval-log.ts");
+    const routerSource = readFileSync(routerPath, "utf-8");
+    const auditSource = readFileSync(auditPath, "utf-8");
+
+    // Router should map domain validation errors, not re-implement approval context checks.
+    expect(routerSource.includes("isApprovalLogValidationError")).toBe(true);
+    expect(routerSource.includes("function hasRequiredApprovalContext")).toBe(false);
+
+    // Core validation helpers live in the audit module.
+    expect(auditSource.includes("function hasRequiredApprovalContext")).toBe(true);
+    expect(auditSource.includes("validateApprovalLogEntry")).toBe(true);
+  });
 });

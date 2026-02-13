@@ -5,9 +5,17 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Router } from "wouter";
 
 import RunbooksPage from "../runbooks";
+import { getQueryFn } from "@/lib/queryClient";
 
 function renderWithProviders(ui: React.ReactElement) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const qc = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+        queryFn: getQueryFn({ on401: "throw" }),
+      },
+    },
+  });
   return render(
     <QueryClientProvider client={qc}>
       <Router>{ui}</Router>

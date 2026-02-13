@@ -85,6 +85,7 @@ export const syftCapability: Capability<
 > = {
     metadata: {
         id: 'golden.sbom.syft',
+        domain: 'sbom',
         version: '1.0.0',
         name: 'syft',
         description:

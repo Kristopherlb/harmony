@@ -58,11 +58,12 @@ export const encodingCapability: Capability<
 > = {
     metadata: {
         id: 'golden.utilities.encoding',
+        domain: 'utilities',
         version: '1.0.0',
         name: 'encoding',
         description:
             'Encoding and decoding utilities supporting Base64, hex, URL encoding, and HTML entities. Pure transformer with no side effects.',
-        tags: ['transformer', 'encoding', 'base64', 'hex', 'url'],
+        tags: ['transformer', 'utilities', 'encoding', 'base64', 'hex', 'url'],
         maintainer: 'platform',
     },
     schemas: {

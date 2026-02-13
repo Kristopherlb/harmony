@@ -50,6 +50,13 @@ export {
   type SecretScope,
 } from './src/binders/secret-broker.js';
 export {
+  assertValidSecretRef,
+  extractValueFromKvData,
+  resolveOpenBaoToken,
+  readOpenBaoKvV2SecretValue,
+  type OpenBaoKvConfig,
+} from './src/auth/openbao-kv.js';
+export {
   noopContextInjector,
   type ContextInjector,
   type EnrichedContext,

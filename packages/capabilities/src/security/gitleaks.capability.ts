@@ -79,6 +79,7 @@ export const gitleaksCapability: Capability<
 > = {
     metadata: {
         id: 'golden.security.gitleaks',
+        domain: 'security',
         version: '1.0.0',
         name: 'gitleaks',
         description:

@@ -69,6 +69,7 @@ export const templateRendererCapability: Capability<
 > = {
     metadata: {
         id: 'golden.utilities.template-renderer',
+        domain: 'utilities',
         version: '1.0.0',
         name: 'templateRenderer',
         description:

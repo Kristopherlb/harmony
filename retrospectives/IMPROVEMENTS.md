@@ -30,6 +30,33 @@ Master list of improvement recommendations from retrospectives. Track implementa
 | IMP-024 | Standardize CI blueprint input passing (file/base64; avoid inline JSON quoting) | PHASE7-SHIPPING-2026-02-02 | ⬜ |  |
 | IMP-029 | Add markdown rendering component for Console runbooks (safe subset) | INCIDENT-LIFECYCLE-P5-2026-02-02 | ✅ | 2026-02-02 |
 | IMP-030 | Add incident-scoped approvals/executions query endpoints (eventId/incidentId/serviceTag) | INCIDENT-LIFECYCLE-P5-2026-02-02 | ✅ | 2026-02-02 |
+| IMP-041 | Document Prometheus scrape endpoints for Console Workbench metrics (and where scrape configs live) | WORKBENCH-UX-P4.5-2026-02-02 | ⬜ |  |
+| IMP-042 | Add Prometheus alert rules for Workbench SLOs (latency + acceptance + run success) | WORKBENCH-UX-P4.5-2026-02-02 | ⬜ |  |
+| IMP-043 | Establish Playwright E2E harness + Tier‑0 Workbench spec (fixture-driven) | WORKBENCH-UX-P4.6-2026-02-02 | ✅ | 2026-02-09 |
+| IMP-044 | Persist Workbench approval log (replace in-memory) + include actionable context (incidentId/workflowId) + real approver identity when available | WORKBENCH-UX-P4.6-2026-02-02 | ⬜ |  |
+| IMP-045 | Add per-node execution state (Temporal history mapping or workflow query) to drive live canvas status per step | WORKBENCH-UX-P4.6-2026-02-02 | ⬜ |  |
+| IMP-046 | Implement template confirmation flow for agent suggestions (templateId → UI “Load template?” → apply) | WORKBENCH-UX-P4.6-2026-02-02 | ✅ | 2026-02-02 |
+| IMP-047 | Add a Workbench telemetry smoke script/runbook (post event → verify expected series in `/api/workbench/metrics`) | WORKBENCH-UX-P4.6-2026-02-02 | ⬜ |  |
+| IMP-048 | Add fixture-driven agent eval harness + dedicated `test:evals` target for prompt/tool regression testing | WORKBENCH-UX-P4.6-2026-02-02 | ✅ | 2026-02-02 |
+| IMP-049 | Add cost/budget UX plumbing: `/api/workbench/cost`, budgetKey override, and UI cost badges (Workbench + Account) | WORKBENCH-UX-P4.6-2026-02-02 | ✅ | 2026-02-02 |
+| IMP-050 | Add a CI gate that runs Tier‑0 Playwright E2E (`pnpm e2e`) and uploads trace on failure | WORKBENCH-TIER0-2026-02-09 | ⬜ |  |
+| IMP-051 | Add server-backed Account preferences API (replace localStorage) + authenticated “current user” identity source for budget keys | WORKBENCH-TIER0-2026-02-09 | ⬜ |  |
+| IMP-052 | Extend tool exploration metadata to support multiple explorers per tool (e.g., OpenAPI + GraphQL) and show connection health from `/api/integrations/status` | WORKBENCH-TIER0-2026-02-09 | ⬜ |  |
+| IMP-053 | Add per-run “cost estimate” UX in Workbench using tool `costFactor` + planned token budget before submit | WORKBENCH-TIER0-2026-02-09 | ⬜ |  |
+| IMP-054 | Add `test` script to `@golden/blueprints` (alias to `vitest run`) to prevent false-success runs via missing script | ENGINE-MVP-2026-02-09 | ✅ | 2026-02-10 |
+| IMP-055 | Standardize internal workspace package imports in Console server to namespace imports (avoid default-import interop pitfalls) | ENGINE-MVP-2026-02-09 | ✅ | 2026-02-10 |
+| IMP-056 | Add CI gate for `pnpm nx run console:lint-interop` to prevent default-import regressions in Console server | BASELINE-ROADMAP-2026-02-10 | ⬜ |  |
+| IMP-057 | Extract shared OpenBao auth helper (token + AppRole + lease-aware cache) for Console ingress and worker secret broker | BASELINE-ROADMAP-2026-02-10 | ⬜ |  |
+| IMP-058 | Centralize approval context validation in shared approval-log domain module with typed error mapping at adapters | WORKBENCH-GOLDEN-PATH-M0-M1-2026-02-10 | ✅ | 2026-02-10 |
+| IMP-059 | Add always-on Cursor rule to prefer root-cause fixes over workaround patches | WORKBENCH-GOLDEN-PATH-M0-M1-2026-02-10 | ✅ | 2026-02-10 |
+| IMP-060 | Add fast Console server agent-focused test script (`test:server:agent-fast`) for prompt/routing iterations | WORKBENCH-M1-M3-2026-02-10 | ✅ | 2026-02-10 |
+| IMP-061 | Add reusable eval harness async flush helper (`flushAgentStream`) for discovery-path stability | WORKBENCH-M1-M3-2026-02-10 | ✅ | 2026-02-10 |
+| IMP-062 | Improve stale tool-catalog failure diagnostics in MCP snapshot tests with actionable regen command | WORKBENCH-M1-M3-2026-02-10 | ✅ | 2026-02-10 |
+| IMP-063 | Add `test:server:recommendations-fast` script for recipe scoring/diagnostics/router recommendation endpoints | WORKBENCH-M4-M5-2026-02-11 | ⬜ |  |
+| IMP-064 | Persist recommendation outcome/feedback weights across local server restarts (SQLite/Redis adapter) | WORKBENCH-M4-M5-2026-02-11 | ⬜ |  |
+| IMP-065 | Add `test:server:blueprint-smoke` script for MCP-gated propose/run API validation | BLUEPRINT-DISCOVERY-2026-02-11 | ⬜ |  |
+| IMP-066 | Add `test:server:discovery-fast` script for intent/discovery/evals contract loop | BLUEPRINT-DISCOVERY-2026-02-11 | ⬜ |  |
+| IMP-067 | Add CI gate requiring MCP readiness smoke before blueprint-first release checks | BLUEPRINT-DISCOVERY-2026-02-11 | ⬜ |  |
 
 ---
 
@@ -42,6 +69,7 @@ Master list of improvement recommendations from retrospectives. Track implementa
 | IMP-036 | RBAC matrix generator from OCS metadata | INCIDENT-LIFECYCLE-P6-2026-02-02 | ⬜ | Auto-role documentation |
 | IMP-037 | Architecture doc generator from workflow code | INCIDENT-LIFECYCLE-P6-2026-02-02 | ⬜ | Generate/update Mermaid docs from blueprints/descriptors |
 | IMP-038 | Docs drift check (validate key control claims against code symbols) | INCIDENT-LIFECYCLE-P6-2026-02-02 | ⬜ | Prevent stale security-doc claims (e.g., renamed middleware) |
+| IMP-039 | Add Workbench-scoped client test target (run only Workbench client tests) | WORKBENCH-UX-P4.4-2026-02-02 | ⬜ | Faster iteration; fewer unrelated suite failures |
 | IMP-004 | Create planning accelerator workflow | OSCAL-2026-02-01 | ✅ | `.agent/workflows/plan-integration.md` |
 | IMP-005 | Add upstream repo summarizer script | OSCAL-2026-02-01 | ✅ | `scripts/summarize-repo.sh` |
 | IMP-006 | Build domain generator plugin | OSCAL-2026-02-01 | ✅ | 2026-02-02 (Plugin: `domain-generator.ts`) |
@@ -69,6 +97,7 @@ Master list of improvement recommendations from retrospectives. Track implementa
 | IMP-009 | Auto-generate capability from specs | OSCAL-2026-02-01 | ⬜ | Design doc created |
 | IMP-022 | Expand Domain Generator to full implementation | Compliance-2026-02-02 | ✅ | 2026-02-02 (Enhanced `domain-generator.ts`) |
 | IMP-015 | Compliance E2E Suite | OSCAL-2026-02-01 | ⬜ | Test real agent execution compliance |
+| IMP-040 | Server-backed shared draft IDs + template create endpoint | WORKBENCH-UX-P4.4-2026-02-02 | ⬜ | Enables multi-user collaboration and durable reuse; avoids URL payload limits |
 
 ---
 
@@ -98,6 +127,19 @@ Master list of improvement recommendations from retrospectives. Track implementa
 | IMP-017 | Cleaner blueprints | Values inlined as constants | ⬜ |
 | IMP-029 | Runbooks are readable in Console (not raw markdown) | Markdown rendered (GFM) + `javascript:` links neutralized | ⬜ |
 | IMP-030 | Incident detail pages show precise approvals/executions without client filtering | Scoped endpoints + incident detail adoption; fixed route shadowing regression | ⬜ |
+| IMP-043 | Workbench E2E “happy path” is deterministic and runnable | Playwright harness + Tier‑0 Workbench spec added | ⬜ |
+| IMP-046 | Agent template suggestions require explicit confirmation | Dialog flow implemented + client test | ⬜ |
+| IMP-048 | Prompt/tool regressions can be caught via fixtures | Eval harness + `test:evals` target added | ⬜ |
+| IMP-049 | Spend visibility available for budgetKey-selected sessions | `/api/workbench/cost` + UI surfaces | ⬜ |
+| IMP-055 | Default-import interop regressions in Console server are prevented | Namespace import guardrail + codemod/check scripts added | ⬜ |
+| IMP-058 | Approval context contract is enforced consistently across entry points | Domain-level validation added + adapter mapping tests pass | ⬜ |
+| IMP-059 | Root-cause-first implementation preference persists across sessions | Always-apply rule added in `.cursor/rules/` | ⬜ |
+| IMP-060 | Faster prompt/routing feedback loops in Console server | `test:server:agent-fast` script added in `@golden/console` | ⬜ |
+| IMP-061 | Less eval timing flake when asserting streamed outputs | Shared `flushAgentStream()` helper added to eval harness | ⬜ |
+| IMP-062 | Faster diagnosis when deterministic catalog artifact is stale | MCP snapshot test now throws explicit `pnpm tools:regen-sync` guidance | ⬜ |
+| IMP-065 | Fast MCP-gated smoke loop becomes a standard preflight command | _(pending)_ | ⬜ |
+| IMP-066 | Discovery regressions are caught in a short deterministic loop | _(pending)_ | ⬜ |
+| IMP-067 | Blueprint-first validation cannot bypass MCP readiness in CI | _(pending)_ | ⬜ |
 | IMP-031 | Timeline/audit remains correct across long-running incidents | Postgres execution persistence enables durable history (validate in Postgres mode) | ⬜ |
 | IMP-032 | Incident linking is deterministic across all subsystems | Canonical incidentId propagation rules implemented (validate with persisted data) | ⬜ |
 | IMP-033 | UX/TDD guidance is consistently available in all dev environments | Vendored + bootstrap scripts verified; validate across fresh machine/CI | ⬜ |

@@ -24,6 +24,7 @@ export type GittufOutput = z.infer<typeof outputSchema>;
 export const gittufCapability: Capability<GittufInput, GittufOutput, void, void> = {
     metadata: {
         id: 'golden.security.gittuf',
+        domain: 'security',
         version: '1.0.0',
         name: 'gittuf',
         description: 'Security layer for Git repositories using The Update Framework (TUF).',

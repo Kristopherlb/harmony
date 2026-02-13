@@ -92,6 +92,7 @@ export const minderCapability: Capability<
 > = {
     metadata: {
         id: 'golden.security.minder',
+        domain: 'security',
         version: '1.0.0',
         name: 'minder',
         description:

@@ -92,6 +92,7 @@ export const bomctlCapability: Capability<
 > = {
   metadata: {
     id: 'golden.sbom.bomctl',
+    domain: 'sbom',
     version: '1.0.0',
     name: 'bomctl',
     description:

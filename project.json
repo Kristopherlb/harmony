@@ -22,7 +22,7 @@
     "dev-up": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "docker compose up -d postgres temporal temporal-ui"
+        "command": "docker compose up -d postgres temporal temporal-ui openbao"
       }
     },
     "dev-up-full": {
@@ -41,6 +41,12 @@
       "executor": "nx:run-commands",
       "options": {
         "command": "pnpm nx run core:build && pnpm --filter @golden/blueprints run bundle-workflows && pnpm --filter @golden/blueprints exec tsx scripts/run-local-worker.ts"
+      }
+    },
+    "dev-worker-dagger": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm nx run core:build && pnpm --filter @golden/blueprints run bundle-workflows && ENABLE_DAGGER_E2E=1 pnpm --filter @golden/blueprints exec tsx scripts/run-local-worker-dagger.ts"
       }
     },
     "dev-mcp": {
@@ -77,6 +83,12 @@
       "executor": "nx:run-commands",
       "options": {
         "command": "dagger -m ./.dagger call audit-git --repo-url \"$(git remote get-url origin)\" --ref \"$(git rev-parse HEAD)\""
+      }
+    },
+    "release-deploy-certify": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm -w vitest run packages/tools/mcp-server/src/manifest/cdm-001-strict-domain.test.ts && pnpm -w vitest run packages/tools/mcp-server/src/manifest/metadata-taxonomy-validator.test.ts && pnpm tools:regen-sync && pnpm -w vitest run packages/tools/mcp-server/src/manifest/tool-catalog.test.ts && pnpm nx run console:lint-interop"
       }
     }
   }

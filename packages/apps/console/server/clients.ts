@@ -1,6 +1,9 @@
 import type { Event, InsertEvent, EventSource } from "@shared/schema";
 import { deriveRepoKeyFromProjectSlug, deriveRing, extractReleaseKeyFromBranch } from "./dora/lead-time";
-import coreWorkflow from "@golden/core/workflow";
+import * as coreWorkflow from "@golden/core/workflow";
+import { unwrapCjsNamespace } from "./lib/cjs-interop";
+
+const coreWorkflowPkg = unwrapCjsNamespace<typeof coreWorkflow>(coreWorkflow as any);
 
 export interface ServiceClient {
   source: EventSource;
@@ -301,8 +304,13 @@ export class JiraClient implements ServiceClient {
       const initiatorId = process.env.CONSOLE_INITIATOR_ID || "local-user";
 
       const memo = {
-        [coreWorkflow.SECURITY_CONTEXT_MEMO_KEY]: { initiatorId, roles: ["local"], tokenRef: "local", traceId },
-        [coreWorkflow.GOLDEN_CONTEXT_MEMO_KEY]: {
+        [(coreWorkflowPkg as any).SECURITY_CONTEXT_MEMO_KEY]: {
+          initiatorId,
+          roles: ["local"],
+          tokenRef: "local",
+          traceId,
+        },
+        [(coreWorkflowPkg as any).GOLDEN_CONTEXT_MEMO_KEY]: {
           app_id: "console",
           environment: process.env.NODE_ENV || "local",
           initiator_id: initiatorId,

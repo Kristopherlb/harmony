@@ -93,6 +93,7 @@ export const semgrepScannerCapability: Capability<
 > = {
     metadata: {
         id: 'golden.security.semgrep-scanner',
+        domain: 'security',
         version: '1.0.0',
         name: 'semgrepScanner',
         description:

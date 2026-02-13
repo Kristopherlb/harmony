@@ -29,6 +29,10 @@ describe('generateToolManifestFromCapabilities', () => {
     expect(echo?.allowOutbound).toEqual([]);
     expect(echo?.isIdempotent).toBe(true);
     expect(echo?.costFactor).toBe('LOW');
+    expect(echo?.ai_hints).toMatchObject({
+      example_input: { x: 1 },
+      example_output: { y: 1 },
+    });
 
     // Basic schema expectations (stability contract).
     expect(echo?.json_schema).toMatchObject({

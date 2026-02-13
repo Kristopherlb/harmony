@@ -12,8 +12,11 @@
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import core from '@golden/core';
+import * as core from '@golden/core';
 import type { ApprovalSignalPayload } from '@golden/core/workflow';
+import { unwrapCjsNamespace } from '../../lib/cjs-interop';
+
+const corePkg = unwrapCjsNamespace<typeof core>(core as any);
 
 export interface SlackApproverPolicy {
   version: '1.0.0';
@@ -31,7 +34,7 @@ export interface SlackApproverPolicy {
 }
 
 export function getDefaultSlackApproverPolicyPath(): string {
-  return path.join(core.getRepoRoot(), 'policies', 'slack-approvers.json');
+  return path.join((corePkg as any).getRepoRoot(), 'policies', 'slack-approvers.json');
 }
 
 export function loadSlackApproverPolicy(

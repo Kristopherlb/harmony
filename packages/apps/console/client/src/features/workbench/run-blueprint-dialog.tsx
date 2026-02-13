@@ -19,7 +19,9 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useMcpToolCatalog } from "@/features/workbench/use-mcp-tools";
+import { ExecutionTimeline } from "@/features/workbench/execution-timeline";
 import { Link } from "wouter";
+import { emitWorkbenchEvent } from "@/lib/workbench-telemetry";
 
 type RunResponse = {
   workflowId: string;
@@ -38,7 +40,16 @@ type DescribeResponse = {
   historyLength?: number;
 };
 
-export function RunBlueprintDialog() {
+const TERMINAL_STATUSES = ["COMPLETED", "FAILED", "CANCELED", "TERMINATED"];
+
+export interface RunBlueprintDialogProps {
+  /** Called when a run starts (Phase 4.3.2 live canvas) */
+  onRunStarted?: (workflowId: string) => void;
+  /** Called when run reaches terminal status */
+  onRunEnded?: (workflowId: string) => void;
+}
+
+export function RunBlueprintDialog({ onRunStarted, onRunEnded }: RunBlueprintDialogProps = {}) {
   const { tools, loading: toolsLoading } = useMcpToolCatalog();
   const blueprintTools = React.useMemo(
     () => tools.filter((t) => t.type === "BLUEPRINT"),
@@ -53,6 +64,7 @@ export function RunBlueprintDialog() {
   const [result, setResult] = React.useState<unknown>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [running, setRunning] = React.useState(false);
+  const runStartedAtRef = React.useRef<number | null>(null);
 
   const selectedTool = React.useMemo(
     () => blueprintTools.find((t) => t.name === selected) ?? null,
@@ -87,6 +99,26 @@ export function RunBlueprintDialog() {
         if (cancelled) return;
         setStatus(json);
 
+        if (TERMINAL_STATUSES.includes(json.status)) {
+          onRunEnded?.(run.workflowId);
+          const startedAt = runStartedAtRef.current;
+          const durationMs = typeof startedAt === "number" ? Math.max(0, Date.now() - startedAt) : undefined;
+          emitWorkbenchEvent({
+            event: "workbench.workflow_run_completed",
+            runId: run.runId,
+            workflowId: run.workflowId,
+            status:
+              json.status === "COMPLETED"
+                ? "completed"
+                : json.status === "FAILED"
+                  ? "failed"
+                  : json.status === "CANCELED" || json.status === "CANCELLED"
+                    ? "cancelled"
+                    : "failed",
+            durationMs,
+          }).catch(() => {});
+          clearInterval(interval);
+        }
         if (json.status === "COMPLETED") {
           const rr = await fetch(
             `/api/workflows/${encodeURIComponent(run.workflowId)}/result`
@@ -95,7 +127,6 @@ export function RunBlueprintDialog() {
             const rj = (await rr.json()) as { result: unknown };
             if (!cancelled) setResult(rj.result);
           }
-          clearInterval(interval);
         }
       } catch {
         // ignore polling errors
@@ -106,7 +137,7 @@ export function RunBlueprintDialog() {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [run?.workflowId]);
+  }, [run?.workflowId, onRunEnded]);
 
   async function startRun() {
     if (!selected) return;
@@ -115,6 +146,7 @@ export function RunBlueprintDialog() {
     setRun(null);
     setStatus(null);
     setResult(null);
+    runStartedAtRef.current = null;
 
     let input: unknown = {};
     try {
@@ -135,6 +167,13 @@ export function RunBlueprintDialog() {
       if (!res.ok) throw new Error(text || res.statusText);
       const json = JSON.parse(text) as RunResponse;
       setRun(json);
+      onRunStarted?.(json.workflowId);
+      runStartedAtRef.current = Date.now();
+      emitWorkbenchEvent({
+        event: "workbench.workflow_run_started",
+        runId: json.runId,
+        draftId: "current",
+      }).catch(() => {});
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -150,6 +189,7 @@ export function RunBlueprintDialog() {
         className="h-8 w-8 p-0 text-green-600"
         title="Run workflow"
         onClick={() => setOpen(true)}
+        data-testid="workbench-run-open"
       >
         <Play className="w-4 h-4" />
       </Button>
@@ -229,6 +269,7 @@ export function RunBlueprintDialog() {
 
             {run ? (
               <div className="rounded-md border p-3 space-y-2">
+                <ExecutionTimeline workflowId={run.workflowId} compact={false} />
                 <div className="flex items-center justify-between gap-2">
                   <div className="font-mono text-xs truncate" title={run.workflowId}>
                     {run.workflowId}
@@ -268,7 +309,11 @@ export function RunBlueprintDialog() {
             <Button variant="outline" onClick={() => setOpen(false)}>
               Close
             </Button>
-            <Button onClick={startRun} disabled={!selected || running}>
+            <Button
+              onClick={startRun}
+              disabled={!selected || running}
+              data-testid="workbench-run-submit"
+            >
               {running ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Run
             </Button>

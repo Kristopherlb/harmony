@@ -18,10 +18,11 @@ export type MathAddSecrets = z.infer<typeof secretsSchema>;
 const mathAddCapabilityImpl: Capability<MathAddInput, MathAddOutput, MathAddConfig, MathAddSecrets> = {
   metadata: {
     id: 'golden.math_add',
+    domain: 'demo',
     version: '1.0.0',
     name: 'Math Add',
     description: 'Add two numbers (a + b).',
-    tags: ['demo', 'math'],
+    tags: ['demo', 'math', 'math_add'],
     maintainer: 'platform',
   },
   schemas: {

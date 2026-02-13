@@ -1,9 +1,13 @@
-import mcpServer from "@golden/mcp-server";
+import * as mcpNamespace from "@golden/mcp-server";
 import type { McpTool, ToolCatalog, ToolManifest, ToolManifestEntry, ToolSurface } from "@golden/mcp-server";
-import capabilities from "@golden/capabilities";
+import * as capsNamespace from "@golden/capabilities";
 import type { CapabilityRegistry } from "@golden/capabilities";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { unwrapCjsNamespace } from "../../lib/cjs-interop";
+
+const mcp = unwrapCjsNamespace<typeof mcpNamespace>(mcpNamespace as any);
+const caps = unwrapCjsNamespace<typeof capsNamespace>(capsNamespace as any);
 
 export interface ToolCatalogTool extends McpTool {
   type: ToolManifestEntry["type"];
@@ -16,6 +20,17 @@ export interface ToolCatalogTool extends McpTool {
   allowOutbound?: ToolManifestEntry["allowOutbound"];
   isIdempotent?: ToolManifestEntry["isIdempotent"];
   costFactor?: ToolManifestEntry["costFactor"];
+  aiHints?: {
+    exampleInput?: unknown;
+    exampleOutput?: unknown;
+    usageNotes?: string;
+    constraints?: string[];
+    negativeExamples?: string[];
+  };
+  exploration?: {
+    kind: "openapi" | "graphql" | "none";
+    connectionType: "github" | "jira" | "gitlab" | "none";
+  };
 }
 
 export interface ToolCatalogSnapshot {
@@ -51,7 +66,7 @@ export class HarmonyMcpToolService {
   }
 
   constructor(input?: { includeBlueprints?: boolean; version?: string }) {
-    this.registry = capabilities.createCapabilityRegistry();
+    this.registry = caps.createCapabilityRegistry();
     this.version = input?.version ?? "1";
     this.includeBlueprints = input?.includeBlueprints ?? true;
 
@@ -60,7 +75,7 @@ export class HarmonyMcpToolService {
     // not "when the artifact was originally generated", because the UI needs freshness
     // relative to the running process.
     this.manifest = { generated_at: "1970-01-01T00:00:00.000Z", version: this.version, tools: [] };
-    this.toolSurface = mcpServer.createToolSurface({ manifest: this.manifest, traceId: () => `console-${Date.now()}` });
+    this.toolSurface = mcp.createToolSurface({ manifest: this.manifest, traceId: () => `console-${Date.now()}` });
     this.refresh();
   }
 
@@ -86,7 +101,7 @@ export class HarmonyMcpToolService {
       };
     }
 
-    const catalog = mcpServer.generateToolCatalog({ registry: this.registry, version, includeBlueprints });
+    const catalog = mcp.generateToolCatalog({ registry: this.registry, version, includeBlueprints });
     return {
       generated_at: this.nextGeneratedAtIso(),
       version: catalog.version,
@@ -96,7 +111,7 @@ export class HarmonyMcpToolService {
 
   refresh(): ToolCatalogSnapshot {
     this.manifest = this.buildManifest();
-    this.toolSurface = mcpServer.createToolSurface({
+    this.toolSurface = mcp.createToolSurface({
       manifest: this.manifest,
       traceId: () => `console-${Date.now()}`,
     });
@@ -123,6 +138,7 @@ export class HarmonyMcpToolService {
         | "allowOutbound"
         | "isIdempotent"
         | "costFactor"
+        | "ai_hints"
       >
     >();
     for (const entry of this.manifest.tools) {
@@ -137,7 +153,19 @@ export class HarmonyMcpToolService {
         allowOutbound: entry.allowOutbound,
         isIdempotent: entry.isIdempotent,
         costFactor: entry.costFactor,
+        ai_hints: entry.ai_hints,
       });
+    }
+
+    function inferExploration(toolId: string): ToolCatalogTool["exploration"] {
+      const id = toolId.toLowerCase();
+      const hasProviderPrefix = (provider: string) =>
+        id.startsWith(`${provider}.`) || id.startsWith(`golden.${provider}.`);
+
+      if (hasProviderPrefix("github")) return { kind: "graphql", connectionType: "github" };
+      if (hasProviderPrefix("jira")) return { kind: "openapi", connectionType: "jira" };
+      if (hasProviderPrefix("gitlab")) return { kind: "openapi", connectionType: "gitlab" };
+      return { kind: "none", connectionType: "none" };
     }
 
     return mcpTools.map((t) => {
@@ -154,6 +182,16 @@ export class HarmonyMcpToolService {
         allowOutbound: meta?.allowOutbound,
         isIdempotent: meta?.isIdempotent,
         costFactor: meta?.costFactor,
+        aiHints: meta?.ai_hints
+          ? {
+              exampleInput: meta.ai_hints.example_input,
+              exampleOutput: meta.ai_hints.example_output,
+              usageNotes: meta.ai_hints.usage_notes,
+              constraints: meta.ai_hints.constraints,
+              negativeExamples: meta.ai_hints.negative_examples,
+            }
+          : undefined,
+        exploration: inferExploration(t.name),
       };
     });
   }

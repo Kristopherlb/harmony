@@ -76,6 +76,7 @@ export const clamavScannerCapability: Capability<
 > = {
     metadata: {
         id: 'golden.security.clamav-scanner',
+        domain: 'security',
         version: '1.0.0',
         name: 'clamavScanner',
         description:

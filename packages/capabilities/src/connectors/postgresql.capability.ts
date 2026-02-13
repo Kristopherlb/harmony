@@ -76,11 +76,12 @@ export const postgresqlCapability: Capability<
 > = {
   metadata: {
     id: 'golden.connectors.postgresql',
+    domain: 'connectors',
     version: '1.0.0',
     name: 'postgresql',
     description:
       'PostgreSQL database connector for queries, mutations, and transactions. Supports parameterized queries and connection pooling.',
-    tags: ['connector', 'database', 'postgresql', 'sql'],
+    tags: ['connector', 'connectors', 'database', 'postgresql', 'sql'],
     maintainer: 'platform',
   },
   schemas: {

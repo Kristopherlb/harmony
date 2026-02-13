@@ -59,6 +59,11 @@ export default function OperationsHub() {
     refetchInterval: 5000,
   });
 
+  const workbenchPendingQuery = useQuery<{ workflows: any[] }>({
+    queryKey: ["/api/workflows/pending-approvals?type=workbenchDraftRunWorkflow"],
+    refetchInterval: 5000,
+  });
+
   const templatesQuery = useQuery<{ templates: QueryTemplate[] }>({
     queryKey: ["/api/sql/templates"],
   });
@@ -136,6 +141,36 @@ export default function OperationsHub() {
     },
   });
 
+  const workbenchApprovalMutation = useMutation({
+    mutationFn: async (payload: { workflowId: string; decision: "approved" | "rejected" }) => {
+      const res = await apiRequest("POST", `/api/workflows/${encodeURIComponent(payload.workflowId)}/approval`, {
+        decision: payload.decision,
+        approverId: "ops-hub-user",
+        approverRoles: ["ops-hub"],
+        reason: payload.decision === "rejected" ? "Rejected via Operations Hub" : undefined,
+      });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({
+        predicate: (q) =>
+          typeof q.queryKey[0] === "string" &&
+          String(q.queryKey[0]).startsWith("/api/workflows/pending-approvals"),
+      });
+      toast({
+        title: data.decision === "approved" ? "Approved" : "Rejected",
+        description: `Workflow run has been ${data.decision}.`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to process approval",
+        variant: "destructive",
+      });
+    },
+  });
+
   const queryMutation = useMutation({
     mutationFn: async (payload: { templateId: string; params: Record<string, any> }) => {
       const res = await apiRequest("POST", "/api/sql/execute", payload);
@@ -182,6 +217,7 @@ export default function OperationsHub() {
   const categories = catalogQuery.data?.categories ?? [];
   const executions = executionsQuery.data?.executions ?? [];
   const pendingApprovals = pendingQuery.data?.executions ?? [];
+  const workbenchPendingApprovals = workbenchPendingQuery.data?.workflows ?? [];
   const templates = templatesQuery.data?.templates ?? [];
 
   if (catalogQuery.isLoading) { // Assuming eventsQuery is not defined, using catalogQuery for loading
@@ -222,6 +258,59 @@ export default function OperationsHub() {
             </Badge>
           )}
         </div>
+
+        {workbenchPendingApprovals.length > 0 ? (
+          <div className="mb-6 rounded-lg border bg-card p-4" data-testid="card-workbench-pending-approvals">
+            <div className="flex items-center justify-between gap-2">
+              <div className="font-semibold">Workbench pending approvals</div>
+              <Badge variant="destructive" className="gap-1">
+                <AlertTriangle className="h-3 w-3" />
+                {workbenchPendingApprovals.length}
+              </Badge>
+            </div>
+            <div className="mt-3 space-y-3">
+              {workbenchPendingApprovals.slice(0, 25).map((w: any) => (
+                <div key={w.workflowId} className="rounded-md border p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium truncate">{w.workflowId}</div>
+                      <div className="text-xs text-muted-foreground font-mono truncate">
+                        type:{w.type} status:{w.status}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => workbenchApprovalMutation.mutate({ workflowId: w.workflowId, decision: "approved" })}
+                        disabled={workbenchApprovalMutation.isPending}
+                        data-testid={`button-approve-workbench-${w.workflowId}`}
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => workbenchApprovalMutation.mutate({ workflowId: w.workflowId, decision: "rejected" })}
+                        disabled={workbenchApprovalMutation.isPending}
+                        data-testid={`button-reject-workbench-${w.workflowId}`}
+                      >
+                        Reject
+                      </Button>
+                    </div>
+                  </div>
+                  {w.state?.requestReason ? (
+                    <div className="text-xs text-muted-foreground whitespace-pre-wrap">{w.state.requestReason}</div>
+                  ) : null}
+                  {Array.isArray(w.state?.requiredRoles) && w.state.requiredRoles.length > 0 ? (
+                    <div className="text-xs text-muted-foreground">
+                      requiredRoles: <span className="font-mono">{w.state.requiredRoles.join(", ")}</span>
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         <OperationsHubView
           categories={categories}

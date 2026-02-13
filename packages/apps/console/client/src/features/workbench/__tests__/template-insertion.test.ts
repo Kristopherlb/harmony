@@ -3,8 +3,7 @@
  * Unit tests for template → BlueprintDraft conversion (Phase 4.1.4).
  */
 import { describe, expect, it } from "vitest";
-import { templateToBlueprintDraft } from "@/features/workbench/template-insertion";
-import type { TemplateDraftLike } from "@/features/workbench/template-insertion";
+import { templateToBlueprintDraft, type TemplateDraftLike } from "../template-insertion";
 
 describe("template-insertion", () => {
   it("converts template to BlueprintDraft and strips library-only metadata", () => {

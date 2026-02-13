@@ -66,4 +66,21 @@ export default [
       ],
     },
   },
+  {
+    files: ["packages/apps/console/server/**/*.ts"],
+    languageOptions: {
+      parser: tsParser,
+    },
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "ImportDeclaration[source.value=/^@golden\\//] > ImportDefaultSpecifier",
+          message:
+            "Avoid default imports from internal workspace packages (@golden/*). Use namespace imports (import * as pkg from '@golden/pkg') to avoid ESM interop pitfalls.",
+        },
+      ],
+    },
+  },
 ];

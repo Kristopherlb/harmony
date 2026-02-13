@@ -11,6 +11,13 @@ export interface ExecuteCapabilityActivityInput<In = unknown> {
   config?: unknown;
   /** Optional secretRefs object passed to the capability's secrets schema at execution time. */
   secretRefs?: unknown;
+  /**
+   * Optional correlation metadata for UI/execution mapping.
+   * This must not be required by capability implementations.
+   */
+  correlation?: {
+    nodeId: string;
+  };
   runAs: string;
   traceId?: string;
   /** Optional GoldenContext for observability and binders (preferred). */

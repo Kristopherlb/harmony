@@ -9,7 +9,8 @@
             "options": {
                 "command": "pnpm run dev",
                 "cwd": "packages/apps/console"
-            }
+            },
+            "dependsOn": ["^build"]
         },
         "build": {
             "executor": "nx:run-commands",
@@ -25,11 +26,24 @@
                 "cwd": "packages/apps/console"
             }
         },
+        "test-client-workbench": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "pnpm run test:client:workbench",
+                "cwd": "packages/apps/console"
+            }
+        },
         "lint": {
             "executor": "nx:run-commands",
             "options": {
                 "command": "pnpm run check",
                 "cwd": "packages/apps/console"
+            }
+        },
+        "lint-interop": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "node tools/scripts/check-console-workspace-imports.mjs"
             }
         }
     }

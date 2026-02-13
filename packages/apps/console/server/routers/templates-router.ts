@@ -5,12 +5,11 @@ import type { Request, Response } from "express";
 import { Router } from "express";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import {
-  templateDraftSchema,
-  templateManifestSchema,
-  type TemplateDraft,
-  type TemplateManifest,
-} from "@golden/core";
+import * as core from "@golden/core";
+import type { TemplateDraft, TemplateManifest } from "@golden/core";
+import { unwrapCjsNamespace } from "../lib/cjs-interop";
+
+const corePkg = unwrapCjsNamespace<typeof core>(core as any);
 
 async function pathExists(p: string): Promise<boolean> {
   try {
@@ -54,12 +53,12 @@ export function createTemplatesRouter(): Router {
       const catalogDir = path.join(root, "packages", "core", "src", "templates", "catalog");
 
       if (!(await pathExists(catalogDir))) {
-        return res.json(templateManifestSchema.parse({ version: "1.0.0", templates: [] }));
+        return res.json((corePkg as any).templateManifestSchema.parse({ version: "1.0.0", templates: [] }));
       }
 
       const manifestPath = path.join(catalogDir, "manifest.json");
       if (!(await pathExists(manifestPath))) {
-        return res.json(templateManifestSchema.parse({ version: "1.0.0", templates: [] }));
+        return res.json((corePkg as any).templateManifestSchema.parse({ version: "1.0.0", templates: [] }));
       }
 
       const manifestRaw = await fs.readFile(manifestPath, "utf8");
@@ -72,12 +71,12 @@ export function createTemplatesRouter(): Router {
         const filePath = safeTemplatePath(catalogDir, id);
         if (!(await pathExists(filePath))) continue;
         const raw = await fs.readFile(filePath, "utf8");
-        const parsed = templateDraftSchema.safeParse(JSON.parse(raw));
+        const parsed = (corePkg as any).templateDraftSchema.safeParse(JSON.parse(raw));
         if (parsed.success) templates.push(parsed.data);
       }
 
       const manifest: TemplateManifest = { version, templates };
-      return res.json(templateManifestSchema.parse(manifest));
+      return res.json((corePkg as any).templateManifestSchema.parse(manifest));
     } catch (error) {
       console.error("Error loading template catalog:", error);
       return res.status(500).json({ error: "Failed to load templates" });

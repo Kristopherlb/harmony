@@ -15,8 +15,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import type { BlueprintDraft, BlueprintNode } from "@/features/workbench/types";
+import { buildExplainStepMessage } from "@/features/workbench/node-explanation";
 import type { McpTool } from "@/features/workbench/use-mcp-tools";
 import { asObjectSchema, isFilledValue, schemaRequiredKeys, missingRequiredKeys } from "@/features/workbench/required-fields";
+import { useWorkflowProgress } from "@/features/workbench/use-workflow-progress";
+import { useWorkflowStatus } from "@/features/workbench/use-workflow-status";
 
 function findNode(draft: BlueprintDraft | null, nodeId: string | null): BlueprintNode | null {
   if (!draft || !nodeId) return null;
@@ -60,6 +63,8 @@ export interface NodeInfoSheetProps {
   onOpenChange: (open: boolean) => void;
   draft: BlueprintDraft | null;
   selectedNodeId: string | null;
+  /** Active workflow id for live execution mapping (Phase 4.3.2 / Phase 1 draft-run). */
+  activeWorkflowId?: string | null;
   tools: McpTool[];
   pinned?: boolean;
   onPinnedChange?: (pinned: boolean) => void;
@@ -71,6 +76,8 @@ export interface NodeInfoSheetProps {
     selectedNodeId: string;
     missingRequired: string[];
   }) => void;
+  /** Ask the agent to explain why this step was added (Phase 4.2.3) */
+  onRequestExplain?: (input: { node: BlueprintNode }) => void;
 }
 
 export function NodeInfoSheet({
@@ -78,17 +85,27 @@ export function NodeInfoSheet({
   onOpenChange,
   draft,
   selectedNodeId,
+  activeWorkflowId,
   tools,
   pinned,
   onPinnedChange,
   onUpdateNodeProperties,
   onRequestConfigureWithAgent,
+  onRequestExplain,
 }: NodeInfoSheetProps) {
   const node = React.useMemo(() => findNode(draft, selectedNodeId), [draft, selectedNodeId]);
   const tool = React.useMemo(
     () => (node ? tools.find((t) => t.name === node.type) ?? null : null),
     [node, tools]
   );
+
+  const progress = useWorkflowProgress(activeWorkflowId ?? null);
+  const describe = useWorkflowStatus(activeWorkflowId ?? null);
+  const stepForNode = React.useMemo(() => {
+    if (!node) return null;
+    const steps = progress?.steps ?? [];
+    return steps.find((s) => s.nodeId === node.id) ?? null;
+  }, [node?.id, progress?.steps]);
   const required = React.useMemo(() => schemaRequiredKeys(tool?.inputSchema), [tool]);
   const missing = React.useMemo(
     () =>
@@ -103,11 +120,20 @@ export function NodeInfoSheet({
 
   const classification = tool?.dataClassification ?? "INTERNAL";
 
-  const provider = React.useMemo(() => (node ? inferProviderFromNodeType(node.type) : "github"), [node]);
+  const exploration = tool?.exploration ?? { kind: "none" as const, connectionType: "none" as const };
+
+  const provider = React.useMemo(() => {
+    if (exploration.connectionType !== "none") return exploration.connectionType;
+    return node ? inferProviderFromNodeType(node.type) : "github";
+  }, [node, exploration.connectionType]);
 
   const [localProperties, setLocalProperties] = React.useState<Record<string, unknown>>({});
   const [propertiesText, setPropertiesText] = React.useState<string>("{}");
   const [propertiesError, setPropertiesError] = React.useState<string | null>(null);
+
+  const [resultStatus, setResultStatus] = React.useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [resultError, setResultError] = React.useState<string | null>(null);
+  const [resultForNode, setResultForNode] = React.useState<unknown>(null);
 
   React.useEffect(() => {
     const base =
@@ -120,10 +146,61 @@ export function NodeInfoSheet({
     setPropertiesError(null);
   }, [node?.id]);
 
+  // Best-effort: fetch workflow result so we can show a per-node output preview.
+  React.useEffect(() => {
+    if (!open) return;
+    if (!activeWorkflowId) return;
+    if (!node) return;
+
+    if (describe?.status !== "COMPLETED") {
+      setResultStatus("idle");
+      setResultError(null);
+      setResultForNode(null);
+      return;
+    }
+
+    let cancelled = false;
+    setResultStatus("loading");
+    setResultError(null);
+    setResultForNode(null);
+
+    fetch(`/api/workflows/${encodeURIComponent(activeWorkflowId)}/result`, { credentials: "include" })
+      .then((r) => r.json())
+      .then((json) => {
+        if (cancelled) return;
+        const root = (json as any)?.result ?? null;
+        const byNode = root && typeof root === "object" ? (root as any).resultsByNodeId : null;
+        setResultForNode(byNode && typeof byNode === "object" ? (byNode as any)[node.id] : null);
+        setResultStatus("ready");
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        setResultStatus("error");
+        setResultError(String((e as any)?.message ?? e));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, activeWorkflowId, node?.id, describe?.status]);
+
   const missingLocal = React.useMemo(() => {
     if (!node) return [];
     return missingRequiredKeys({ properties: localProperties, required });
   }, [node, required, localProperties]);
+
+  // Phase 1 Fix-it UX: when a node is selected and has missing required fields,
+  // focus the first missing input so users can fix immediately.
+  React.useEffect(() => {
+    if (!open) return;
+    if (!node) return;
+    if (missingLocal.length === 0) return;
+    const key = missingLocal[0];
+    requestAnimationFrame(() => {
+      const el = typeof document !== "undefined" ? document.getElementById(`required-${key}`) : null;
+      if (el && "focus" in el) (el as any).focus();
+    });
+  }, [open, node?.id, missingLocal.join(",")]);
 
   function updateLocalProperty(key: string, value: unknown) {
     setLocalProperties((prev) => {
@@ -170,7 +247,7 @@ export function NodeInfoSheet({
 
     try {
       const body = {
-        provider: kind === "graphql" ? "github" : provider,
+        provider,
         kind,
         mode: "launch" as WorkbenchMode,
       };
@@ -269,6 +346,23 @@ export function NodeInfoSheet({
                   {pinned ? "Pinned" : "Pin"}
                 </Button>
               ) : null}
+              {stepForNode ? (
+                <Badge
+                  variant={stepForNode.status === "failed" ? "destructive" : "secondary"}
+                  className="text-[10px] font-mono"
+                >
+                  {stepForNode.status}
+                </Badge>
+              ) : describe?.status ? (
+                <Badge variant="outline" className="text-[10px] font-mono">
+                  wf:{describe.status}
+                </Badge>
+              ) : null}
+              {tool?.costFactor ? (
+                <Badge variant="outline" className="text-[10px] font-mono">
+                  cost:{tool.costFactor}
+                </Badge>
+              ) : null}
               <Badge variant="secondary" className="text-[10px] font-mono">
                 {classification}
               </Badge>
@@ -278,6 +372,34 @@ export function NodeInfoSheet({
 
         <ScrollArea className="flex-1 py-6">
           <div className="space-y-6 pr-4">
+            {activeWorkflowId ? (
+              <>
+                <section className="space-y-3" aria-label="Execution">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Execution
+                  </div>
+                  <Card className="p-3 space-y-2">
+                    <div className="text-xs text-muted-foreground">
+                      workflowId: <span className="font-mono">{activeWorkflowId}</span>
+                    </div>
+                    {resultStatus === "loading" ? (
+                      <div className="text-xs text-muted-foreground">Loading result…</div>
+                    ) : resultStatus === "error" ? (
+                      <div className="text-xs text-destructive">{resultError ?? "Failed to load result"}</div>
+                    ) : resultStatus === "ready" && resultForNode !== null ? (
+                      <pre className="mt-1 rounded-md border bg-muted p-2 overflow-auto max-h-[180px] text-[11px]">
+                        {JSON.stringify(resultForNode, null, 2)}
+                      </pre>
+                    ) : (
+                      <div className="text-xs text-muted-foreground">No output yet.</div>
+                    )}
+                  </Card>
+                </section>
+
+                <Separator />
+              </>
+            ) : null}
+
             <section className="space-y-3" aria-label="Overview">
               <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Overview
@@ -291,6 +413,17 @@ export function NodeInfoSheet({
                   <div className="text-xs text-muted-foreground leading-5">
                     {tool.description}
                   </div>
+                ) : null}
+                {node && onRequestExplain ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 h-7 text-xs"
+                    onClick={() => onRequestExplain({ node })}
+                    data-testid="button-explain-step"
+                  >
+                    Explain step
+                  </Button>
                 ) : null}
               </Card>
             </section>
@@ -433,26 +566,33 @@ export function NodeInfoSheet({
                   Provider: <span className="font-mono">{provider}</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs"
-                    disabled={launchStatus === "loading"}
-                    onClick={() => launch("openapi")}
-                    data-testid="button-launch-swagger"
-                  >
-                    Open Swagger
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs"
-                    disabled={launchStatus === "loading"}
-                    onClick={() => launch("graphql")}
-                    data-testid="button-launch-graphiql"
-                  >
-                    Open GraphQL
-                  </Button>
+                  {exploration.kind === "openapi" ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      disabled={launchStatus === "loading"}
+                      onClick={() => launch("openapi")}
+                      data-testid="button-launch-swagger"
+                    >
+                      Open Swagger
+                    </Button>
+                  ) : exploration.kind === "graphql" ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      disabled={launchStatus === "loading"}
+                      onClick={() => launch("graphql")}
+                      data-testid="button-launch-graphiql"
+                    >
+                      Open GraphQL
+                    </Button>
+                  ) : (
+                    <div className="text-xs text-muted-foreground">
+                      No explorer available for this capability.
+                    </div>
+                  )}
                 </div>
 
                 {launchStatus === "error" && launchError ? (

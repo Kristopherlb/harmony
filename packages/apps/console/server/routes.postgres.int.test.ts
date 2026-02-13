@@ -4,7 +4,8 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { registerRoutes } from "./routes";
 import { DbFixture } from "./test/db-fixture";
-import type { InsertEvent } from "@shared/schema";
+import { createAppDeps } from "./composition";
+import type { AppDeps } from "./types/deps";
 
 /**
  * Integration test for routes using Postgres repository.
@@ -18,6 +19,7 @@ describe.skipIf(shouldSkip)("Routes - Postgres Integration", () => {
   let httpServer: Server;
   let fixture: DbFixture;
   let originalRepoMode: string | undefined;
+  let deps: AppDeps;
 
   beforeAll(async () => {
     const databaseUrl = process.env.DATABASE_URL;
@@ -51,12 +53,13 @@ describe.skipIf(shouldSkip)("Routes - Postgres Integration", () => {
 
   beforeEach(async () => {
     // Create fresh Express app for each test
+    deps = createAppDeps();
     app = express();
     app.use(express.json());
     app.use(express.urlencoded({ extended: false }));
 
     httpServer = createServer(app);
-    await registerRoutes(httpServer, app);
+    await registerRoutes(httpServer, app, deps);
 
     // Clean up any existing data
     await fixture.truncateTables();
@@ -82,6 +85,39 @@ describe.skipIf(shouldSkip)("Routes - Postgres Integration", () => {
     expect(response.body).toHaveProperty("page");
     expect(response.body).toHaveProperty("pageSize");
     expect(Array.isArray(response.body.events)).toBe(true);
+  });
+
+  it("persists and lists approval log entries via /api/workbench/approvals/log", async () => {
+    await request(app)
+      .post("/api/workbench/approvals/log")
+      .send({
+        approverId: "postgres-test-user",
+        approvedToolIds: ["tool.restricted"],
+        context: { incidentId: "incident-1", workflowId: "wf-1", contextType: "draft", draftTitle: "Test" },
+      })
+      .expect(201);
+
+    const response = await request(app).get("/api/workbench/approvals/log").expect(200);
+    expect(Array.isArray(response.body.entries)).toBe(true);
+    expect(response.body.entries.length).toBeGreaterThanOrEqual(1);
+    expect(response.body.entries[0]).toMatchObject({
+      approverId: "postgres-test-user",
+      approvedToolIds: ["tool.restricted"],
+      context: { incidentId: "incident-1", workflowId: "wf-1", contextType: "draft", draftTitle: "Test" },
+    });
+  });
+
+  it("rejects approval log entries with no actionable context", async () => {
+    const response = await request(app)
+      .post("/api/workbench/approvals/log")
+      .send({
+        approverId: "postgres-test-user",
+        approvedToolIds: ["tool.restricted"],
+        context: { contextType: "draft" },
+      })
+      .expect(400);
+
+    expect(response.body).toMatchObject({ error: "APPROVAL_CONTEXT_REQUIRED" });
   });
 
   it("should handle pagination correctly with Postgres data", async () => {

@@ -8,9 +8,32 @@ Observability infrastructure following GOS-001 (Golden Observability Standard).
 observability/
 ├── grafana/
 │   └── incident-lifecycle-dashboard.json    # Grafana dashboard for incident workflows
+│   └── workbench-dashboard.json             # Grafana dashboard for Workbench UX (Phase 4.5)
 ├── prometheus/
 │   └── incident-alerts.yaml                 # Prometheus alerting rules
+│   └── workbench-alerts.yaml                # Prometheus alerting rules (Workbench UX)
 └── README.md
+```
+
+## Prometheus Scrape (Console Workbench UX)
+
+To power the Workbench UX dashboard and SLOs, Prometheus must scrape the Console's Workbench metrics endpoint:
+
+- **Metrics endpoint (Prometheus text format)**: `GET /api/workbench/metrics`
+- **Runbook**: `/runbooks/console-metrics-scrape.md`
+
+This repository does **not** ship Prometheus scrape wiring (no `prometheus.yml`, no ServiceMonitor/Helm). Configure scraping in your Prometheus deployment (external infra or managed Prometheus).
+
+Example `scrape_configs` job:
+
+```yaml
+scrape_configs:
+  - job_name: console-workbench
+    metrics_path: /api/workbench/metrics
+    scheme: https
+    static_configs:
+      - targets:
+          - console.example.com
 ```
 
 ## Grafana Dashboard
@@ -42,6 +65,24 @@ curl -X POST \
   -H "Authorization: Bearer $GRAFANA_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d @grafana/incident-lifecycle-dashboard.json \
+  https://grafana.internal/api/dashboards/db
+```
+
+### Workbench UX
+
+**UID:** `workbench-ux-gos001`
+
+Features:
+- Workbench session volume and activity (sessions, drafts, templates)
+- Client-reported duration histograms (e.g. session duration, time-to-accept)
+
+Installation:
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer $GRAFANA_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d @grafana/workbench-dashboard.json \
   https://grafana.internal/api/dashboards/db
 ```
 
@@ -77,9 +118,12 @@ curl -X POST \
 # In prometheus.yml, add:
 rule_files:
   - /etc/prometheus/rules/incident-alerts.yaml
+  - /etc/prometheus/rules/workbench-alerts.yaml
 
 # Copy alert rules
 kubectl cp prometheus/incident-alerts.yaml \
+  monitoring/prometheus-0:/etc/prometheus/rules/
+kubectl cp prometheus/workbench-alerts.yaml \
   monitoring/prometheus-0:/etc/prometheus/rules/
 
 # Reload Prometheus
@@ -112,3 +156,4 @@ Dashboard includes overlay annotations for:
 - [GOS-001 Standard](/.cursor/skills/golden-observability/SKILL.md)
 - [Incident Lifecycle Blueprints](/packages/blueprints/src/workflows/incident/)
 - [Runbooks](/runbooks/)
+- [Console metrics scrape (Workbench UX)](/runbooks/console-metrics-scrape.md)

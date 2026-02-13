@@ -101,6 +101,7 @@ export const jiraIssueSearchCapability: Capability<
 > = {
   metadata: {
     id: 'golden.jira.issue.search',
+    domain: 'jira',
     version: '1.0.0',
     name: 'jiraIssueSearch',
     description: 'Search Jira issues using JQL via /rest/api/3/search/jql.',

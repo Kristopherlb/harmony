@@ -1,7 +1,8 @@
 import { v4 as uuidv4 } from "uuid";
 import { Client, Connection } from "@temporalio/client";
-import coreWorkflow from "@golden/core/workflow";
+import * as coreWorkflow from "@golden/core/workflow";
 import type { ApprovalSignalPayload } from "@golden/core/workflow";
+import { unwrapCjsNamespace } from "./lib/cjs-interop";
 import type {
   Action,
   WorkflowExecution,
@@ -41,6 +42,7 @@ export interface IWorkflowEngine {
 }
 
 const CRITICAL_RISK_LEVELS: RiskLevel[] = ["critical", "high"];
+const coreWorkflowPkg = unwrapCjsNamespace<typeof coreWorkflow>(coreWorkflow as any);
 
 export class MockWorkflowEngine implements IWorkflowEngine {
   private executions: Map<string, WorkflowProgress> = new Map();
@@ -321,7 +323,7 @@ export class TemporalAdapter implements IWorkflowEngine {
         source: "console",
       };
 
-      await handle.signal(coreWorkflow.approvalSignal, payload);
+      await handle.signal((coreWorkflowPkg as any).approvalSignal, payload);
       console.log(`[TemporalAdapter] Sent approval signal to workflow: ${runId}`);
       return true;
     } catch (err) {
@@ -344,7 +346,7 @@ export class TemporalAdapter implements IWorkflowEngine {
         source: "console",
       };
 
-      await handle.signal(coreWorkflow.approvalSignal, payload);
+      await handle.signal((coreWorkflowPkg as any).approvalSignal, payload);
       console.log(`[TemporalAdapter] Sent rejection signal to workflow: ${runId}`);
       return true;
     } catch (err) {

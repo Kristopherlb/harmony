@@ -17,6 +17,7 @@ import {
   BookOpen,
   Clock,
   Library,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,6 +56,7 @@ export function NOCHeader({ className }: NOCHeaderProps) {
     { path: "/timeline", label: "Timeline", icon: Clock },
     { path: "/workbench", label: "Workbench", icon: MonitorDot },
     { path: "/workbench/library", label: "Library", icon: Library },
+    { path: "/account", label: "Account", icon: User },
     { path: "/workflows", label: "Workflows", icon: Workflow },
     { path: "/capabilities", label: "Capabilities", icon: Boxes },
     { path: "/services", label: "Services", icon: Network },

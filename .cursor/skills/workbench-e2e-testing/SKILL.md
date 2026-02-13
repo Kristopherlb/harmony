@@ -61,6 +61,14 @@ Use this skill when writing or running end-to-end tests for the Workbench: chat 
 - **Config:** `packages/apps/console/playwright.config.ts` or root `playwright.config.ts` with project for console.
 - **Test IDs:** Document required `data-testid` values in this skill or in a short “E2E selectors” doc so front-end and E2E stay in sync.
 
+### 8. TODO: Library E2E (when Playwright is configured)
+
+When Playwright is set up for the Console, add **workbench-library.spec.ts** covering: browse library → select template → edit (optional) → accept. Reference: Phase 4.1 retro (`retrospectives/sessions/2026-02-02-workbench-ux-phase-4.1-library-ux.md`); acceptance scenario `library-usage-ease` in `product-management/workbench-ux.acceptance.json`.
+
+### 9. TODO: Iterative Refinement E2E (Phase 4.2)
+
+When Playwright is set up, add **workbench-iterative-refinement.spec.ts** covering: start with draft on canvas (from chat or template) → send "Rename the second step to Notify" → wait for proposal → accept → assert node label changed. Repeat for add/remove. Mock agent responses for determinism. Reference: Phase 4.2 retro (`retrospectives/sessions/2026-02-02-workbench-ux-phase-4.2-generative-iteration.md`).
+
 ## Related
 
 - Workbench UX Acceptance Scenario Pack: `product-management/workbench-ux.acceptance.json` – scenario fixtures and UI assertions

@@ -80,6 +80,7 @@ export const hashingCapability: Capability<
 > = {
     metadata: {
         id: 'golden.utilities.hashing',
+        domain: 'utilities',
         version: '1.0.0',
         name: 'hashing',
         description:

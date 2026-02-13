@@ -12,6 +12,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { NativeConnection, Worker } from '@temporalio/worker';
 import type { ExecuteCapabilityActivityInput } from '@golden/core';
+import { createApprovalActivities } from '../src/activities/approval-activities.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageRoot = path.resolve(__dirname, '..');
@@ -53,6 +54,7 @@ async function main(): Promise<void> {
         }
         throw new Error(`DEV_STUB_ONLY (capId=${input.capId})`);
       },
+      ...createApprovalActivities(),
     },
   });
 

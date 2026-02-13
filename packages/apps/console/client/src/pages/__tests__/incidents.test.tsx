@@ -5,9 +5,17 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Router } from "wouter";
 
 import IncidentsPage, { IncidentDetailPage } from "../incidents";
+import { getQueryFn } from "@/lib/queryClient";
 
 function renderWithProviders(ui: React.ReactElement) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const qc = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+        queryFn: getQueryFn({ on401: "throw" }),
+      },
+    },
+  });
   return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
 }
 
@@ -53,7 +61,7 @@ describe("IncidentsPage", () => {
 
       await screen.findByTestId("incidents-page");
       expect(screen.getByText("Incidents")).toBeInTheDocument();
-      expect(screen.getByText("API is down")).toBeInTheDocument();
+      await screen.findByText("API is down");
       expect(screen.getByText("critical")).toBeInTheDocument();
       expect(screen.getByText("pagerduty")).toBeInTheDocument();
     } finally {

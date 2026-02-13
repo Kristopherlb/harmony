@@ -112,7 +112,26 @@
       ],
       "allowOutbound": [],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "decode",
+          "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+        },
+        "example_output": {
+          "header": {
+            "alg": "HS256",
+            "typ": "JWT"
+          },
+          "payload": {
+            "sub": "1234567890",
+            "name": "John Doe",
+            "iat": 1516239022
+          },
+          "signature": "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+        },
+        "usage_notes": "Use decode for extracting claims without verification. Use verify when you need cryptographic validation. Use sign to create new tokens. For RS*/ES* algorithms, provide the appropriate key via secretRefs."
+      }
     },
     {
       "id": "golden.auth.oauth-provider",
@@ -203,7 +222,23 @@
         "*"
       ],
       "isIdempotent": false,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "grantType": "client_credentials",
+          "tokenUrl": "https://oauth.example.com/token",
+          "clientId": "my-client-id",
+          "scope": "read:data write:data"
+        },
+        "example_output": {
+          "accessToken": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+          "tokenType": "Bearer",
+          "expiresIn": 3600,
+          "expiresAt": "2024-01-01T12:00:00Z",
+          "scope": "read:data write:data"
+        },
+        "usage_notes": "Use client_credentials for service-to-service auth. Use authorization_code for user-delegated access (requires prior redirect flow). Refresh tokens should be stored securely and used before access token expiry."
+      }
     },
     {
       "id": "golden.auth.openbao",
@@ -267,7 +302,87 @@
         "*"
       ],
       "isIdempotent": false,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "read",
+          "path": "myapp/config"
+        },
+        "example_output": {
+          "success": true,
+          "data": {
+            "apiKey": "***"
+          },
+          "message": "Secret read successfully"
+        },
+        "usage_notes": "Uses hashicorp/vault container. Requires VAULT_ADDR and VAULT_TOKEN."
+      }
+    },
+    {
+      "id": "blueprints.ci.github-release",
+      "type": "BLUEPRINT",
+      "description": "GitHub webhook-triggered release workflow composed from GitHub REST + GraphQL capabilities.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "deliveryId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "GitHub delivery id (X-GitHub-Delivery)"
+          },
+          "eventType": {
+            "type": "string",
+            "minLength": 1,
+            "description": "GitHub event type (X-GitHub-Event)"
+          },
+          "action": {
+            "type": "string",
+            "description": "GitHub payload action field (if present)"
+          },
+          "repoFullName": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Repo full name (owner/repo)"
+          },
+          "ref": {
+            "type": "string",
+            "description": "Git ref (if present)"
+          },
+          "sha": {
+            "type": "string",
+            "description": "Commit SHA (if present)"
+          },
+          "actor": {
+            "type": "string",
+            "description": "Actor login (if present)"
+          },
+          "receivedAt": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Ingress timestamp generated outside workflow"
+          },
+          "githubTokenSecretRef": {
+            "type": "string",
+            "minLength": 1,
+            "description": "OpenBao secretRef for GitHub token"
+          }
+        },
+        "required": [
+          "deliveryId",
+          "eventType",
+          "repoFullName",
+          "receivedAt",
+          "githubTokenSecretRef"
+        ],
+        "additionalProperties": false,
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "blueprints",
+      "subdomain": "ci.github-release",
+      "tags": [
+        "blueprints"
+      ]
     },
     {
       "id": "blueprints.ci.release-pipeline",
@@ -930,7 +1045,37 @@
       ],
       "allowOutbound": [],
       "isIdempotent": true,
-      "costFactor": "MEDIUM"
+      "costFactor": "MEDIUM",
+      "ai_hints": {
+        "example_input": {
+          "operation": "full",
+          "gitSha": "abc123def456"
+        },
+        "example_output": {
+          "status": "PASS",
+          "specVersion": "1.0.0",
+          "generatedAt": "2024-01-15T10:30:00Z",
+          "gitSha": "abc123def456",
+          "audits": [
+            {
+              "id": "nis-001-capability-ids",
+              "name": "Capability ID Format",
+              "status": "PASS",
+              "standard": "NIS-001",
+              "message": "All capability IDs follow golden.{domain}.{name} pattern"
+            }
+          ],
+          "summary": {
+            "total": 25,
+            "passed": 24,
+            "failed": 0,
+            "warnings": 1,
+            "skipped": 0
+          },
+          "reportPath": "dist/certification/CERTIFICATION.json"
+        },
+        "usage_notes": "Run \"full\" audit before releases. Use skipChecks to exclude known issues. Generated CERTIFICATION.json is unsigned in MVP and should be included in release artifacts."
+      }
     },
     {
       "id": "golden.ci.container-builder",
@@ -1037,7 +1182,34 @@
         "quay.io"
       ],
       "isIdempotent": false,
-      "costFactor": "HIGH"
+      "costFactor": "HIGH",
+      "ai_hints": {
+        "example_input": {
+          "operation": "build-and-push",
+          "context": "packages/blueprints",
+          "dockerfile": "Dockerfile",
+          "target": "production",
+          "tags": [
+            "ghcr.io/org/harmony-worker:v2.0.0"
+          ],
+          "buildArgs": {
+            "WORKER_BUILD_ID": "v2.0.0"
+          },
+          "registry": "ghcr.io"
+        },
+        "example_output": {
+          "imageRef": "ghcr.io/org/harmony-worker:v2.0.0",
+          "digest": "sha256:abc123def456...",
+          "size": 156000000,
+          "tags": [
+            "ghcr.io/org/harmony-worker:v2.0.0"
+          ],
+          "buildDuration": 45000,
+          "pushed": true,
+          "layers": 12
+        },
+        "usage_notes": "Use target for multi-stage builds to select the final stage. Build args are passed as --build-arg. For CI, ensure registry credentials are provided via secrets."
+      }
     },
     {
       "id": "golden.ci.oscal-generator",
@@ -1098,7 +1270,37 @@
       ],
       "allowOutbound": [],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "generate",
+          "title": "Harmony Platform",
+          "version": "2.0.0"
+        },
+        "example_output": {
+          "outputPath": "dist/oscal/component-definition.json",
+          "format": "json",
+          "controlsCovered": [
+            "AC-2",
+            "AU-2",
+            "CA-2",
+            "CM-2",
+            "CM-3",
+            "SA-11",
+            "SI-4"
+          ],
+          "controlCount": 7,
+          "components": [
+            {
+              "uuid": "550e8400-e29b-41d4-a716-446655440000",
+              "type": "software",
+              "title": "Harmony Platform",
+              "controlCount": 7
+            }
+          ]
+        },
+        "usage_notes": "Run after certification to generate OSCAL Component Definition. Include in release artifacts for compliance audits. Controls are extracted from security.oscalControlIds in capability metadata."
+      }
     },
     {
       "id": "golden.ci.release-manifest",
@@ -1269,7 +1471,53 @@
       ],
       "allowOutbound": [],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "generate",
+          "version": "2.0.0",
+          "gitSha": "abc123def456",
+          "certificationPath": "dist/certification/CERTIFICATION.json",
+          "oscalPath": "dist/oscal/component-definition.json",
+          "security": {
+            "trivyScanPath": "dist/security/trivy.json",
+            "gitleaksScanPath": "dist/security/gitleaks.json",
+            "sbomPath": "dist/sbom/sbom.json"
+          },
+          "flagsConfigPath": "deploy/flagd/flags.json"
+        },
+        "example_output": {
+          "manifestPath": "dist/release-manifest.json",
+          "version": "2.0.0",
+          "gitSha": "abc123def456",
+          "buildId": "v2.0.0",
+          "certification": {
+            "status": "PASS",
+            "reportPath": "dist/certification/CERTIFICATION.json"
+          },
+          "oscal": {
+            "componentDefinitionPath": "dist/oscal/component-definition.json",
+            "controlsCovered": [
+              "AC-2",
+              "AU-2",
+              "CM-2",
+              "CM-3"
+            ]
+          },
+          "security": {
+            "vulnerabilities": 0,
+            "secretLeaks": 0,
+            "sbomPackages": 245
+          },
+          "featureFlags": {
+            "flagdConfigPath": "deploy/flagd/flags.json",
+            "releaseGate": "release-2.0.0-enabled",
+            "flagCount": 15
+          },
+          "generatedAt": "2024-01-15T10:30:00Z"
+        },
+        "usage_notes": "Generate after all CI checks pass. Include in GitHub release artifacts. The manifest provides a single source of truth for what was validated in this release."
+      }
     },
     {
       "id": "golden.commanders.kubectl",
@@ -1349,7 +1597,23 @@
         "*"
       ],
       "isIdempotent": false,
-      "costFactor": "MEDIUM"
+      "costFactor": "MEDIUM",
+      "ai_hints": {
+        "example_input": {
+          "operation": "get",
+          "manifest": "pods",
+          "namespace": "default"
+        },
+        "example_output": {
+          "success": true,
+          "stdout": "...",
+          "stderr": "",
+          "data": {
+            "items": []
+          }
+        },
+        "usage_notes": "Uses bitnami/kubectl. Kubeconfig must be mounted or configured in the environment."
+      }
     },
     {
       "id": "golden.commanders.terraform-runner",
@@ -1456,7 +1720,29 @@
         "*"
       ],
       "isIdempotent": false,
-      "costFactor": "HIGH"
+      "costFactor": "HIGH",
+      "ai_hints": {
+        "example_input": {
+          "command": "plan",
+          "variables": {
+            "instance_type": "t3.micro",
+            "region": "us-east-1"
+          }
+        },
+        "example_output": {
+          "success": true,
+          "command": "plan",
+          "exitCode": 0,
+          "plan": {
+            "hasChanges": true,
+            "add": 2,
+            "change": 1,
+            "destroy": 0
+          },
+          "duration": 15000
+        },
+        "usage_notes": "Always run plan before apply. Use autoApprove: true only in CI/CD. Target specific resources with targets array. Use state commands for manual state manipulation."
+      }
     },
     {
       "id": "golden.connectors.aws-sdk",
@@ -1513,7 +1799,39 @@
         "*.aws.amazon.com"
       ],
       "isIdempotent": false,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "service": "s3",
+          "operation": "listObjects",
+          "params": {
+            "Bucket": "my-bucket",
+            "Prefix": "logs/"
+          }
+        },
+        "example_output": {
+          "success": true,
+          "data": {
+            "Contents": [
+              {
+                "Key": "logs/app.log",
+                "Size": 1234
+              },
+              {
+                "Key": "logs/error.log",
+                "Size": 567
+              }
+            ],
+            "IsTruncated": false
+          },
+          "metadata": {
+            "requestId": "abc123",
+            "httpStatusCode": 200
+          },
+          "duration": 245
+        },
+        "usage_notes": "Use service name in lowercase (s3, sts, lambda). Operation names match SDK method names (getObject, putItem). Provide credentials via secretRefs or use IAM roles."
+      }
     },
     {
       "id": "golden.connectors.confluence",
@@ -1631,7 +1949,39 @@
         "*.atlassian.net"
       ],
       "isIdempotent": false,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "create-page",
+          "spaceKey": "OPS",
+          "title": "Post-Mortem: API Outage 2024-01-15",
+          "body": "<h1>Incident Summary</h1><p>On January 15th, 2024, our API experienced a 45-minute outage...</p>",
+          "bodyFormat": "storage",
+          "parentId": "12345678",
+          "labels": [
+            "post-mortem",
+            "incident",
+            "api"
+          ]
+        },
+        "example_output": {
+          "success": true,
+          "operation": "create-page",
+          "page": {
+            "id": "98765432",
+            "title": "Post-Mortem: API Outage 2024-01-15",
+            "spaceKey": "OPS",
+            "version": 1,
+            "webUrl": "https://mysite.atlassian.net/wiki/spaces/OPS/pages/98765432",
+            "createdAt": "2024-01-16T10:00:00Z",
+            "updatedAt": "2024-01-16T10:00:00Z",
+            "createdBy": "automation@example.com",
+            "status": "current"
+          },
+          "message": "Page created successfully: Post-Mortem: API Outage 2024-01-15"
+        },
+        "usage_notes": "Use storage format for rich content with templates. Provide version number when updating pages to handle concurrent edits. Use CQL for powerful searches across spaces."
+      }
     },
     {
       "id": "golden.connectors.pagerduty",
@@ -1744,7 +2094,34 @@
         "events.pagerduty.com"
       ],
       "isIdempotent": false,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "create-incident",
+          "title": "High CPU on harmony-worker-prod-1",
+          "description": "CPU usage exceeded 90% for 5 minutes",
+          "serviceId": "P1234ABC",
+          "urgency": "high"
+        },
+        "example_output": {
+          "success": true,
+          "operation": "create-incident",
+          "incident": {
+            "id": "Q1234ABC",
+            "title": "High CPU on harmony-worker-prod-1",
+            "status": "triggered",
+            "urgency": "high",
+            "service": {
+              "id": "P1234ABC",
+              "name": "Harmony Production"
+            },
+            "createdAt": "2024-01-15T10:30:00Z",
+            "htmlUrl": "https://acme.pagerduty.com/incidents/Q1234ABC"
+          },
+          "message": "Incident created successfully"
+        },
+        "usage_notes": "Use create-incident for manual incident creation. Use trigger-event with Events API v2 for automated alerting with deduplication."
+      }
     },
     {
       "id": "golden.connectors.postgresql",
@@ -1826,7 +2203,49 @@
         "*"
       ],
       "isIdempotent": false,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "query",
+          "sql": "SELECT id, name, email FROM users WHERE status = $1 LIMIT $2",
+          "params": [
+            "active",
+            10
+          ]
+        },
+        "example_output": {
+          "rows": [
+            {
+              "id": 1,
+              "name": "Alice",
+              "email": "alice@example.com"
+            },
+            {
+              "id": 2,
+              "name": "Bob",
+              "email": "bob@example.com"
+            }
+          ],
+          "rowCount": 2,
+          "command": "SELECT",
+          "fields": [
+            {
+              "name": "id",
+              "dataTypeID": 23
+            },
+            {
+              "name": "name",
+              "dataTypeID": 25
+            },
+            {
+              "name": "email",
+              "dataTypeID": 25
+            }
+          ],
+          "duration": 12
+        },
+        "usage_notes": "Use parameterized queries ($1, $2, etc.) to prevent SQL injection. Use transactions for multi-statement atomic operations. Query for SELECT, execute for INSERT/UPDATE/DELETE."
+      }
     },
     {
       "id": "golden.connectors.redis",
@@ -1958,7 +2377,22 @@
         "*.redis.cloud"
       ],
       "isIdempotent": false,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "set",
+          "key": "workflow:abc123:status",
+          "value": "running",
+          "ttlSeconds": 3600
+        },
+        "example_output": {
+          "success": true,
+          "operation": "set",
+          "key": "workflow:abc123:status",
+          "message": "Key set successfully with TTL 3600s"
+        },
+        "usage_notes": "Use for caching workflow state, rate limiting, and pub/sub messaging between services. Set TTL for cache entries to prevent memory bloat."
+      }
     },
     {
       "id": "golden.connectors.slack",
@@ -2054,7 +2488,33 @@
         "files.slack.com"
       ],
       "isIdempotent": false,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "sendMessage",
+          "channel": "#general",
+          "text": "Hello from Harmony! :wave:",
+          "blocks": [
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "*Deployment Complete* :white_check_mark:"
+              }
+            }
+          ]
+        },
+        "example_output": {
+          "ok": true,
+          "channel": "C12345678",
+          "ts": "1234567890.123456",
+          "message": {
+            "text": "Hello from Harmony! :wave:",
+            "ts": "1234567890.123456"
+          }
+        },
+        "usage_notes": "Use Block Kit for rich formatting. Provide channel ID (C...) for reliability over channel names. Thread replies require threadTs."
+      }
     },
     {
       "id": "golden.connectors.statuspage",
@@ -2167,7 +2627,37 @@
         "api.statuspage.io"
       ],
       "isIdempotent": false,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "create-incident",
+          "name": "API Degradation - Increased Latency",
+          "status": "investigating",
+          "impact": "minor",
+          "body": "We are investigating reports of increased API response times.",
+          "componentIds": [
+            "abc123"
+          ],
+          "componentStatus": "degraded_performance",
+          "deliverNotifications": true
+        },
+        "example_output": {
+          "success": true,
+          "operation": "create-incident",
+          "incident": {
+            "id": "inc_xyz789",
+            "name": "API Degradation - Increased Latency",
+            "status": "investigating",
+            "impact": "minor",
+            "shortlink": "https://stspg.io/xyz789",
+            "pageId": "page_abc123",
+            "createdAt": "2024-01-15T10:30:00Z",
+            "updatedAt": "2024-01-15T10:30:00Z"
+          },
+          "message": "Incident created successfully: API Degradation - Increased Latency"
+        },
+        "usage_notes": "Use create-incident to open new status page incidents. Update with status changes via update-incident. Always resolve incidents when issues are fixed. Component status updates automatically reflect on the status page."
+      }
     },
     {
       "id": "golden.echo",
@@ -2191,13 +2681,22 @@
       "subdomain": "echo",
       "tags": [
         "demo",
-        "test"
+        "test",
+        "echo"
       ],
       "maintainer": "platform",
       "requiredScopes": [],
       "allowOutbound": [],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "x": 1
+        },
+        "example_output": {
+          "y": 1
+        }
+      }
     },
     {
       "id": "golden.math_add",
@@ -2225,13 +2724,55 @@
       "subdomain": "math_add",
       "tags": [
         "demo",
-        "math"
+        "math",
+        "math_add"
       ],
       "maintainer": "platform",
       "requiredScopes": [],
       "allowOutbound": [],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "a": 2,
+          "b": 3
+        },
+        "example_output": {
+          "sum": 5
+        }
+      }
+    },
+    {
+      "id": "golden.demo.secret-present",
+      "type": "CAPABILITY",
+      "description": "Proves a secretRef was resolved and mounted into the runtime container without leaking the secret value. Use for runtime-smoke validation of OpenBao secretRefs.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false,
+        "description": "secretPresent input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "demo",
+      "subdomain": "secret-present",
+      "tags": [
+        "demo",
+        "smoke",
+        "secrets"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [],
+      "allowOutbound": [],
+      "isIdempotent": true,
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {},
+        "example_output": {
+          "ok": true
+        },
+        "usage_notes": "Provide `secretRefs.value` as an absolute OpenBao path (e.g. /artifacts/console/public/secrets/engine_mvp.smoke). The worker resolves it to a Dagger secret and mounts it at /run/secrets/value."
+      }
     },
     {
       "id": "golden.flags.auto-feature-flag",
@@ -2333,7 +2874,30 @@
       ],
       "allowOutbound": [],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "generateReleaseFlags",
+          "releaseVersion": "2.0.0"
+        },
+        "example_output": {
+          "operation": "generateReleaseFlags",
+          "flagsGenerated": [
+            {
+              "flagKey": "release-2.0.0-enabled",
+              "defaultValue": false,
+              "variants": {
+                "on": true,
+                "off": false
+              },
+              "state": "DISABLED"
+            }
+          ],
+          "flagdConfigPath": "deploy/flagd/flags.json",
+          "message": "Generated 1 release flags for version 2.0.0"
+        },
+        "usage_notes": "Use generateReleaseFlags before deployment to create release gates. Use setFlagState for progressive rollout. Use rollbackRelease to disable all flags for a failed release."
+      }
     },
     {
       "id": "golden.flags.flagd-sync",
@@ -2402,7 +2966,35 @@
         "kubernetes.default.svc"
       ],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "sync",
+          "version": "2.0.0",
+          "configPath": "deploy/flagd/flags.json",
+          "namespace": "production",
+          "configMapName": "flagd-flags"
+        },
+        "example_output": {
+          "status": "SYNCED",
+          "operation": "sync",
+          "flagsCount": 15,
+          "changedFlags": [
+            {
+              "flagKey": "release-2.0.0-enabled",
+              "changeType": "added",
+              "newValue": {
+                "state": "ENABLED",
+                "defaultVariant": "on"
+              }
+            }
+          ],
+          "configMapName": "flagd-flags",
+          "namespace": "production",
+          "message": "Synced 15 flags to ConfigMap flagd-flags in production namespace"
+        },
+        "usage_notes": "Use validate before sync to catch configuration errors. Use diff to preview changes. The ConfigMap is automatically picked up by flagd pods."
+      }
     },
     {
       "id": "golden.flags.openfeature-provider",
@@ -2463,18 +3055,122 @@
         "localhost:8013"
       ],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "evaluateBoolean",
+          "flagKey": "dark-mode-enabled",
+          "defaultValue": false,
+          "evaluationContext": {
+            "targetingKey": "user-123",
+            "userId": "user-123",
+            "email": "user@example.com"
+          }
+        },
+        "example_output": {
+          "value": true,
+          "details": {
+            "flagKey": "dark-mode-enabled",
+            "value": true,
+            "variant": "on",
+            "reason": "TARGETING_MATCH"
+          },
+          "cached": false,
+          "evaluatedAt": "2024-01-15T10:30:00Z"
+        },
+        "usage_notes": "Use for gradual rollouts, A/B testing, and feature toggles. Provide evaluation context for user targeting. Default values are returned when the flag service is unavailable."
+      }
+    },
+    {
+      "id": "golden.github.actions.dispatch",
+      "type": "CAPABILITY",
+      "description": "Dispatch a GitHub Actions workflow via workflow_dispatch. Use for optional release orchestration (e.g., triggering CI/CD flows) with explicit outbound allowlists and token secretRefs.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Repository owner/org."
+          },
+          "repo": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Repository name."
+          },
+          "workflow": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Workflow filename (e.g. ci.yml) or numeric workflow ID (as a string)."
+          },
+          "ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Git ref to run on (e.g. main, refs/heads/main, or a tag)."
+          },
+          "inputs": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "workflow_dispatch inputs (string values)."
+          }
+        },
+        "required": [
+          "owner",
+          "repo",
+          "workflow",
+          "ref"
+        ],
+        "additionalProperties": false,
+        "description": "githubActionsDispatchCapability input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "github",
+      "subdomain": "actions.dispatch",
+      "tags": [
+        "github",
+        "connector",
+        "actions",
+        "dispatch"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [],
+      "allowOutbound": [
+        "api.github.com"
+      ],
+      "isIdempotent": false,
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "owner": "octocat",
+          "repo": "hello-world",
+          "workflow": "release.yml",
+          "ref": "main",
+          "inputs": {
+            "version": "v1.2.3"
+          }
+        },
+        "example_output": {
+          "status": 204,
+          "headers": {},
+          "body": {}
+        },
+        "usage_notes": "Provide a token via `secretRefs.token` (an OpenBao path). The worker resolves and mounts it; the container reads /run/secrets/github_token."
+      }
     },
     {
       "id": "golden.github.graphql.query",
       "type": "CAPABILITY",
-      "description": "TODO: Describe what this capability does (purpose, not effect).",
+      "description": "Perform a GitHub GraphQL query using a mounted token secret and an explicit outbound allowlist. Use for safe, composable GitHub automation.",
       "data_classification": "INTERNAL",
       "json_schema": {
         "type": "object",
         "properties": {
           "query": {
             "type": "string",
+            "minLength": 1,
             "description": "GraphQL query string."
           },
           "variables": {
@@ -2483,6 +3179,9 @@
             "description": "GraphQL variables."
           }
         },
+        "required": [
+          "query"
+        ],
         "additionalProperties": false,
         "description": "githubGraphqlQueryCapability input",
         "$schema": "https://json-schema.org/draft/2020-12/schema#"
@@ -2491,29 +3190,51 @@
       "subdomain": "graphql.query",
       "tags": [
         "github",
-        "generated",
-        "connector"
+        "connector",
+        "graphql"
       ],
       "maintainer": "platform",
       "requiredScopes": [],
-      "allowOutbound": [],
+      "allowOutbound": [
+        "api.github.com"
+      ],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "query": "query { viewer { login } }",
+          "variables": {}
+        },
+        "example_output": {
+          "status": 200,
+          "headers": {},
+          "body": {}
+        },
+        "usage_notes": "Provide a token via `secretRefs.token` (an OpenBao path). The worker resolves and mounts it; the container reads /run/secrets/github_token."
+      }
     },
     {
       "id": "golden.github.rest.request",
       "type": "CAPABILITY",
-      "description": "TODO: Describe what this capability does (purpose, not effect).",
+      "description": "Perform a GitHub REST API request using a mounted token secret and an explicit outbound allowlist. Use for safe, composable GitHub automation.",
       "data_classification": "INTERNAL",
       "json_schema": {
         "type": "object",
         "properties": {
           "method": {
             "type": "string",
+            "enum": [
+              "GET",
+              "POST",
+              "PUT",
+              "PATCH",
+              "DELETE"
+            ],
             "description": "HTTP method for GitHub REST request."
           },
           "path": {
             "type": "string",
+            "minLength": 1,
             "description": "GitHub REST path (e.g. /repos/{owner}/{repo})."
           },
           "query": {
@@ -2531,6 +3252,10 @@
             "description": "Request body (JSON)."
           }
         },
+        "required": [
+          "method",
+          "path"
+        ],
         "additionalProperties": false,
         "description": "githubRestRequestCapability input",
         "$schema": "https://json-schema.org/draft/2020-12/schema#"
@@ -2539,14 +3264,31 @@
       "subdomain": "rest.request",
       "tags": [
         "github",
-        "generated",
-        "connector"
+        "connector",
+        "rest"
       ],
       "maintainer": "platform",
       "requiredScopes": [],
-      "allowOutbound": [],
+      "allowOutbound": [
+        "api.github.com"
+      ],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "method": "GET",
+          "path": "/repos/octocat/hello-world",
+          "query": {
+            "per_page": 1
+          }
+        },
+        "example_output": {
+          "status": 200,
+          "headers": {},
+          "body": {}
+        },
+        "usage_notes": "Provide a token via `secretRefs.token` (an OpenBao path). The worker resolves and mounts it; the container reads /run/secrets/github_token."
+      }
     },
     {
       "id": "golden.integrations.slack-interactive",
@@ -2651,7 +3393,36 @@
         "api.slack.com"
       ],
       "isIdempotent": false,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "send-approval-request",
+          "channel": "#deployments",
+          "text": "🔐 Approval Required",
+          "blocks": [
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "*Reason:* Deploy v1.2.3 to production"
+              }
+            }
+          ],
+          "workflowContext": {
+            "workflowId": "wf-123",
+            "approvalReason": "Deploy to prod",
+            "requiredRoles": [
+              "sre"
+            ],
+            "timeout": "30m"
+          }
+        },
+        "example_output": {
+          "success": true,
+          "messageTs": "1234567890.123456"
+        },
+        "usage_notes": "Prefer passing channel IDs (C...) for reliability. For response_url operations, provide responseUrl and optional replaceOriginal."
+      }
     },
     {
       "id": "golden.jira.issue.count",
@@ -2687,7 +3458,94 @@
       ],
       "allowOutbound": [],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "jql": "project = HSP"
+        },
+        "example_output": {
+          "count": 153
+        },
+        "usage_notes": "Requires bounded JQL. Use this to sanity-check search scope before paging."
+      }
+    },
+    {
+      "id": "golden.jira.issue.create",
+      "type": "CAPABILITY",
+      "description": "Create a Jira issue in a specific project with a simple, typed input schema.",
+      "data_classification": "RESTRICTED",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "projectKey": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Jira project key (e.g. HSP)."
+          },
+          "issueType": {
+            "type": "string",
+            "minLength": 1,
+            "default": "Task",
+            "description": "Issue type name (e.g. Task, Bug, Incident)."
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Issue summary/title."
+          },
+          "description": {
+            "type": "string",
+            "description": "Issue description (plain text)."
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Optional labels/tags."
+          }
+        },
+        "required": [
+          "projectKey",
+          "summary"
+        ],
+        "additionalProperties": false,
+        "description": "jiraIssueCreate input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "jira",
+      "subdomain": "issue.create",
+      "tags": [
+        "jira",
+        "connector",
+        "write",
+        "issue-create"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "write:jira-work"
+      ],
+      "allowOutbound": [],
+      "isIdempotent": false,
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "projectKey": "HSP",
+          "issueType": "Task",
+          "summary": "Investigate elevated 500s",
+          "description": "Triage: correlate error spike with deploy 2026-02-11.",
+          "labels": [
+            "incident",
+            "triage"
+          ]
+        },
+        "example_output": {
+          "id": "10001",
+          "key": "HSP-123",
+          "self": "https://example.atlassian.net/rest/api/3/issue/10001"
+        },
+        "usage_notes": "Use for deterministic issue creation. Provide auth via secretRefs (basic or oauth2). For rich Jira descriptions, prefer ADF support in a future enhancement."
+      }
     },
     {
       "id": "golden.jira.issue.search",
@@ -2760,7 +3618,19 @@
       ],
       "allowOutbound": [],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "jql": "project = HSP order by updated desc",
+          "maxResults": 50,
+          "fields": [
+            "id",
+            "key"
+          ]
+        },
+        "example_output": {},
+        "usage_notes": "Prefer bounded JQL. Use nextPageToken for pagination. Provide reconcileIssues if you need stronger consistency."
+      }
     },
     {
       "id": "golden.k8s.apply",
@@ -2852,7 +3722,37 @@
         "*.gke.io"
       ],
       "isIdempotent": true,
-      "costFactor": "MEDIUM"
+      "costFactor": "MEDIUM",
+      "ai_hints": {
+        "example_input": {
+          "operation": "apply",
+          "manifestPath": "deploy/k8s/workers",
+          "namespace": "production",
+          "substitutions": {
+            "BUILD_ID": "v2.0.0",
+            "IMAGE_TAG": "v2.0.0"
+          },
+          "wait": true
+        },
+        "example_output": {
+          "success": true,
+          "operation": "apply",
+          "namespace": "production",
+          "resourcesAffected": 3,
+          "resources": [
+            {
+              "kind": "Deployment",
+              "name": "harmony-worker",
+              "namespace": "production",
+              "status": "ready",
+              "replicas": 3,
+              "readyReplicas": 3
+            }
+          ],
+          "message": "Applied 3 resources to production namespace"
+        },
+        "usage_notes": "Use substitutions for environment-specific values like BUILD_ID and IMAGE_TAG. Set wait=true for deployments to ensure rollout completes. Use rollout-restart to restart pods without manifest changes."
+      }
     },
     {
       "id": "golden.observability.grafana-api",
@@ -2957,7 +3857,68 @@
         "*"
       ],
       "isIdempotent": false,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "create-dashboard",
+          "title": "Incident Dashboard - INC-2024-001",
+          "dashboardJson": {
+            "title": "Incident Dashboard - INC-2024-001",
+            "tags": [
+              "incident",
+              "auto-generated"
+            ],
+            "panels": [
+              {
+                "id": 1,
+                "title": "Request Rate",
+                "type": "timeseries",
+                "gridPos": {
+                  "x": 0,
+                  "y": 0,
+                  "w": 12,
+                  "h": 8
+                }
+              },
+              {
+                "id": 2,
+                "title": "Error Rate",
+                "type": "timeseries",
+                "gridPos": {
+                  "x": 12,
+                  "y": 0,
+                  "w": 12,
+                  "h": 8
+                }
+              }
+            ]
+          },
+          "folderUid": "incidents",
+          "tags": [
+            "incident",
+            "INC-2024-001"
+          ]
+        },
+        "example_output": {
+          "success": true,
+          "operation": "create-dashboard",
+          "dashboard": {
+            "uid": "inc-2024-001",
+            "id": 42,
+            "title": "Incident Dashboard - INC-2024-001",
+            "url": "/d/inc-2024-001/incident-dashboard-inc-2024-001",
+            "version": 1,
+            "folderUid": "incidents",
+            "folderTitle": "Incidents",
+            "tags": [
+              "incident",
+              "INC-2024-001"
+            ]
+          },
+          "message": "Dashboard created successfully: Incident Dashboard - INC-2024-001"
+        },
+        "usage_notes": "Use service account tokens over API keys for better security. Create snapshots before deleting dashboards for archival. Use folders to organize incident dashboards separately from operational ones."
+      }
     },
     {
       "id": "golden.observability.health-check-probe",
@@ -3067,7 +4028,85 @@
         "*"
       ],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "probeType": "http",
+          "url": "https://api.example.com/health",
+          "expectedStatus": 200,
+          "timeout": 5000
+        },
+        "example_output": {
+          "healthy": true,
+          "probeType": "http",
+          "target": "https://api.example.com/health",
+          "responseTime": 125,
+          "statusCode": 200,
+          "attempts": 1,
+          "checkedAt": "2024-01-15T10:30:00Z"
+        },
+        "usage_notes": "Use for liveness/readiness checks. HTTP probe checks status codes and optional body content. TCP probe validates port connectivity. DNS probe verifies DNS resolution."
+      }
+    },
+    {
+      "id": "golden.observability.mcp-readiness",
+      "type": "CAPABILITY",
+      "description": "Check that the Harmony MCP tool catalog is up and available via the Console API (GET /api/mcp/tools). Use before blueprint generation or agent discovery.",
+      "data_classification": "INTERNAL",
+      "json_schema": {
+        "type": "object",
+        "properties": {
+          "baseUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Console base URL (e.g. http://localhost:5000)"
+          },
+          "timeoutMs": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "description": "Request timeout in milliseconds"
+          }
+        },
+        "required": [
+          "baseUrl"
+        ],
+        "additionalProperties": false,
+        "description": "MCP Readiness check input",
+        "$schema": "https://json-schema.org/draft/2020-12/schema#"
+      },
+      "domain": "observability",
+      "subdomain": "mcp-readiness",
+      "tags": [
+        "observability",
+        "connector",
+        "health",
+        "mcp",
+        "workbench"
+      ],
+      "maintainer": "platform",
+      "requiredScopes": [
+        "observability:read"
+      ],
+      "allowOutbound": [
+        "*"
+      ],
+      "isIdempotent": true,
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "baseUrl": "http://localhost:5000",
+          "timeoutMs": 5000
+        },
+        "example_output": {
+          "available": true,
+          "toolCount": 42,
+          "generatedAt": "2026-02-11T12:00:00.000Z",
+          "responseTimeMs": 120,
+          "checkedAt": "2026-02-11T12:00:01.000Z"
+        },
+        "usage_notes": "Use for MCP hard gate before blueprint-first tests or agent tool discovery. Requires Console to be serving /api/mcp/tools."
+      }
     },
     {
       "id": "golden.operations.runme-runner",
@@ -3139,7 +4178,46 @@
         "*"
       ],
       "isIdempotent": false,
-      "costFactor": "MEDIUM"
+      "costFactor": "MEDIUM",
+      "ai_hints": {
+        "example_input": {
+          "source": "/runbooks/incident-response/redis-failover.md",
+          "sourceType": "file",
+          "cells": [
+            "verify-cluster-health",
+            "promote-replica"
+          ],
+          "env": {
+            "REDIS_HOST": "redis-primary.prod.svc.cluster.local"
+          },
+          "timeout": "10m"
+        },
+        "example_output": {
+          "cells": [
+            {
+              "id": "verify-cluster-health",
+              "name": "Verify Cluster Health",
+              "exitCode": 0,
+              "stdout": "Cluster health: OK\n3 nodes, 1 primary, 2 replicas",
+              "stderr": "",
+              "durationMs": 2340
+            },
+            {
+              "id": "promote-replica",
+              "name": "Promote Replica",
+              "exitCode": 0,
+              "stdout": "Replica redis-replica-1 promoted to primary",
+              "stderr": "",
+              "durationMs": 5120
+            }
+          ],
+          "success": true,
+          "totalDurationMs": 7460,
+          "runbookPath": "/runbooks/incident-response/redis-failover.md",
+          "message": "All 2 cells completed successfully"
+        },
+        "usage_notes": "Use for executing documented operational procedures. Cells are executed sequentially. If specific cells are provided, only those run. Always verify runbook content before execution in production."
+      }
     },
     {
       "id": "golden.reasoners.strategic-planner",
@@ -3370,7 +4448,281 @@
       ],
       "allowOutbound": [],
       "isIdempotent": true,
-      "costFactor": "MEDIUM"
+      "costFactor": "MEDIUM",
+      "ai_hints": {
+        "example_input": {
+          "plan": {
+            "type": "intent",
+            "description": "Evaluate a multi-phase implementation plan for readiness and gaps.",
+            "goals": [
+              "Deterministic execution",
+              "OCS compliance",
+              "Fast feedback via tests"
+            ],
+            "constraints": [
+              "No secrets in plans",
+              "Prefer generators over custom scripts"
+            ]
+          },
+          "projectContext": {
+            "name": "harmony",
+            "domain": "other",
+            "domainExpert": {
+              "role": "Platform Engineer",
+              "concerns": [
+                "Compliance",
+                "Security",
+                "Maintainability"
+              ],
+              "successCriteria": [
+                "All schemas validated",
+                "Tests pass in CI"
+              ]
+            }
+          },
+          "options": {
+            "depth": "standard",
+            "outputFormat": "both",
+            "createCheckpoint": false,
+            "evaluations": {
+              "personas": true,
+              "gapAnalysis": true,
+              "preWorkIdentification": true,
+              "metricsDefinition": true
+            }
+          }
+        },
+        "example_output": {
+          "summary": {
+            "projectName": "harmony",
+            "overallReadiness": "needs-prework",
+            "averageAlignmentScore": 7,
+            "totalGaps": 2,
+            "criticalGaps": 1,
+            "preWorkItems": 2
+          },
+          "personaEvaluations": [
+            {
+              "persona": "Agent (AI Assistant)",
+              "alignmentScore": 7,
+              "gaps": [
+                {
+                  "aspect": "Tool Discovery",
+                  "currentState": "MCP integration not referenced",
+                  "gap": "Agents need deterministic tool naming/discoverability via MCP catalogs",
+                  "mitigation": "Register the capability and ensure tool catalog generation includes it",
+                  "priority": "P2"
+                }
+              ],
+              "missingSkills": []
+            },
+            {
+              "persona": "Developer (Platform Contributor)",
+              "alignmentScore": 7,
+              "gaps": [
+                {
+                  "aspect": "Fast Feedback",
+                  "currentState": "Contract tests not specified",
+                  "gap": "Without TCS-001 tests, schemas and examples can drift",
+                  "mitigation": "Add contract tests validating schemas and aiHints examples",
+                  "priority": "P1"
+                }
+              ],
+              "missingSkills": []
+            },
+            {
+              "persona": "End User (Platform Operator)",
+              "alignmentScore": 6,
+              "gaps": [
+                {
+                  "aspect": "Usability",
+                  "currentState": "Operator runbooks not referenced",
+                  "gap": "Operators need a clear workflow and troubleshooting guidance",
+                  "mitigation": "Add minimal runbooks and link them from UI/capability outputs",
+                  "priority": "P2"
+                }
+              ],
+              "missingSkills": []
+            },
+            {
+              "persona": "Platform Engineering Leadership",
+              "alignmentScore": 6,
+              "gaps": [
+                {
+                  "aspect": "ROI",
+                  "currentState": "Success metrics not referenced",
+                  "gap": "Leadership needs measurable targets to justify adoption",
+                  "mitigation": "Define success metrics per persona and how they will be measured",
+                  "priority": "P2"
+                }
+              ],
+              "missingSkills": []
+            },
+            {
+              "persona": "Domain Expert (Platform Engineer)",
+              "alignmentScore": 8,
+              "gaps": [],
+              "missingSkills": []
+            }
+          ],
+          "gaps": [
+            {
+              "category": "testing",
+              "item": "Contract tests for aiHints examples",
+              "description": "Add TCS-001 contract tests validating exampleInput/exampleOutput against schemas.",
+              "priority": "P1",
+              "blocksPhases": [
+                "Phase 4.1"
+              ],
+              "effort": "low"
+            },
+            {
+              "category": "documentation",
+              "item": "Operator-facing docs/runbooks missing",
+              "description": "No runbooks/docs referenced; add minimal runbooks to reduce operator friction.",
+              "priority": "P2",
+              "blocksPhases": [
+                "Phase 4"
+              ],
+              "effort": "low"
+            }
+          ],
+          "skillsMatrix": {
+            "prioritySkills": [
+              {
+                "skill": "test-driven-development",
+                "reason": "Enforces red-green-refactor and prevents drift",
+                "readBefore": "Phase 1"
+              },
+              {
+                "skill": "open-capability-standard",
+                "reason": "OCS compliance for schemas/security/aiHints",
+                "readBefore": "Phase 1"
+              },
+              {
+                "skill": "agent-specification-standard",
+                "reason": "ASS-001 Reasoner patterns and safety guardrails",
+                "readBefore": "Phase 1"
+              },
+              {
+                "skill": "pattern-catalog-capabilities",
+                "reason": "Reasoner baseline expectations (CPC-001)",
+                "readBefore": "Phase 1"
+              },
+              {
+                "skill": "testing-certification-standard",
+                "reason": "TCS-001 contract verification requirements",
+                "readBefore": "Phase 4.1"
+              }
+            ],
+            "referenceSkills": [
+              {
+                "skill": "strategic-planning-protocol",
+                "phases": [
+                  "Phase 2",
+                  "Phase 3"
+                ]
+              },
+              {
+                "skill": "langgraph-reasoner-patterns",
+                "phases": [
+                  "Phase 2",
+                  "Phase 3"
+                ]
+              },
+              {
+                "skill": "prompt-engineering",
+                "phases": [
+                  "Phase 3.1"
+                ]
+              },
+              {
+                "skill": "golden-observability",
+                "phases": [
+                  "Backlog"
+                ]
+              }
+            ],
+            "missingSkills": []
+          },
+          "preWork": [
+            {
+              "id": "pw-testing-aihints-contract-tests",
+              "title": "Pre-work: Contract tests for aiHints examples",
+              "category": "sample-implementation",
+              "priority": "P1",
+              "description": "Add contract tests validating aiHints examples against input/output schemas.",
+              "deliverable": {
+                "path": "packages/capabilities/src/reasoners/strategic-planner.capability.test.ts",
+                "format": "typescript"
+              },
+              "blocksPhases": [
+                "Phase 4.1"
+              ],
+              "effort": "low"
+            },
+            {
+              "id": "pw-documentation-runbooks",
+              "title": "Pre-work: Operator runbooks",
+              "category": "foundation-document",
+              "priority": "P2",
+              "description": "Create minimal runbooks covering usage, rollback, and verification.",
+              "deliverable": {
+                "path": "runbooks/",
+                "format": "markdown",
+                "sections": [
+                  "Summary",
+                  "Steps",
+                  "Rollback",
+                  "Verification"
+                ]
+              },
+              "blocksPhases": [
+                "Phase 4"
+              ],
+              "effort": "low"
+            }
+          ],
+          "successMetrics": [
+            {
+              "persona": "Agent (AI Assistant)",
+              "metric": "MCP discoverability",
+              "target": "100%",
+              "measurementMethod": "Tool catalog manifest audit (generated vs committed)",
+              "measurementPhase": "Phase 4.2"
+            },
+            {
+              "persona": "Developer (Platform Contributor)",
+              "metric": "Test coverage",
+              "target": ">80%",
+              "measurementMethod": "Vitest coverage report in CI",
+              "measurementPhase": "Phase 4.1"
+            },
+            {
+              "persona": "End User (Platform Operator)",
+              "metric": "Output completeness",
+              "target": "All required sections present",
+              "measurementMethod": "Schema validation + fixture-based integration test",
+              "measurementPhase": "Phase 4.1"
+            },
+            {
+              "persona": "Platform Engineering Leadership",
+              "metric": "OCS compliance",
+              "target": "100%",
+              "measurementMethod": "TCS-001 contract test suite",
+              "measurementPhase": "Phase 4.1"
+            },
+            {
+              "persona": "Domain Expert (Platform Engineer)",
+              "metric": "Domain acceptance",
+              "target": "Meets domain success criteria",
+              "measurementMethod": "Dogfood run + domain review checklist",
+              "measurementPhase": "Phase 4.3"
+            }
+          ]
+        },
+        "usage_notes": "Provide plan as {type:\"file\",path:\"./...\"} for repo-local runs or {type:\"content\"} / {type:\"intent\"} for inline evaluation. Output is JSON and must validate against schemas. Recommended node timeout budget: quick<5s, standard<15s, thorough<30s (implementation-dependent)."
+      }
     },
     {
       "id": "golden.sbom.bomctl",
@@ -3452,7 +4804,26 @@
         "*.gcr.io"
       ],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "merge",
+          "sbomPaths": [
+            "sbom-frontend.json",
+            "sbom-backend.json"
+          ],
+          "outputPath": "sbom-merged.json",
+          "outputFormat": "cyclonedx-json"
+        },
+        "example_output": {
+          "success": true,
+          "operation": "merge",
+          "outputPath": "sbom-merged.json",
+          "componentCount": 245,
+          "message": "Merged 2 SBOMs with 245 total components"
+        },
+        "usage_notes": "Use merge to combine SBOMs from multiple build stages. Use diff to compare SBOMs between releases for dependency changes."
+      }
     },
     {
       "id": "golden.sbom.protobom",
@@ -3531,7 +4902,26 @@
       ],
       "allowOutbound": [],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "convert",
+          "sbomPath": "sbom-spdx.json",
+          "inputFormat": "spdx-2.3-json",
+          "outputFormat": "cyclonedx-1.5-json",
+          "outputPath": "sbom-cdx.json"
+        },
+        "example_output": {
+          "success": true,
+          "operation": "convert",
+          "inputFormat": "spdx-2.3-json",
+          "outputFormat": "cyclonedx-1.5-json",
+          "outputPath": "sbom-cdx.json",
+          "componentCount": 156,
+          "message": "Converted SBOM from SPDX 2.3 to CycloneDX 1.5 (156 components)"
+        },
+        "usage_notes": "Use to convert between SPDX and CycloneDX for tool compatibility. Some metadata may not have direct mappings between formats."
+      }
     },
     {
       "id": "golden.sbom.syft",
@@ -3623,7 +5013,36 @@
         "quay.io"
       ],
       "isIdempotent": true,
-      "costFactor": "MEDIUM"
+      "costFactor": "MEDIUM",
+      "ai_hints": {
+        "example_input": {
+          "sourceType": "image",
+          "source": "alpine:3.18",
+          "format": "cyclonedx-json"
+        },
+        "example_output": {
+          "sbom": "{\"bomFormat\":\"CycloneDX\",\"specVersion\":\"1.4\",...}",
+          "format": "cyclonedx-json",
+          "packageCount": 42,
+          "packages": [
+            {
+              "name": "alpine-baselayout",
+              "version": "3.4.3-r1",
+              "type": "apk",
+              "purl": "pkg:apk/alpine/alpine-baselayout@3.4.3-r1",
+              "licenses": [
+                "GPL-2.0-only"
+              ]
+            }
+          ],
+          "source": {
+            "type": "image",
+            "target": "alpine:3.18"
+          },
+          "scanDuration": 5230
+        },
+        "usage_notes": "Use spdx-json or cyclonedx-json for standard SBOM formats. For container images, use sourceType=image. The SBOM output can be passed to Grype or Bomctl for further processing."
+      }
     },
     {
       "id": "golden.security.checkov",
@@ -3722,7 +5141,37 @@
         "raw.githubusercontent.com"
       ],
       "isIdempotent": true,
-      "costFactor": "MEDIUM"
+      "costFactor": "MEDIUM",
+      "ai_hints": {
+        "example_input": {
+          "operation": "scan",
+          "directory": "deploy/terraform",
+          "framework": "terraform",
+          "softFail": true
+        },
+        "example_output": {
+          "success": true,
+          "operation": "scan",
+          "passed": 45,
+          "failed": 3,
+          "skipped": 2,
+          "failedChecks": [
+            {
+              "checkId": "CKV_AWS_20",
+              "checkName": "Ensure S3 bucket has versioning enabled",
+              "checkResult": "failed",
+              "severity": "medium",
+              "resourceAddress": "aws_s3_bucket.logs",
+              "file": "main.tf",
+              "line": 42
+            }
+          ],
+          "framework": "terraform",
+          "scanDuration": 5200,
+          "message": "Scan completed: 45 passed, 3 failed, 2 skipped"
+        },
+        "usage_notes": "Run before terraform apply to catch misconfigurations. Use skipChecks for known exceptions. Use softFail in CI to report without blocking."
+      }
     },
     {
       "id": "golden.security.clamav-scanner",
@@ -3806,7 +5255,25 @@
         "clamav.net"
       ],
       "isIdempotent": true,
-      "costFactor": "MEDIUM"
+      "costFactor": "MEDIUM",
+      "ai_hints": {
+        "example_input": {
+          "scanType": "data",
+          "data": "SGVsbG8gV29ybGQhIFRoaXMgaXMgYSBjbGVhbiBmaWxlLg==",
+          "dataEncoding": "base64"
+        },
+        "example_output": {
+          "clean": true,
+          "scannedFiles": 1,
+          "scannedBytes": 35,
+          "infectedFiles": 0,
+          "findings": [],
+          "scanDuration": 150,
+          "engineVersion": "0.105.2",
+          "signatureVersion": "26789"
+        },
+        "usage_notes": "Use for scanning uploaded files, downloaded content, or suspicious data. For large file batches, use path scan with recursive option. Consider enabling signature updates for production use."
+      }
     },
     {
       "id": "golden.security.gitleaks",
@@ -3882,7 +5349,37 @@
       ],
       "allowOutbound": [],
       "isIdempotent": true,
-      "costFactor": "MEDIUM"
+      "costFactor": "MEDIUM",
+      "ai_hints": {
+        "example_input": {
+          "operation": "detect",
+          "source": "/path/to/repo",
+          "redact": true
+        },
+        "example_output": {
+          "findings": [
+            {
+              "description": "AWS Access Key",
+              "file": "config.js",
+              "startLine": 42,
+              "endLine": 42,
+              "match": "AKIA***REDACTED***",
+              "secret": "AKIA***REDACTED***",
+              "rule": "aws-access-key",
+              "commit": "abc123",
+              "author": "developer",
+              "email": "dev@example.com",
+              "date": "2024-01-15",
+              "message": "Add config file"
+            }
+          ],
+          "findingsCount": 1,
+          "exitCode": 1,
+          "scanDuration": 2340,
+          "commitsScanned": 150
+        },
+        "usage_notes": "Use \"detect\" to scan entire git history. Use \"protect\" for pre-commit checks (staged files only). Enable redact=true in production to avoid logging secrets."
+      }
     },
     {
       "id": "golden.security.gittuf",
@@ -3935,7 +5432,19 @@
         "*"
       ],
       "isIdempotent": true,
-      "costFactor": "MEDIUM"
+      "costFactor": "MEDIUM",
+      "ai_hints": {
+        "example_input": {
+          "operation": "verify-ref",
+          "repositoryUrl": "https://github.com/gittuf/gittuf",
+          "ref": "main"
+        },
+        "example_output": {
+          "success": true,
+          "message": "Verified"
+        },
+        "usage_notes": "Clone repo and verify RSL/policies. Requires internet access."
+      }
     },
     {
       "id": "golden.security.grype",
@@ -4020,7 +5529,41 @@
         "toolbox-data.anchore.io"
       ],
       "isIdempotent": true,
-      "costFactor": "MEDIUM"
+      "costFactor": "MEDIUM",
+      "ai_hints": {
+        "example_input": {
+          "sourceType": "image",
+          "source": "alpine:3.18",
+          "failOnSeverity": "high"
+        },
+        "example_output": {
+          "vulnerabilities": [
+            {
+              "id": "CVE-2023-12345",
+              "severity": "high",
+              "package": "libssl",
+              "version": "1.1.1k",
+              "fixedIn": "1.1.1l",
+              "description": "Buffer overflow in OpenSSL"
+            }
+          ],
+          "summary": {
+            "critical": 0,
+            "high": 1,
+            "medium": 3,
+            "low": 5,
+            "negligible": 2,
+            "total": 11
+          },
+          "source": {
+            "type": "image",
+            "target": "alpine:3.18"
+          },
+          "scanDuration": 4520,
+          "passed": false
+        },
+        "usage_notes": "Use with Syft-generated SBOMs for faster scans. Set failOnSeverity to enforce security gates in CI/CD. Use onlyFixed=true to focus on actionable vulnerabilities."
+      }
     },
     {
       "id": "golden.security.guac",
@@ -4101,7 +5644,32 @@
         "*.guac.dev"
       ],
       "isIdempotent": true,
-      "costFactor": "MEDIUM"
+      "costFactor": "MEDIUM",
+      "ai_hints": {
+        "example_input": {
+          "operation": "query-vulns",
+          "purl": "pkg:npm/@harmony/worker@2.0.0"
+        },
+        "example_output": {
+          "success": true,
+          "operation": "query-vulns",
+          "vulnerabilities": [
+            {
+              "id": "CVE-2024-1234",
+              "packages": [
+                {
+                  "purl": "pkg:npm/lodash@4.17.20",
+                  "name": "lodash",
+                  "version": "4.17.20"
+                }
+              ],
+              "severity": "high"
+            }
+          ],
+          "message": "Found 1 vulnerability in dependency graph"
+        },
+        "usage_notes": "Ingest SBOMs and attestations to build the graph. Query for vulnerabilities and dependency paths to understand supply chain risk."
+      }
     },
     {
       "id": "golden.security.minder",
@@ -4176,7 +5744,37 @@
         "*.minder.dev"
       ],
       "isIdempotent": false,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "evaluate",
+          "repoOwner": "harmony-org",
+          "repoName": "harmony-platform",
+          "profileName": "security-baseline"
+        },
+        "example_output": {
+          "success": true,
+          "operation": "evaluate",
+          "profileStatus": {
+            "name": "security-baseline",
+            "status": "failing",
+            "rulesEvaluated": 15,
+            "rulesPassing": 12,
+            "rulesFailing": 3
+          },
+          "violations": [
+            {
+              "rule": "branch_protection",
+              "severity": "high",
+              "description": "Main branch lacks required reviews",
+              "remediation": "Enable branch protection with 2 required reviewers",
+              "autoRemediable": true
+            }
+          ],
+          "message": "Evaluation complete: 12/15 rules passing"
+        },
+        "usage_notes": "Enroll repositories to monitor security posture. Apply profiles to enforce policies like branch protection, secret scanning, and dependency updates."
+      }
     },
     {
       "id": "golden.security.model-signing",
@@ -4246,7 +5844,19 @@
         "*"
       ],
       "isIdempotent": false,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "sign-model",
+          "modelPath": "/app/model.pt"
+        },
+        "example_output": {
+          "success": true,
+          "signaturePath": "/app/model.pt.sig",
+          "message": "Signed successfully"
+        },
+        "usage_notes": "Signs binary blobs using Cosign. Supports OIDC identity verification."
+      }
     },
     {
       "id": "golden.security.openvex",
@@ -4367,7 +5977,34 @@
       ],
       "allowOutbound": [],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "create",
+          "author": "security-team@example.com",
+          "role": "Security Engineer",
+          "statements": [
+            {
+              "vulnerability": "CVE-2024-1234",
+              "status": "not_affected",
+              "justification": "vulnerable_code_not_present",
+              "impactStatement": "The vulnerable function is not used in our codebase",
+              "products": [
+                "pkg:npm/@harmony/worker@2.0.0"
+              ]
+            }
+          ],
+          "outputPath": "security/vex.json"
+        },
+        "example_output": {
+          "success": true,
+          "operation": "create",
+          "outputPath": "security/vex.json",
+          "statementCount": 1,
+          "message": "Created VEX document with 1 statement"
+        },
+        "usage_notes": "Use to document false positives and vulnerability exceptions. Apply VEX to SBOMs to filter known non-issues from vulnerability reports."
+      }
     },
     {
       "id": "golden.security.osv-scanner",
@@ -4452,7 +6089,40 @@
         "osv-vulnerabilities.storage.googleapis.com"
       ],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "sourceType": "lockfile",
+          "source": "/path/to/package-lock.json",
+          "recursive": false
+        },
+        "example_output": {
+          "vulnerabilities": [
+            {
+              "id": "GHSA-1234-5678-9abc",
+              "aliases": [
+                "CVE-2023-12345"
+              ],
+              "summary": "Prototype pollution in lodash",
+              "severity": "high",
+              "package": "lodash",
+              "version": "4.17.20",
+              "ecosystem": "npm",
+              "fixedVersions": [
+                "4.17.21"
+              ]
+            }
+          ],
+          "packagesScanned": 150,
+          "vulnerablePackages": 3,
+          "source": {
+            "type": "lockfile",
+            "target": "/path/to/package-lock.json"
+          },
+          "scanDuration": 1230
+        },
+        "usage_notes": "OSV Scanner supports all major ecosystems. Use recursive=true to scan monorepos. SARIF output integrates with GitHub Security tab."
+      }
     },
     {
       "id": "golden.security.package-analysis",
@@ -4505,7 +6175,21 @@
         "*"
       ],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "target": "./package-lock.json"
+        },
+        "example_output": {
+          "verdict": "vulnerable",
+          "level": "critical",
+          "behavior": [
+            "GHSA-1234-5678"
+          ],
+          "rawResults": {}
+        },
+        "usage_notes": "Scans lockfiles or directories for known vulnerabilities using OSV database."
+      }
     },
     {
       "id": "golden.security.scorecard",
@@ -4566,7 +6250,42 @@
         "api.securityscorecards.dev"
       ],
       "isIdempotent": true,
-      "costFactor": "MEDIUM"
+      "costFactor": "MEDIUM",
+      "ai_hints": {
+        "example_input": {
+          "repository": "ossf/scorecard",
+          "format": "json"
+        },
+        "example_output": {
+          "repository": "github.com/ossf/scorecard",
+          "commit": "abc123def456",
+          "score": 8.5,
+          "checks": [
+            {
+              "name": "Branch-Protection",
+              "score": 9,
+              "reason": "branch protection is enabled",
+              "documentation": {
+                "short": "Determines if the default branch is protected",
+                "url": "https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection"
+              }
+            },
+            {
+              "name": "Code-Review",
+              "score": 10,
+              "reason": "all changesets reviewed"
+            },
+            {
+              "name": "Dependency-Update-Tool",
+              "score": 10,
+              "reason": "update tool detected"
+            }
+          ],
+          "date": "2024-01-15T10:30:00Z",
+          "version": "v4.13.1"
+        },
+        "usage_notes": "Use for evaluating third-party dependencies or your own repositories. Higher scores indicate better security practices. Common checks: Branch-Protection, Code-Review, CII-Best-Practices, Dangerous-Workflow, Dependency-Update-Tool, Maintained, Pinned-Dependencies, SAST, Security-Policy, Signed-Releases, Token-Permissions, Vulnerabilities."
+      }
     },
     {
       "id": "golden.security.security-insights",
@@ -4690,7 +6409,33 @@
       ],
       "allowOutbound": [],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "generate",
+          "projectName": "harmony-platform",
+          "projectUrl": "https://github.com/harmony-org/harmony",
+          "status": "active",
+          "securityContacts": [
+            {
+              "type": "email",
+              "value": "security@harmony.dev"
+            }
+          ],
+          "vulnerabilityReporting": {
+            "acceptsReports": true,
+            "securityPolicy": "https://github.com/harmony-org/harmony/security/policy",
+            "bugBounty": false
+          }
+        },
+        "example_output": {
+          "success": true,
+          "operation": "generate",
+          "generated": "schema-version: 1.0.0\nproject-lifecycle:\n  status: active\n...",
+          "message": "Generated SECURITY-INSIGHTS.yml"
+        },
+        "usage_notes": "Generate SECURITY-INSIGHTS.yml to document your project security posture. Parse existing files to extract security metadata."
+      }
     },
     {
       "id": "golden.security.semgrep-scanner",
@@ -4785,7 +6530,48 @@
         "semgrep.dev"
       ],
       "isIdempotent": true,
-      "costFactor": "MEDIUM"
+      "costFactor": "MEDIUM",
+      "ai_hints": {
+        "example_input": {
+          "target": "/app/src",
+          "config": "p/security-audit",
+          "severity": [
+            "ERROR",
+            "WARNING"
+          ]
+        },
+        "example_output": {
+          "target": "/app/src",
+          "config": "p/security-audit",
+          "findings": [
+            {
+              "ruleId": "javascript.express.security.audit.xss.mustache-escape",
+              "path": "/app/src/views/user.js",
+              "startLine": 42,
+              "endLine": 42,
+              "message": "Potential XSS vulnerability: user input not escaped",
+              "severity": "WARNING",
+              "category": "security",
+              "cwe": [
+                "CWE-79"
+              ],
+              "owasp": [
+                "A03:2021 - Injection"
+              ]
+            }
+          ],
+          "summary": {
+            "error": 0,
+            "warning": 1,
+            "info": 2,
+            "total": 3
+          },
+          "filesScanned": 45,
+          "scanDuration": 3200,
+          "semgrepVersion": "1.50.0"
+        },
+        "usage_notes": "Use p/security-audit for comprehensive security scan. Use p/owasp-top-ten for OWASP coverage. Use auto for automatic detection. Filter by severity to focus on critical issues."
+      }
     },
     {
       "id": "golden.security.sigstore",
@@ -4887,7 +6673,26 @@
         "*.sigstore.dev"
       ],
       "isIdempotent": false,
-      "costFactor": "MEDIUM"
+      "costFactor": "MEDIUM",
+      "ai_hints": {
+        "example_input": {
+          "operation": "sign",
+          "artifactPath": "dist/harmony-worker-v2.0.0.tar.gz",
+          "outputFormat": "bundle"
+        },
+        "example_output": {
+          "success": true,
+          "operation": "sign",
+          "artifactDigest": "sha256:abc123def456...",
+          "rekorLogId": "c0d23d6ad406973f9559f3ba2d1ca01f84147d8ffc5b8445c224f98b9591801d",
+          "rekorLogIndex": 12345678,
+          "signedTimestamp": "2024-01-15T10:30:00Z",
+          "issuer": "https://oauth2.sigstore.dev/auth",
+          "subject": "build@harmony-platform.iam.gserviceaccount.com",
+          "message": "Artifact signed successfully, entry logged to Rekor"
+        },
+        "usage_notes": "Use for keyless signing in CI/CD pipelines. Requires OIDC identity token from GitHub Actions, GitLab CI, or similar. Signatures are logged to Rekor for transparency."
+      }
     },
     {
       "id": "golden.security.slsa-verifier",
@@ -4985,7 +6790,27 @@
         "registry.npmjs.org"
       ],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "verify-image",
+          "imageRef": "ghcr.io/org/harmony-worker:v2.0.0",
+          "sourceUri": "github.com/org/harmony",
+          "minSlsaLevel": "3"
+        },
+        "example_output": {
+          "success": true,
+          "operation": "verify-image",
+          "verified": true,
+          "slsaLevel": "3",
+          "builderID": "https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@refs/tags/v1.9.0",
+          "sourceUri": "github.com/org/harmony",
+          "sourceDigest": "abc123def456",
+          "buildTimestamp": "2024-01-15T10:30:00Z",
+          "message": "SLSA verification passed at level 3"
+        },
+        "usage_notes": "Use to verify provenance before deploying artifacts. Supports GitHub Actions, Google Cloud Build, and other SLSA-compliant builders."
+      }
     },
     {
       "id": "golden.security.trivy-scanner",
@@ -5094,7 +6919,41 @@
         "*.githubusercontent.com"
       ],
       "isIdempotent": true,
-      "costFactor": "MEDIUM"
+      "costFactor": "MEDIUM",
+      "ai_hints": {
+        "example_input": {
+          "target": "alpine:3.18",
+          "scanType": "image",
+          "severities": [
+            "CRITICAL",
+            "HIGH"
+          ]
+        },
+        "example_output": {
+          "target": "alpine:3.18",
+          "scanType": "image",
+          "vulnerabilities": [
+            {
+              "vulnerabilityId": "CVE-2023-12345",
+              "pkgName": "libcrypto3",
+              "installedVersion": "3.0.8-r0",
+              "fixedVersion": "3.0.9-r0",
+              "severity": "HIGH",
+              "title": "OpenSSL vulnerability"
+            }
+          ],
+          "summary": {
+            "critical": 0,
+            "high": 1,
+            "medium": 2,
+            "low": 5,
+            "unknown": 0
+          },
+          "scanDuration": 5200,
+          "trivyVersion": "0.48.0"
+        },
+        "usage_notes": "Use for CI/CD security gates. image scan for container images, filesystem for local code, config for IaC misconfigurations. Set severities filter to focus on critical issues."
+      }
     },
     {
       "id": "golden.security.tuf-repository",
@@ -5147,7 +7006,24 @@
       ],
       "allowOutbound": [],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "init-repo",
+          "repoPath": "/tmp/repo"
+        },
+        "example_output": {
+          "success": true,
+          "message": "Initialized TUF repository",
+          "metadataUpdated": [
+            "root.json",
+            "targets.json",
+            "snapshot.json",
+            "timestamp.json"
+          ]
+        },
+        "usage_notes": "Manages TUF metadata. Requires python-tuf environment."
+      }
     },
     {
       "id": "golden.temporal.version-manager",
@@ -5213,7 +7089,21 @@
         "*.tmprl.cloud"
       ],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "registerBuildAsDefault",
+          "buildId": "v2.0.0",
+          "taskQueue": "golden-tools"
+        },
+        "example_output": {
+          "success": true,
+          "buildId": "v2.0.0",
+          "operation": "registerBuildAsDefault",
+          "message": "Build ID v2.0.0 registered as default for task queue golden-tools"
+        },
+        "usage_notes": "Use registerBuildAsDefault after deploying new workers. Use waitForDrain before decommissioning old workers to ensure zero interrupted workflows. Poll interval defaults to 10 seconds."
+      }
     },
     {
       "id": "golden.traffic.canary-analyzer",
@@ -5315,7 +7205,53 @@
         "*.prometheus.io"
       ],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "analyze",
+          "baselineVersion": "v1.9.0",
+          "canaryVersion": "v2.0.0",
+          "prometheusUrl": "http://prometheus:9090",
+          "analysisWindowSeconds": 600,
+          "errorRateThreshold": 0.05,
+          "metrics": [
+            "error_rate",
+            "latency_p99"
+          ]
+        },
+        "example_output": {
+          "decision": "PROMOTE",
+          "baselineVersion": "v1.9.0",
+          "canaryVersion": "v2.0.0",
+          "baselineMetrics": {
+            "error_rate": 0.01,
+            "latency_p99": 150
+          },
+          "canaryMetrics": {
+            "error_rate": 0.012,
+            "latency_p99": 145
+          },
+          "deltas": {
+            "error_rate": 0.002,
+            "latency_p99": -5
+          },
+          "metricResults": [
+            {
+              "metric": "error_rate",
+              "baselineValue": 0.01,
+              "canaryValue": 0.012,
+              "delta": 0.002,
+              "deltaPercent": 20,
+              "threshold": 0.05,
+              "passed": true
+            }
+          ],
+          "reason": "Canary error rate (1.2%) within threshold (5%). Latency improved by 3%.",
+          "analysisWindowSeconds": 600,
+          "analyzedAt": "2024-01-15T10:30:00Z"
+        },
+        "usage_notes": "Use during progressive rollout to determine if canary should be promoted. Requires Prometheus with GOS-001 compliant metrics. Set appropriate thresholds for your SLOs."
+      }
     },
     {
       "id": "golden.traffic.mesh-router",
@@ -5441,7 +7377,44 @@
         "kubernetes.default.svc"
       ],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "set-weights",
+          "service": "harmony-mcp",
+          "namespace": "production",
+          "meshType": "istio",
+          "weights": {
+            "stable": 90,
+            "canary": 10
+          }
+        },
+        "example_output": {
+          "success": true,
+          "operation": "set-weights",
+          "service": "harmony-mcp",
+          "namespace": "production",
+          "meshType": "istio",
+          "currentWeights": {
+            "stable": 90,
+            "canary": 10
+          },
+          "routes": [
+            {
+              "subset": "stable",
+              "weight": 90,
+              "endpoints": 3
+            },
+            {
+              "subset": "canary",
+              "weight": 10,
+              "endpoints": 1
+            }
+          ],
+          "message": "Updated traffic weights: 90% stable, 10% canary"
+        },
+        "usage_notes": "Use for progressive rollout - gradually increase canary weight. Header-based routing enables testing specific versions. Reset to 100% stable after promotion or rollback."
+      }
     },
     {
       "id": "golden.transformers.incident-timeline",
@@ -5524,7 +7497,30 @@
       "requiredScopes": [],
       "allowOutbound": [],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "title": "Incident Timeline",
+          "events": [
+            {
+              "timestamp": "2023-10-27T10:00:00Z",
+              "source": "PagerDuty",
+              "message": "Alert triggered",
+              "severity": "CRITICAL"
+            },
+            {
+              "timestamp": "2023-10-27T10:05:00Z",
+              "source": "Slack",
+              "message": "Acked by on-call",
+              "severity": "INFO"
+            }
+          ],
+          "format": "markdown"
+        },
+        "example_output": {
+          "timeline": "# Incident Timeline..."
+        }
+      }
     },
     {
       "id": "golden.utilities.compression",
@@ -5601,7 +7597,25 @@
       "requiredScopes": [],
       "allowOutbound": [],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "compress",
+          "format": "gzip",
+          "data": "Hello, World! This is some text to compress.",
+          "inputEncoding": "utf8",
+          "outputEncoding": "base64"
+        },
+        "example_output": {
+          "data": "H4sIAAAAAAAAA8tIzcnJVyjPL8pJUeTlAgBP7xT8EwAAAA==",
+          "format": "gzip",
+          "operation": "compress",
+          "inputSize": 45,
+          "outputSize": 33,
+          "compressionRatio": 0.73
+        },
+        "usage_notes": "Use gzip for general-purpose compression with wide compatibility. Use brotli for web content (better ratio). Use zstd for high-performance scenarios. Compression level affects speed vs size tradeoff."
+      }
     },
     {
       "id": "golden.utilities.diff-generator",
@@ -5685,7 +7699,28 @@
       ],
       "allowOutbound": [],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "diff",
+          "originalContent": "Hello World\nLine 2\nLine 3",
+          "modifiedContent": "Hello Universe\nLine 2\nLine 3\nLine 4",
+          "format": "unified",
+          "fileName": "example.txt"
+        },
+        "example_output": {
+          "success": true,
+          "operation": "diff",
+          "diff": "--- a/example.txt\n+++ b/example.txt\n@@ -1,3 +1,4 @@\n-Hello World\n+Hello Universe\n Line 2\n Line 3\n+Line 4",
+          "stats": {
+            "linesAdded": 2,
+            "linesRemoved": 1,
+            "hunks": 1
+          },
+          "message": "Generated diff: +2 -1 lines in 1 hunk"
+        },
+        "usage_notes": "Use for code review summaries, change detection, and patch generation. JSON format is useful for programmatic analysis of changes."
+      }
     },
     {
       "id": "golden.utilities.digital-signing",
@@ -5764,7 +7799,21 @@
       ],
       "allowOutbound": [],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "sign",
+          "data": "SGVsbG8gV29ybGQh",
+          "algorithm": "RSA-SHA256",
+          "outputFormat": "base64"
+        },
+        "example_output": {
+          "operation": "sign",
+          "signature": "dGVzdC1zaWduYXR1cmU=",
+          "algorithm": "RSA-SHA256"
+        },
+        "usage_notes": "Use RSA-SHA256 for compatibility, Ed25519 for performance. Provide private key for signing, public key for verification. Key generation creates ephemeral keys."
+      }
     },
     {
       "id": "golden.utilities.encoding",
@@ -5819,7 +7868,20 @@
       "requiredScopes": [],
       "allowOutbound": [],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "base64Encode",
+          "data": "Hello, World!"
+        },
+        "example_output": {
+          "result": "SGVsbG8sIFdvcmxkIQ==",
+          "operation": "base64Encode",
+          "inputLength": 13,
+          "outputLength": 20
+        },
+        "usage_notes": "Use base64Encode/Decode for binary data. Use urlEncode for query parameters. Use htmlEncode for user input in HTML. URL-safe Base64 replaces +/ with -_."
+      }
     },
     {
       "id": "golden.utilities.hashing",
@@ -5893,7 +7955,22 @@
       "requiredScopes": [],
       "allowOutbound": [],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "algorithm": "sha256",
+          "data": "Hello, World!",
+          "outputEncoding": "hex"
+        },
+        "example_output": {
+          "hash": "dffd6021bb2bd5b0af676290809ec3a53191dd81c7f70a4b28688a362182986f",
+          "algorithm": "sha256",
+          "encoding": "hex",
+          "byteLength": 32,
+          "isHmac": false
+        },
+        "usage_notes": "Use SHA-256 or SHA-3 for security-sensitive applications. MD5 and SHA-1 are provided for legacy compatibility but should not be used for security purposes. BLAKE2 offers high performance with strong security."
+      }
     },
     {
       "id": "golden.utilities.json-yaml-transform",
@@ -5963,7 +8040,26 @@
       "requiredScopes": [],
       "allowOutbound": [],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "jq-query",
+          "data": "{\"users\": [{\"name\": \"Alice\", \"age\": 30}, {\"name\": \"Bob\", \"age\": 25}]}",
+          "query": ".users[] | select(.age > 26) | .name",
+          "deep": true,
+          "indent": 2,
+          "sortKeys": false
+        },
+        "example_output": {
+          "data": "\"Alice\"",
+          "inputFormat": "json",
+          "outputFormat": "values",
+          "queryResults": [
+            "Alice"
+          ]
+        },
+        "usage_notes": "Use jq-query for extracting and transforming data using jq syntax. Use merge for combining configuration files. Validate to check syntax before processing."
+      }
     },
     {
       "id": "golden.utilities.template-renderer",
@@ -6049,7 +8145,25 @@
       ],
       "allowOutbound": [],
       "isIdempotent": true,
-      "costFactor": "LOW"
+      "costFactor": "LOW",
+      "ai_hints": {
+        "example_input": {
+          "operation": "render",
+          "template": "Hello {{name}}! You have {{count}} notifications.",
+          "data": {
+            "name": "Alice",
+            "count": 5
+          },
+          "engine": "handlebars"
+        },
+        "example_output": {
+          "success": true,
+          "operation": "render",
+          "rendered": "Hello Alice! You have 5 notifications.",
+          "message": "Template rendered successfully"
+        },
+        "usage_notes": "Use for generating config files, email templates, and dynamic content. Handlebars supports helpers and partials for complex templates."
+      }
     },
     {
       "id": "workflows.echo",

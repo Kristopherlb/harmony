@@ -61,6 +61,7 @@ export const jsonYamlTransformCapability: Capability<
 > = {
   metadata: {
     id: 'golden.utilities.json-yaml-transform',
+    domain: 'utilities',
     version: '1.0.0',
     name: 'jsonYamlTransform',
     description:

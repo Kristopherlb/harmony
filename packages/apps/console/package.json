@@ -14,6 +14,10 @@
     "db:migrate": "drizzle-kit migrate",
     "test": "vitest run",
     "test:client": "vitest run --config vitest.client.config.ts",
+    "test:client:workbench": "vitest run --config vitest.client.config.ts client/src/features/workbench/__tests__ client/src/components/__tests__/workbench-onboarding.test.tsx client/src/lib/workbench-telemetry.test.ts",
+    "test:server:approval": "vitest run server/audit/approval-log.test.ts server/routes.test.ts server/routes.postgres.int.test.ts",
+    "test:server:agent-fast": "vitest run server/services/intent-router.test.ts server/services/openai-agent-service.test.ts server/services/openai-agent-service.evals.test.ts server/services/openai-agent-service.otel.test.ts server/agent/prompts/blueprint-generation.test.ts server/agent/services/harmony-mcp-tool-service.test.ts",
+    "test:evals": "vitest run --config vitest.evals.config.ts",
     "test:architecture": "vitest run server/architecture.test.ts",
     "mock:jira": "tsx mock/jira-mock-server.ts"
   },
@@ -84,6 +88,7 @@
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
     "pg": "^8.16.3",
+    "prom-client": "^15.1.3",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",

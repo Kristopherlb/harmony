@@ -73,6 +73,7 @@ export const flagdSyncCapability: Capability<
 > = {
   metadata: {
     id: 'golden.flags.flagd-sync',
+    domain: 'flags',
     version: '1.0.0',
     name: 'flagdSync',
     description:

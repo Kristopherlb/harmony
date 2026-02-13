@@ -93,6 +93,7 @@ export const meshRouterCapability: Capability<
 > = {
   metadata: {
     id: 'golden.traffic.mesh-router',
+    domain: 'traffic',
     version: '1.0.0',
     name: 'meshRouter',
     description:

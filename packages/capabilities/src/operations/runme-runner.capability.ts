@@ -68,6 +68,7 @@ export const runmeRunnerCapability: Capability<
 > = {
     metadata: {
         id: 'golden.operations.runme-runner',
+        domain: 'operations',
         version: '1.0.0',
         name: 'runmeRunner',
         description:

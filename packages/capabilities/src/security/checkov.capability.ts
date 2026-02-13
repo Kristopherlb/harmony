@@ -98,6 +98,7 @@ export const checkovCapability: Capability<
 > = {
     metadata: {
         id: 'golden.security.checkov',
+        domain: 'security',
         version: '1.0.0',
         name: 'checkov',
         description:

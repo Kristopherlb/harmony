@@ -80,11 +80,12 @@ export const k8sApplyCapability: Capability<
 > = {
   metadata: {
     id: 'golden.k8s.apply',
+    domain: 'k8s',
     version: '1.0.0',
     name: 'k8sApply',
     description:
       'Apply Kubernetes manifests with variable substitution. Supports apply, delete, rollout-restart, and status operations for deployment management.',
-    tags: ['commander', 'kubernetes', 'deployment', 'infrastructure'],
+    tags: ['commander', 'k8s', 'kubernetes', 'deployment', 'infrastructure'],
     maintainer: 'platform',
   },
   schemas: {

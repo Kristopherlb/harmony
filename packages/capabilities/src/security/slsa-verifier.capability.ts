@@ -79,6 +79,7 @@ export const slsaVerifierCapability: Capability<
 > = {
   metadata: {
     id: 'golden.security.slsa-verifier',
+    domain: 'security',
     version: '1.0.0',
     name: 'slsaVerifier',
     description:

@@ -741,4 +741,91 @@ describe("API Routes", () => {
       }
     });
   });
+
+  describe("GET/POST /api/workbench/approvals/log (Phase 4.1.5)", () => {
+    it("GET returns entries array", async () => {
+      const response = await api().get("/api/workbench/approvals/log").expect(200);
+      expect(response.body).toHaveProperty("entries");
+      expect(Array.isArray(response.body.entries)).toBe(true);
+    });
+
+    it("POST records approval and returns 201", async () => {
+      const response = await api()
+        .post("/api/workbench/approvals/log")
+        .send({ approverId: "test-user", approvedToolIds: ["tool.restricted"], context: { draftTitle: "Test" } })
+        .expect(201);
+      expect(response.body).toHaveProperty("id");
+      expect(response.body.approverId).toBe("test-user");
+      expect(response.body.approvedToolIds).toEqual(["tool.restricted"]);
+      expect(response.body).toHaveProperty("timestamp");
+    });
+
+    it("POST 400 when approvedToolIds empty", async () => {
+      await api()
+        .post("/api/workbench/approvals/log")
+        .send({ approverId: "u", approvedToolIds: [] })
+        .expect(400);
+    });
+
+    it("POST 400 when approval context has no workflowId, incidentId, or draftTitle", async () => {
+      const response = await api()
+        .post("/api/workbench/approvals/log")
+        .send({
+          approverId: "u",
+          approvedToolIds: ["tool.restricted"],
+          context: { contextType: "draft" },
+        })
+        .expect(400);
+
+      expect(response.body).toHaveProperty("error", "APPROVAL_CONTEXT_REQUIRED");
+    });
+
+    it("POST accepts context when incidentId is provided", async () => {
+      const response = await api()
+        .post("/api/workbench/approvals/log")
+        .send({
+          approverId: "u",
+          approvedToolIds: ["tool.restricted"],
+          context: { incidentId: "incident-123", contextType: "incident" },
+        })
+        .expect(201);
+
+      expect(response.body.context).toMatchObject({ incidentId: "incident-123", contextType: "incident" });
+    });
+  });
+
+  describe("Workbench telemetry (Phase 4.5)", () => {
+    it("accepts a workbench analytics event", async () => {
+      await api()
+        .post("/api/workbench/telemetry")
+        .send({
+          event: "workbench.session_started",
+          sessionId: "session-1",
+          timestamp: new Date("2026-02-02T00:00:00.000Z").toISOString(),
+        })
+        .expect(204);
+    });
+
+    it("exposes recorded telemetry as Prometheus metrics", async () => {
+      await api()
+        .post("/api/workbench/telemetry")
+        .send({
+          event: "workbench.draft_accepted",
+          sessionId: "session-1",
+          draftId: "draft-1",
+          timestamp: new Date("2026-02-02T00:00:10.000Z").toISOString(),
+          durationMs: 10_000,
+        })
+        .expect(204);
+
+      const res = await api().get("/api/workbench/metrics").expect(200);
+      expect(res.text).toContain("golden_contract_workbench_events_total");
+      expect(res.text).toContain('event="workbench.draft_accepted"');
+      expect(res.text).toContain("golden_contract_workbench_event_duration_seconds_bucket");
+    });
+
+    it("returns 400 for invalid telemetry payload", async () => {
+      await api().post("/api/workbench/telemetry").send({}).expect(400);
+    });
+  });
 });

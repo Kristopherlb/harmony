@@ -42,6 +42,8 @@ async function main() {
   if (!raw) throw Object.assign(new Error('Missing INPUT_JSON'), { status: 500 });
   const input = JSON.parse(raw);
 
+  const secretsDir = String(process.env.SECRETS_DIR || '/run/secrets').replace(/\/+$/, '');
+
   const method = String(input.method ?? 'GET').toUpperCase();
   const host = input.host;
   const path = input.path;
@@ -51,13 +53,13 @@ async function main() {
   const headers = { Accept: 'application/json' };
 
   if (authMode === 'basic') {
-    const email = readSecret('/run/secrets/jira_email');
-    const token = readSecret('/run/secrets/jira_api_token');
+    const email = readSecret(secretsDir + '/jira_email');
+    const token = readSecret(secretsDir + '/jira_api_token');
     if (!email || !token) throw Object.assign(new Error('Missing Jira Basic Auth secrets'), { status: 401 });
     const b64 = Buffer.from(email + ':' + token, 'utf8').toString('base64');
     headers.Authorization = 'Basic ' + b64;
   } else if (authMode === 'oauth2') {
-    const accessToken = readSecret('/run/secrets/jira_access_token');
+    const accessToken = readSecret(secretsDir + '/jira_access_token');
     if (!accessToken) throw Object.assign(new Error('Missing Jira OAuth2 access token'), { status: 401 });
     headers.Authorization = 'Bearer ' + accessToken;
   } else {

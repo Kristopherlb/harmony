@@ -75,11 +75,12 @@ export const slackConnectorCapability: Capability<
 > = {
   metadata: {
     id: 'golden.connectors.slack',
+    domain: 'connectors',
     version: '1.0.0',
     name: 'slackConnector',
     description:
       'Slack API integration for sending messages, managing reactions, and channel operations. Supports Block Kit for rich messages.',
-    tags: ['connector', 'slack', 'messaging'],
+    tags: ['connector', 'connectors', 'slack', 'messaging'],
     maintainer: 'platform',
   },
   schemas: {

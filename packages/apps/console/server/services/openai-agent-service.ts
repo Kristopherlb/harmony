@@ -2,11 +2,27 @@ import { convertToModelMessages, createUIMessageStream, streamText, tool, type U
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import type { McpTool } from "@golden/mcp-server";
-import core from "@golden/core";
+import * as core from "@golden/core";
 import type { GoldenContext, LlmBudgetPolicy } from "@golden/core";
 import type { ToolCatalogTool } from "../agent/services/harmony-mcp-tool-service";
 import { deriveDomainParts } from "../../client/src/features/capabilities/tool-taxonomy";
 import { randomUUID } from "node:crypto";
+import { getDefaultPricing, getLlmCostManager } from "./llm-cost-tracker";
+import { unwrapCjsNamespace } from "../lib/cjs-interop";
+import { classifyChatIntent } from "./intent-router";
+import {
+  buildBlueprintPlanningPrompt,
+  buildReasoningSteeragePrompt,
+  buildBlueprintSummarizerPrompt,
+  type TemplateSummary,
+} from "../agent/prompts/blueprint-generation";
+import {
+  getExecutionStatus,
+  cancelExecution,
+  isStatusQuery,
+  isCancelQuery,
+} from "../agent/execution-monitor";
+import { selectGoldenPathRecipe } from "./golden-path-recipes";
 
 // Define the schema for the workflow blueprint
 // This MUST match the frontend BlueprintDraft type
@@ -31,8 +47,9 @@ const blueprintZodSchema = z.object({
   ),
 });
 
-const defaultPricing = core.getDefaultLlmPricing();
-const llmCostManager = core.createInMemoryLlmCostManager({ pricing: defaultPricing });
+const defaultPricing = getDefaultPricing();
+const llmCostManager = getLlmCostManager();
+const corePkg = unwrapCjsNamespace<typeof core>(core as any);
 
 function createConsoleGoldenContext(input: { initiatorId: string }): GoldenContext {
   return {
@@ -79,7 +96,7 @@ function preflightModelSelection(input: {
   if (!budget) return { model: input.model, estimatedUsd: 0 };
 
   const inputTokens = estimateTokensFromUnknown(input.system) + estimateTokensFromUnknown(input.messages);
-  const first = core.calculateLlmCostUsd({
+  const first = (corePkg as any).calculateLlmCostUsd({
     pricing: defaultPricing,
     provider: "openai",
     model: input.model,
@@ -91,7 +108,7 @@ function preflightModelSelection(input: {
 
   // Fallback: cheaper OpenAI model (local/free provider integration is out of scope for this service).
   const fallbackModel = "gpt-4o-mini";
-  const second = core.calculateLlmCostUsd({
+  const second = (corePkg as any).calculateLlmCostUsd({
     pricing: defaultPricing,
     provider: "openai",
     model: fallbackModel,
@@ -101,13 +118,13 @@ function preflightModelSelection(input: {
 
   if (second <= budget.hardLimitUsd) return { model: fallbackModel, estimatedUsd: second };
 
-  throw new core.BudgetExceededError(
+  throw new (corePkg as any).BudgetExceededError(
     `Estimated LLM cost exceeds budget for ${input.budgetKey}. ` +
       `budget=$${budget.hardLimitUsd.toFixed(4)}, est=$${second.toFixed(4)} (fallback=${fallbackModel})`,
   );
 }
 
-function summarizeToolsForPrompt(tools: Array<McpTool & Partial<ToolCatalogTool>>, limit: number = 50): string {
+export function summarizeToolsForPrompt(tools: Array<McpTool & Partial<ToolCatalogTool>>, limit: number = 50): string {
   const sorted = [...tools].sort((a, b) => a.name.localeCompare(b.name)).slice(0, limit);
   return sorted
     .map((t) => {
@@ -124,9 +141,112 @@ function summarizeToolsForPrompt(tools: Array<McpTool & Partial<ToolCatalogTool>
       const tags = Array.isArray((t as any).tags) && (t as any).tags.length > 0
         ? ` tags:${(t as any).tags.slice(0, 6).join(",")}`
         : "";
-      return `- ${t.name}${cls} (${domain}${cost}${tags}): ${t.description}${schemaHint}`;
+      const hints = (t as any).aiHints as
+        | {
+            usageNotes?: string;
+            constraints?: string[];
+            negativeExamples?: string[];
+          }
+        | undefined;
+      const usageNotes =
+        typeof hints?.usageNotes === "string" && hints.usageNotes.trim().length > 0
+          ? ` note:${hints.usageNotes.trim()}`
+          : "";
+      const constraints =
+        Array.isArray(hints?.constraints) && hints.constraints.length > 0
+          ? ` constraints:${hints.constraints.slice(0, 3).join(" | ")}`
+          : "";
+      const negatives =
+        Array.isArray(hints?.negativeExamples) && hints.negativeExamples.length > 0
+          ? ` avoid:${hints.negativeExamples.slice(0, 2).join(" | ")}`
+          : "";
+      return `- ${t.name}${cls} (${domain}${cost}${tags}): ${t.description}${schemaHint}${usageNotes}${constraints}${negatives}`;
     })
     .join("\n");
+}
+
+function tokenizeQuestion(question: string): string[] {
+  const tokens = question
+    .toLowerCase()
+    .split(/[^a-z0-9]+/g)
+    .map((t) => t.trim())
+    .filter((t) => t.length > 2);
+  return Array.from(new Set(tokens));
+}
+
+function rankDiscoveryTools(input: {
+  tools: Array<McpTool & Partial<ToolCatalogTool>>;
+  userQuestion: string;
+}): Array<McpTool & Partial<ToolCatalogTool>> {
+  const tokens = tokenizeQuestion(input.userQuestion);
+  if (tokens.length === 0) return [...input.tools].sort((a, b) => a.name.localeCompare(b.name));
+
+  const scored = input.tools.map((tool) => {
+    const searchable = [
+      tool.name,
+      tool.description,
+      (tool as any).domain,
+      (tool as any).subdomain,
+      Array.isArray((tool as any).tags) ? (tool as any).tags.join(" ") : "",
+    ]
+      .filter((v): v is string => typeof v === "string")
+      .join(" ")
+      .toLowerCase();
+
+    const tokenHits = tokens.reduce((acc, token) => (searchable.includes(token) ? acc + 1 : acc), 0);
+    return { tool, tokenHits };
+  });
+
+  const hasHits = scored.some((row) => row.tokenHits > 0);
+  const sorted = scored
+    .sort((a, b) => {
+      if (b.tokenHits !== a.tokenHits) return b.tokenHits - a.tokenHits;
+      return a.tool.name.localeCompare(b.tool.name);
+    })
+    .map((row) => row.tool);
+  return hasHits ? sorted.filter((tool, idx) => scored[idx].tokenHits > 0) : sorted;
+}
+
+export function buildCatalogGroundedDiscoveryResponse(input: {
+  tools: Array<McpTool & Partial<ToolCatalogTool>>;
+  userQuestion: string;
+  maxTools?: number;
+}): string {
+  const ranked = rankDiscoveryTools({ tools: input.tools, userQuestion: input.userQuestion });
+  if (ranked.length === 0) {
+    return [
+      "No tools discovered in the catalog right now.",
+      "",
+      "Next steps:",
+      "1. Refresh catalog: POST /api/mcp/tools/refresh",
+      "2. Verify Console catalog path: GET /api/mcp/tools",
+      "3. Verify direct MCP server handshake (initialize + tools/list) before blueprint generation tests.",
+      "",
+      "Discovery mode only: I can list capabilities, but I will not draft a workflow in this turn.",
+    ].join("\n");
+  }
+
+  const selected = ranked.slice(0, input.maxTools ?? 12);
+  const grouped = new Map<string, Array<McpTool & Partial<ToolCatalogTool>>>();
+  for (const tool of selected) {
+    const domain = ((tool as any).domain as string | undefined)?.trim() || deriveDomainParts(tool.name).domain;
+    const key = domain || "misc";
+    const list = grouped.get(key) ?? [];
+    list.push(tool);
+    grouped.set(key, list);
+  }
+
+  const lines: string[] = [];
+  lines.push("Catalog-grounded capabilities:");
+  for (const [domain, tools] of [...grouped.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+    lines.push(`- ${domain}`);
+    for (const tool of tools.sort((a, b) => a.name.localeCompare(b.name))) {
+      lines.push(`  - ${tool.name}: ${tool.description}`);
+    }
+  }
+  lines.push("");
+  lines.push("Discovery mode only: I can list capabilities and use-cases, but I will not draft a workflow in this turn.");
+  return lines.join("\n");
 }
 
 export function normalizeIncomingMessages(messages: unknown): UIMessage[] {
@@ -157,17 +277,62 @@ export function normalizeIncomingMessages(messages: unknown): UIMessage[] {
   });
 }
 
+function extractTextParts(message: UIMessage | undefined): string {
+  if (!message?.parts) return "";
+  return message.parts
+    .filter((p: any) => p?.type === "text" && typeof p?.text === "string")
+    .map((p: any) => p.text)
+    .join("\n")
+    .trim();
+}
+
+function userConfirmedSteerage(messageText: string): boolean {
+  const t = (messageText ?? "").toLowerCase();
+  return /\b(yes|yep|looks good|go ahead|proceed|continue|generate|build it|do it)\b/.test(t);
+}
+
+function containsSteerageCheckpoint(messageText: string): boolean {
+  return /<steerageCheckpoint/i.test(messageText ?? "");
+}
+
+function shouldRunReasoningSteerage(input: {
+  intent: string;
+  hasCurrentDraft: boolean;
+  lastUserText: string;
+  lastAssistantText: string;
+  hasCompetingAlternatives: boolean;
+}): boolean {
+  if (input.intent !== "workflow_generation") return false;
+  if (input.hasCurrentDraft) return false;
+  if (input.hasCompetingAlternatives) return true;
+  const priorCheckpoint = containsSteerageCheckpoint(input.lastAssistantText);
+  if (priorCheckpoint && userConfirmedSteerage(input.lastUserText)) return false;
+  if (priorCheckpoint) return false;
+
+  const text = (input.lastUserText ?? "").toLowerCase();
+  const looksComplex =
+    text.length > 140 ||
+    /\b(and then|after that|if .* then|triage|rollback|approval|multi|complex|incident|release)\b/.test(text);
+  return looksComplex;
+}
+
+const explainStepZodSchema = z.object({
+  nodeId: z.string(),
+  explanation: z.string(),
+});
+
 export const OpenAIAgentService = {
   async generateBlueprint(input: {
     messages: any[];
     tools?: Array<McpTool & Partial<ToolCatalogTool>>;
     budgetKey?: string;
+    currentDraft?: { title: string; summary: string; nodes: unknown[]; edges: unknown[] } | null;
+    templatesSummary?: TemplateSummary[];
+    /** Active workflow run ID for status/cancel context (Phase 4.3.3) */
+    activeWorkflowId?: string;
   }) {
     const toolsList = input.tools ?? [];
     const toolsSummary = toolsList.length > 0 ? summarizeToolsForPrompt(toolsList, 80) : "- (no tools available)";
-
-    const blueprintPlanningPrompt = buildBlueprintPlanningPrompt({ toolsSummary });
-    const summarizerPrompt = buildBlueprintSummarizerPrompt();
 
     const stream = createUIMessageStream({
       execute: async ({ writer }) => {
@@ -177,7 +342,7 @@ export const OpenAIAgentService = {
         const ctx = createConsoleGoldenContext({ initiatorId: budgetKey });
 
         try {
-          await core.withGoldenSpan("console.chat.generate_blueprint", ctx, "REASONER", async (rootSpan) => {
+          await (corePkg as any).withGoldenSpan("console.chat.generate_blueprint", ctx, "REASONER", async (rootSpan) => {
             rootSpan.setAttribute("ai.budget.key", budgetKey);
             rootSpan.setAttribute("ai.request.kind", "generate_blueprint");
             rootSpan.setAttribute("ai.tools.count", toolsList.length);
@@ -190,7 +355,176 @@ export const OpenAIAgentService = {
             }
 
             const uiMessages = normalizeIncomingMessages(input.messages);
+            const originalLastUserMessage = [...uiMessages].reverse().find((m) => m.role === "user");
+            const originalLastUserTextPart = originalLastUserMessage?.parts?.find(
+              (p: any) => p.type === "text" && typeof p.text === "string"
+            );
+            const originalLastUserText = originalLastUserTextPart?.text ?? "";
+
+            // Phase 4.3.3: Inject execution status or cancel result when user asks and we have activeWorkflowId.
+            const activeWorkflowId = input.activeWorkflowId;
+            if (activeWorkflowId) {
+              const lastUserIdx = [...uiMessages].reverse().findIndex((m) => m.role === "user");
+              const lastUserMessage =
+                lastUserIdx >= 0 ? uiMessages[uiMessages.length - 1 - lastUserIdx] : null;
+              const textPart = lastUserMessage?.parts?.find((p: any) => p.type === "text" && typeof p.text === "string");
+              const lastText = textPart?.text ?? "";
+              if (isCancelQuery(lastText)) {
+                const result = await cancelExecution(activeWorkflowId);
+                const context = result.ok
+                  ? "The workflow was canceled."
+                  : `Cancel failed: ${result.error}`;
+                if (textPart) {
+                  textPart.text = `[Execution: ${context}]\n\n${lastText}`;
+                }
+              } else if (isStatusQuery(lastText)) {
+                const statusText = await getExecutionStatus(activeWorkflowId);
+                if (textPart) {
+                  textPart.text = `[Current workflow execution:\n${statusText}\n]\n\n${lastText}`;
+                }
+              }
+            }
+
             const modelMessages = await convertToModelMessages(uiMessages);
+            const lastUserMessage = [...uiMessages].reverse().find((m) => m.role === "user");
+            const lastUserTextPart = lastUserMessage?.parts?.find(
+              (p: any) => p.type === "text" && typeof p.text === "string"
+            );
+            const intent = classifyChatIntent(originalLastUserText || lastUserTextPart?.text || "");
+            rootSpan.setAttribute("ai.intent", intent);
+
+            const recipeSelection = selectGoldenPathRecipe({
+              userMessage: originalLastUserText || lastUserTextPart?.text || "",
+              tools: toolsList,
+              intent,
+              limit: 3,
+            });
+            if (recipeSelection.primary) {
+              rootSpan.setAttribute("ai.recipe.primary_id", recipeSelection.primary.recipe.id);
+              rootSpan.setAttribute("ai.recipe.primary_score", recipeSelection.primary.score);
+            }
+
+            if (intent === "capability_discovery") {
+              const discoveryMessage = buildCatalogGroundedDiscoveryResponse({
+                tools: toolsList,
+                userQuestion: originalLastUserText || lastUserTextPart?.text || "",
+              });
+              writer.write({
+                type: "text",
+                text: discoveryMessage,
+              } as any);
+              return;
+            }
+
+            const lastAssistantMessage = [...uiMessages].reverse().find((m) => m.role === "assistant");
+            const lastAssistantText = extractTextParts(lastAssistantMessage);
+            if (
+              shouldRunReasoningSteerage({
+                intent,
+                hasCurrentDraft: Boolean(input.currentDraft && input.currentDraft.nodes.length > 0),
+                lastUserText: originalLastUserText || lastUserTextPart?.text || "",
+                lastAssistantText,
+                hasCompetingAlternatives:
+                  recipeSelection.alternatives.length > 0 &&
+                  recipeSelection.primary != null &&
+                  recipeSelection.alternatives[0].score >= recipeSelection.primary.score - 2,
+              })
+            ) {
+              const steeragePrompt = buildReasoningSteeragePrompt({
+                userMessage: originalLastUserText || lastUserTextPart?.text || "",
+                currentDraft: input.currentDraft ?? null,
+                recipeContext: recipeSelection.primary
+                  ? {
+                      primary: {
+                        id: recipeSelection.primary.recipe.id,
+                        title: recipeSelection.primary.recipe.title,
+                        why:
+                          `keywordHits=${recipeSelection.primary.keywordHits}, ` +
+                          `toolHits=${recipeSelection.primary.toolHits}, ` +
+                          `outcomeWeight=${recipeSelection.primary.diagnostics.outcomeWeight}, ` +
+                          `feedbackWeight=${recipeSelection.primary.diagnostics.feedbackWeight}`,
+                        chain: recipeSelection.primary.recipe.steps.map((s) => s.label),
+                      },
+                      alternatives: recipeSelection.alternatives.map((alt) => ({
+                        id: alt.recipe.id,
+                        title: alt.recipe.title,
+                        why: `${alt.tradeoff} (score=${alt.score})`,
+                      })),
+                    }
+                  : { primary: null, alternatives: [] },
+              });
+              const requestedModel = process.env.AI_MODEL_NAME || "gpt-4o";
+              const steerageModel = preflightModelSelection({
+                budgetKey,
+                model: requestedModel,
+                system: steeragePrompt,
+                messages: modelMessages,
+                expectedOutputTokens: 500,
+              }).model;
+
+              await (corePkg as any).withGoldenSpan("console.chat.llm.steerage", ctx, "REASONER", async (span) => {
+                span.setAttribute("ai.provider", "openai");
+                span.setAttribute("ai.model", steerageModel);
+                span.setAttribute("ai.step", "steerage");
+                const steerage = streamText(
+                  {
+                    model: openai(steerageModel),
+                    system: steeragePrompt,
+                    messages: modelMessages,
+                    onFinish: (result: any) => {
+                      const usage = result?.usage;
+                      const promptTokens = usage?.promptTokens ?? usage?.inputTokens ?? usage?.prompt_tokens;
+                      const completionTokens = usage?.completionTokens ?? usage?.outputTokens ?? usage?.completion_tokens;
+                      if (typeof promptTokens === "number" && typeof completionTokens === "number") {
+                        span.setAttribute("ai.usage.input_tokens", promptTokens);
+                        span.setAttribute("ai.usage.output_tokens", completionTokens);
+                        const entry = llmCostManager.recordUsage({
+                          budgetKey,
+                          provider: "openai",
+                          model: steerageModel,
+                          inputTokens: promptTokens,
+                          outputTokens: completionTokens,
+                        });
+                        const totals = llmCostManager.getTotals({ budgetKey });
+                        span.setAttribute("ai.cost.usd", entry.usd);
+                        span.setAttribute("ai.cost.total_usd", totals.usd);
+                      }
+                    },
+                  } as any
+                );
+                writer.merge(steerage.toUIMessageStream({ sendStart: false }));
+                await steerage.response;
+              });
+              return;
+            }
+
+            const blueprintPlanningPrompt = buildBlueprintPlanningPrompt({
+              toolsSummary,
+              templatesSummary: input.templatesSummary ?? [],
+              currentDraft: input.currentDraft ?? null,
+              recipeContext: recipeSelection.primary
+                ? {
+                    primary: {
+                      id: recipeSelection.primary.recipe.id,
+                      title: recipeSelection.primary.recipe.title,
+                      why:
+                        `keywordHits=${recipeSelection.primary.keywordHits}, ` +
+                        `toolHits=${recipeSelection.primary.toolHits}, ` +
+                        `outcomeWeight=${recipeSelection.primary.diagnostics.outcomeWeight}, ` +
+                        `feedbackWeight=${recipeSelection.primary.diagnostics.feedbackWeight}`,
+                      chain: recipeSelection.primary.recipe.steps.map((s) => s.label),
+                      preflight: recipeSelection.primary.recipe.preflightRules,
+                      approvals: recipeSelection.primary.recipe.approvals,
+                    },
+                    alternatives: recipeSelection.alternatives.map((alt) => ({
+                      id: alt.recipe.id,
+                      title: alt.recipe.title,
+                      why: `${alt.tradeoff} (score=${alt.score})`,
+                    })),
+                  }
+                : { primary: null, alternatives: [] },
+            });
+            const summarizerPrompt = buildBlueprintSummarizerPrompt();
 
             // Step 1: force a tool call so the UI always receives a structured draft.
             const requestedModel = process.env.AI_MODEL_NAME || "gpt-4o";
@@ -202,7 +536,11 @@ export const OpenAIAgentService = {
               expectedOutputTokens: 1200,
             }).model;
 
-            const planningMessages = await core.withGoldenSpan("console.chat.llm.planning", ctx, "REASONER", async (span) => {
+            const planningMessages = await (corePkg as any).withGoldenSpan(
+              "console.chat.llm.planning",
+              ctx,
+              "REASONER",
+              async (span) => {
               span.setAttribute("ai.provider", "openai");
               span.setAttribute("ai.model", planningModel);
               span.setAttribute("ai.step", "planning");
@@ -218,6 +556,11 @@ export const OpenAIAgentService = {
                       description: "Propose a workflow blueprint draft the user can refine.",
                       inputSchema: blueprintZodSchema,
                       execute: async (draft) => draft,
+                    }),
+                    explainStep: tool({
+                      description: "Explain why a specific step was added to the workflow. Use when the user asks 'Why did you add this step?' or similar.",
+                      inputSchema: explainStepZodSchema,
+                      execute: async (input) => input,
                     }),
                   },
                   onFinish: (result: any) => {
@@ -258,7 +601,7 @@ export const OpenAIAgentService = {
               expectedOutputTokens: 800,
             }).model;
 
-            await core.withGoldenSpan("console.chat.llm.summary", ctx, "REASONER", async (span) => {
+            await (corePkg as any).withGoldenSpan("console.chat.llm.summary", ctx, "REASONER", async (span) => {
               span.setAttribute("ai.provider", "openai");
               span.setAttribute("ai.model", summaryModel);
               span.setAttribute("ai.step", "summary");
@@ -315,74 +658,3 @@ export const OpenAIAgentService = {
   },
 };
 
-export function buildBlueprintPlanningPrompt(input: { toolsSummary: string }): string {
-  return `
-<system_role>
-You are the AI Architect for a Workflow Automation Platform.
-</system_role>
-
-<engineering_principles>
-- Prefer deterministic, editable drafts over perfect completeness.
-- Do not invent tool IDs; use only IDs from the available tool catalog.
-- Keep workflow structure stable unless the user explicitly asks to restructure it.
-- When refining an existing node, change only that node's properties unless asked otherwise.
-</engineering_principles>
-
-<instructions>
-AVAILABLE HARMONY MCP TOOLS (use these IDs for node.type):
-${input.toolsSummary}
-
-PRIMARY TASK (default):
-- Analyze the user's request.
-- Construct a logical workflow using the available tools.
-- ALWAYS start with a Trigger node if possible.
-- Use explicit edges to connect nodes.
-- Prefer fewer, higher-signal steps; avoid overfitting.
-- If a tool is missing, choose the closest available tool id and record missing assumptions in node.description.
-
-NODE REFINEMENT MODE:
-If the user message contains a <workbench_node_refinement>...</workbench_node_refinement> JSON payload:
-- Treat this as a request to configure an existing node inside the provided draft.
-- The payload is JSON and includes: { kind, requestId, draft, selectedNodeId, missingRequired, tool }.
-- Keep the draft title/summary/nodes/edges structure unchanged unless explicitly requested.
-- Update ONLY the selected node's properties with any user-provided values from the conversation.
-- Use tool.inputSchema to understand field intent, but do not invent values.
-- If required fields are missing, still return the draft via proposeWorkflow (only safe property fills), and ask targeted questions ONLY for the missingRequired keys.
-
-IMPORTANT:
-- You MUST call the proposeWorkflow tool with a BlueprintDraft object.
-</instructions>
-
-<hitl_protocol>
-- If the draft references RESTRICTED tools, the UI may require explicit approval before applying.
-- Ask concise questions to unblock configuration; do not ask for unnecessary details.
-</hitl_protocol>
-
-<reference_example>
-If you need the user to supply required fields, ask only for those missing keys and suggest example values.
-</reference_example>
-`.trim();
-}
-
-export function buildBlueprintSummarizerPrompt(): string {
-  return `
-<system_role>
-You are the AI Architect. You already created or updated a draft workflow blueprint in a tool call.
-</system_role>
-
-<instructions>
-If the conversation includes a <workbench_node_refinement> JSON payload:
-- Provide a 1-2 sentence summary of what you updated (or that no changes were applied yet).
-- Ask only targeted questions for missingRequired fields.
-- Do not ask general workflow questions unrelated to the selected node.
-
-Otherwise (initial drafting):
-Respond with:
-1) A short summary of what you generated (title + 1-3 bullets of the flow).
-2) The most important assumptions you made (if any).
-3) 2-4 concrete questions that will help refine the workflow (inputs, schedule/trigger, destinations, error-handling, approvals).
-
-Never return an empty response.
-</instructions>
-`.trim();
-}

@@ -111,6 +111,7 @@ export const releaseManifestCapability: Capability<
 > = {
     metadata: {
         id: 'golden.ci.release-manifest',
+        domain: 'ci',
         version: '1.0.0',
         name: 'releaseManifest',
         description:

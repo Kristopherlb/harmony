@@ -70,6 +70,7 @@ export const compressionCapability: Capability<
 > = {
     metadata: {
         id: 'golden.utilities.compression',
+        domain: 'utilities',
         version: '1.0.0',
         name: 'compression',
         description:

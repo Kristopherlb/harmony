@@ -28,6 +28,20 @@ describe("HarmonyMcpToolService", () => {
     expect((echo as any)?.costFactor).toBe("LOW");
     expect((echo as any)?.allowOutbound).toEqual([]);
     expect((echo as any)?.requiredScopes).toEqual([]);
+    const aiHints = (echo as any)?.aiHints;
+    if (!aiHints) {
+      throw new Error(
+        "Expected aiHints in MCP tool snapshot for golden.echo. " +
+          "Run `pnpm tools:regen-sync` to refresh tool-catalog artifacts when manifest shape changes."
+      );
+    }
+    expect(aiHints).toMatchObject({
+      exampleInput: { x: 1 },
+      exampleOutput: { y: 1 },
+    });
+
+    // Workbench exploration affordances are inferred deterministically for now.
+    expect((echo as any)?.exploration).toEqual({ kind: "none", connectionType: "none" });
   });
 
   it("includes Jira capabilities in the tool catalog snapshot (discoverability guardrail)", () => {
@@ -37,6 +51,9 @@ describe("HarmonyMcpToolService", () => {
     const toolNames = new Set(snapshot.tools.map((t) => t.name));
     expect(toolNames.has("golden.jira.issue.search")).toBe(true);
     expect(toolNames.has("golden.jira.issue.count")).toBe(true);
+
+    const jiraSearch = snapshot.tools.find((t) => t.name === "golden.jira.issue.search");
+    expect((jiraSearch as any)?.exploration).toEqual({ kind: "openapi", connectionType: "jira" });
   });
 
   it("refresh updates generated_at (monotonic)", () => {

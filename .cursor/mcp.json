@@ -1,18 +1,16 @@
 {
-    "mcpServers": {
-      "harmony": {
-        "command": "node",
-        "args": [
-          "/Users/kristopherbowles/code/harmony/packages/tools/mcp-server/dist/src/cli/stdio.js"
-        ],
-        "env": {
-          "TEMPORAL_ADDRESS": "localhost:7233",
-          "TEMPORAL_NAMESPACE": "default",
-          "TEMPORAL_TASK_QUEUE": "golden-tools",
-          "TEMPORAL_UI_URL": "http://localhost:8233",
-          "MCP_INCLUDE_BLUEPRINTS": "true",
-          "MCP_USE_ENV_DEFAULTS": "true"
-        }
+  "mcpServers": {
+    "harmony": {
+      "command": "pnpm",
+      "args": ["run", "mcp:stdio"],
+      "env": {
+        "TEMPORAL_ADDRESS": "localhost:7233",
+        "TEMPORAL_NAMESPACE": "default",
+        "TEMPORAL_TASK_QUEUE": "golden-tools",
+        "TEMPORAL_UI_URL": "http://localhost:8233",
+        "MCP_INCLUDE_BLUEPRINTS": "true",
+        "MCP_USE_ENV_DEFAULTS": "true"
       }
     }
   }
+}

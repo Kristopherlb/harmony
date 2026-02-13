@@ -28,6 +28,12 @@ Missing tools or capabilities that would help.
 **Impact:** False 404s and wasted time debugging “missing” endpoints; tests can fail in non-obvious ways.  
 **Resolution:** Register fixed-prefix routes first; add a route test that hits fixed-prefix paths; add a brief router comment near `/:id` routes.
 
+### 🔴 Nested anchors from `wouter` Link patterns
+**Occurrences:** 1 (Workbench multi-surface work, 2026-02-02)  
+**Description:** Using `Link` plus an inner `<a>` or “clickable row” composition can produce `<a>` inside `<a>` DOM nesting warnings.  
+**Impact:** No immediate functional break, but noisy test output and risk of subtle interaction/a11y bugs later.  
+**Resolution:** Standardize a row-link pattern (either `Link` renders the only anchor, or use a button/div + `setLocation`), and add a small shared component to avoid reintroducing it.
+
 ### 🔵 Contract-Complete, Runtime-Incomplete (Dogfooding gap)
 **Occurrences:** 1 (Phase 7 Shipping & Traffic, 2026-02-02)  
 **Description:** Work lands with strong schemas/tests/guardrails and deterministic discovery, but runtime execution (real infra, real secrets, real external services) remains unvalidated. Mirrors the Jira capability situation where container/runtime is placeholder (discovery is good; runtime usefulness lags).  
@@ -45,6 +51,18 @@ Missing tools or capabilities that would help.
 **Description:** Multiple files implemented `retryPolicy` missing `backoffCoefficient`, causing build failure across package.
 **Impact:** Blocked build, required auditing multiple files.
 **Resolution:** [IMP-020] Enforce strict type checks or provide factory helper for config objects.
+
+### 🔴 Workspace package default-import interop (ESM/Vitest)
+**Occurrences:** 2 (Engine MVP core capabilities, 2026-02-09; Baseline release/deploy roadmap, 2026-02-10)  
+**Description:** Default imports of internal workspace packages (e.g. `import blueprints from '@golden/blueprints'`) can resolve to `undefined` in some TS/ESM/Vitest contexts, causing runtime 500s.  
+**Impact:** Non-obvious runtime failures; time lost debugging “undefined export” issues.  
+**Resolution:** Standardize `import * as blueprints from '@golden/blueprints'` (namespace imports) for internal workspace packages in the Console server; consider an eslint rule to disallow default imports from `@golden/*`.
+
+### 🔴 Runtime smoke blocked by local Docker daemon
+**Occurrences:** 1 (Engine MVP core capabilities, 2026-02-09)  
+**Description:** Runtime smoke harnesses that depend on Docker (OpenBao/Temporal/Dagger) fail fast when Docker daemon isn’t running, without a clear preflight path.  
+**Impact:** “Runtime smoke required” milestones become non-actionable on some environments; increases plan drift.  
+**Resolution:** Add preflight checks + one actionable error message (“Start Docker Desktop / ensure daemon reachable”) to smoke scripts and docs.
 
 ### 🔴 Documentation drift (stale symbol/control references)
 **Occurrences:** 1 (Incident Lifecycle Phase 6, 2026-02-02)  
@@ -65,10 +83,16 @@ Missing tools or capabilities that would help.
 **Resolution:** Add a documented/debug wrapper or improve Nx test target output to surface underlying suite failures.
 
 ### 🔵 Hidden deterministic artifact coupling
-**Occurrences:** 2 (DX Artifacts, 2026-02-02; Incident Lifecycle Phase 4, 2026-02-02)  
+**Occurrences:** 4 (DX Artifacts, 2026-02-02; Incident Lifecycle Phase 4, 2026-02-02; Baseline release/deploy roadmap, 2026-02-10; Workbench M1-M3 Assigned To-dos, 2026-02-10)  
 **Description:** `@golden/path:sync` validates the presence of `packages/tools/mcp-server/src/manifest/tool-catalog.json`; generator tests did not seed it in fixtures, causing unrelated suite failures.  
 **Impact:** Surprise failures in `path:test` after other work.  
 **Resolution:** Always seed minimal deterministic tool-catalog fixtures in generator tests; consider adding a `sync` mode to regenerate the catalog.
+
+### 🔴 Cross-surface secret auth drift (Console ingress vs worker secret broker)
+**Occurrences:** 1 (Baseline release/deploy roadmap, 2026-02-10)  
+**Description:** OpenBao auth/read logic lived in multiple runtime surfaces (Console webhook ingress and worker secret broker), so policy changes (e.g., AppRole support) required duplicate updates.  
+**Impact:** Increased implementation and review overhead; higher risk of inconsistent secret access behavior under staging conditions.  
+**Resolution:** Extract a shared OpenBao auth/token helper (token + AppRole + lease-aware cache) and consume it from both surfaces.
 
 ### 🔵 Capability/Blueprint registry drift blocks discoverability
 **Occurrences:** 1 (Incident Lifecycle Phase 4, 2026-02-02)  
@@ -88,11 +112,23 @@ Missing tools or capabilities that would help.
 **Impact:** Features appear “missing” in dev/test environments until path resolution is fixed.  
 **Resolution:** Standardize a shared “workspace root finder” helper and require it for any repo-local artifact endpoints.
 
+### 🔵 Observability assets need scrape wiring (Prometheus)
+**Occurrences:** 1 (Workbench UX Phase 4.5, 2026-02-02)  
+**Description:** Grafana dashboards and SLO docs can be added correctly, but remain non-actionable until Prometheus is configured to scrape the underlying metrics endpoint(s).  
+**Impact:** Time lost debugging “empty” dashboards and uncertainty about whether SLOs are actually live.  
+**Resolution:** Document canonical scrape endpoints for each service (and where scrape configs live). Add a quick smoke check that posts a synthetic event and verifies series appear in metrics output.
+
 ### 🔵 Approvals without incident/workflow context are not actionable
-**Occurrences:** 1 (Incident Lifecycle Phase 5, 2026-02-02)  
+**Occurrences:** 2 (Incident Lifecycle Phase 5, 2026-02-02; Workbench Golden Path M0/M1 Foundations, 2026-02-10)  
 **Description:** Approval items were technically present but lacked enough context (triggering eventId/serviceTags/contextType) to review safely.  
 **Impact:** Increased operator uncertainty and context switching; harder to audit “why” for approvals.  
-**Resolution:** Extend execution/request contracts to carry optional context and render it in the approval queue UI.
+**Resolution:** Enforce a server-side minimum context contract (at least one of `workflowId|incidentId|draftTitle`) in the shared approval-log module, map validation errors consistently at adapters, and render the context in approval UIs.
+
+### 🔴 Discovery prompts can drift from catalog-grounded truth
+**Occurrences:** 1 (Blueprint Discovery Improvement Plan assigned todos, 2026-02-11)  
+**Description:** Discovery-only asks (especially security capability inventory) can return generic suggestions when behavior depends on prompt-following rather than deterministic catalog grounding.  
+**Impact:** Agents may suggest tools that are not actually available in the MCP catalog; reduces trust in blueprint-first flow.  
+**Resolution:** Enforce discovery correctness at service boundary with deterministic catalog-grounded responses and explicit no-generation-on-discovery behavior; keep prompts as supportive constraints only.
 
 ### 🔴 Manual Upstream Research
 **Occurrences:** 1 (OSCAL Compass, 2026-02-01)
@@ -136,7 +172,11 @@ Missing tools or capabilities that would help.
 
 _Patterns that have been fully addressed and can be archived._
 
-_(none yet)_
+### 🔴 E2E Harness Missing → Repeated E2E Deferrals (Workbench)
+**Occurrences:** 4 (Workbench UX Phases 4.1–4.3, 2026-02-02; Workbench Tier‑0 Followthrough, 2026-02-09)  
+**Description:** Multiple Workbench phases specified Playwright E2E coverage (library insertion, iterative refinement, run monitoring) but implementation repeatedly deferred because an E2E harness/CI target wasn’t available.  
+**Impact:** Reduced end-to-end confidence; repeated manual validation; plan drift accumulates as “we’ll add E2E later.”  
+**Resolution Implemented:** Added Playwright harness + Tier‑0 Workbench spec + deterministic `/api/chat` fixture mode (2026-02-09). Follow-up: wire Tier‑0 E2E into CI as a required gate.
 
 ---
 

@@ -66,11 +66,12 @@ export const awsSdkCapability: Capability<
 > = {
   metadata: {
     id: 'golden.connectors.aws-sdk',
+    domain: 'connectors',
     version: '1.0.0',
     name: 'awsSdk',
     description:
       'AWS SDK v3 connector for cloud operations. Supports S3, STS, Lambda, DynamoDB, SQS, SNS, Secrets Manager, and all AWS services.',
-    tags: ['connector', 'aws', 'cloud', 's3', 'lambda'],
+    tags: ['connector', 'connectors', 'aws', 'cloud', 's3', 'lambda'],
     maintainer: 'platform',
   },
   schemas: {

@@ -93,6 +93,7 @@ export const securityInsightsCapability: Capability<
 > = {
   metadata: {
     id: 'golden.security.security-insights',
+    domain: 'security',
     version: '1.0.0',
     name: 'securityInsights',
     description:

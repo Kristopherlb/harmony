@@ -65,16 +65,24 @@ The workflow calls Dagger which calls `runBlueprint`, which starts:
 This is a **runtime-true** local smoke that exercises real capabilities against a Kind cluster:
 - `golden.flags.flagd-sync` (sync flags into ConfigMap using inline JSON)
 - `golden.k8s.apply` (apply worker deployment YAML using inline manifests)
+- `golden.k8s.apply` (rollout-restart) as a compensation-path validation
 
 Prereqs:
 - `docker`, `kubectl`, `kind`
-- OpenBao + Temporal running locally (`docker-compose up -d openbao temporal postgres`)
+- OpenBao + Temporal running locally (`pnpm nx run harmony:dev-up`)
 
 Run:
 
 ```bash
 pnpm --filter @golden/blueprints run bundle-workflows
 ENABLE_DAGGER_E2E=1 pnpm --filter @golden/blueprints exec tsx scripts/run-kind-dogfood-blue-green.ts
+```
+
+To induce a failure and validate the “compensation-like” restart path (mirrors the rollback operation used by `blueprints.deploy.blue-green`):
+
+```bash
+pnpm --filter @golden/blueprints run bundle-workflows
+ENABLE_DAGGER_E2E=1 DOGFOOD_INDUCE_FAILURE=1 pnpm --filter @golden/blueprints exec tsx scripts/run-kind-dogfood-blue-green.ts
 ```
 
 

@@ -1,5 +1,27 @@
 ## Workbench tool catalog: refresh vs restart
 
+## MCP Readiness Hard Gate (before blueprint tests)
+
+Blueprint-first API tests must not run until both MCP paths are healthy:
+
+1. Console catalog path:
+   - `GET /api/mcp/tools` returns non-empty `tools`
+   - `POST /api/mcp/tools/refresh` succeeds and bumps `manifest.generated_at`
+2. Direct MCP path (outside Console proxy):
+   - JSON-RPC handshake succeeds (`initialize`, `tools/list`, `tools/call`)
+
+Fast verification commands:
+
+```bash
+# Console MCP gate + blueprint-first API smoke
+pnpm --dir packages/apps/console exec vitest run server/blueprint-first-api-smoke.test.ts
+
+# Direct MCP stdio handshake smoke (external MCP path)
+pnpm -w vitest run packages/tools/mcp-server/src/demo/stdio-jsonrpc-client.test.ts
+```
+
+If either path fails, stop blueprint generation/run tests and remediate MCP health first.
+
 ### What “tools” are
 - The Workbench tool palette is backed by the Console server endpoint `GET /api/mcp/tools`.
 - The response includes a `manifest.generated_at` timestamp and `manifest.version`.

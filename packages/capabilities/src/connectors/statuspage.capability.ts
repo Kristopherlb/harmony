@@ -115,11 +115,12 @@ export const statuspageCapability: Capability<
 > = {
     metadata: {
         id: 'golden.connectors.statuspage',
+        domain: 'connectors',
         version: '1.0.0',
         name: 'statuspageConnector',
         description:
             'Atlassian Statuspage connector for managing public-facing status page incidents and component status. Use for incident communication, service health updates, and customer-facing status management.',
-        tags: ['connector', 'statuspage', 'atlassian', 'incidents', 'status', 'communication'],
+        tags: ['connector', 'connectors', 'statuspage', 'atlassian', 'incidents', 'status', 'communication'],
         maintainer: 'platform',
     },
     schemas: {

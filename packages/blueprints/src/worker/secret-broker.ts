@@ -7,14 +7,11 @@
  * - The worker late-binds them by fetching values and calling `dag.setSecret(...)`.
  * - For backwards compatibility, non-ref strings are treated as plaintext and wrapped as Dagger Secrets.
  */
-export type OpenBaoKvConfig = {
-  /** Base address, e.g. http://localhost:8200 */
-  address: string;
-  /** Vault/OpenBao token */
-  token: string;
-  /** KV mount name, e.g. "secret" */
-  mount: string;
-};
+import {
+  assertValidSecretRef,
+  readOpenBaoKvV2SecretValue,
+  type OpenBaoKvConfig,
+} from '@golden/core';
 
 type DaggerClientLike = {
   setSecret(name: string, value: string): unknown;
@@ -23,55 +20,6 @@ type DaggerClientLike = {
 function isRefString(value: string): boolean {
   // ISS-001 uses hierarchical absolute paths (e.g. /artifacts/{appId}/...).
   return value.startsWith('/');
-}
-
-function normalizeRef(ref: string): string {
-  return ref.replace(/^\/+/, '');
-}
-
-function joinUrl(base: string, path: string): string {
-  const b = base.replace(/\/+$/, '');
-  const p = path.startsWith('/') ? path : `/${path}`;
-  return `${b}${p}`;
-}
-
-function extractValueFromKvData(data: unknown): string {
-  if (!data || typeof data !== 'object') {
-    throw new Error('OpenBao KV response missing data');
-  }
-  const obj = data as Record<string, unknown>;
-  const direct = obj.value;
-  if (typeof direct === 'string') return direct;
-
-  // If only one string field exists, treat it as the secret value.
-  const stringEntries = Object.entries(obj).filter(([, v]) => typeof v === 'string') as Array<
-    [string, string]
-  >;
-  if (stringEntries.length === 1) return stringEntries[0]![1];
-
-  throw new Error('OpenBao secret did not contain a single string value');
-}
-
-async function readOpenBaoKvV2Value(opts: {
-  fetchImpl: typeof fetch;
-  openBao: OpenBaoKvConfig;
-  ref: string;
-}): Promise<string> {
-  const { fetchImpl, openBao } = opts;
-  const rel = normalizeRef(opts.ref);
-  const url = joinUrl(openBao.address, `/v1/${openBao.mount}/data/${rel}`);
-
-  const res = await fetchImpl(url, {
-    method: 'GET',
-    headers: { 'X-Vault-Token': openBao.token, Accept: 'application/json' },
-  });
-  if (!res.ok) {
-    const text = (await res.text().catch(() => '')) || res.statusText;
-    throw new Error(`OpenBao read failed (${res.status}): ${text}`);
-  }
-  const json = (await res.json()) as any;
-  const kvData = json?.data?.data;
-  return extractValueFromKvData(kvData);
 }
 
 export async function resolveSecretRefs(opts: {
@@ -101,10 +49,11 @@ export async function resolveSecretRefs(opts: {
     }
 
     if (isRefString(value)) {
-      const secretValue = await readOpenBaoKvV2Value({
-        fetchImpl,
+      assertValidSecretRef(value);
+      const secretValue = await readOpenBaoKvV2SecretValue({
         openBao: opts.openBao,
-        ref: value,
+        secretRef: value,
+        fetchImpl,
       });
       out[key] = d.setSecret(`${opts.appId}-${key}`, secretValue);
       continue;

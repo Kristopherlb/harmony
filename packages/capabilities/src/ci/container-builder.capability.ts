@@ -69,6 +69,7 @@ export const containerBuilderCapability: Capability<
 > = {
     metadata: {
         id: 'golden.ci.container-builder',
+        domain: 'ci',
         version: '1.0.0',
         name: 'containerBuilder',
         description:

@@ -78,7 +78,7 @@ export const incidentTimelineCapability: Capability<
         description: 'Aggregates and formats incident events into a chronological timeline.',
         domain: 'transformers',
         subdomain: 'incident-timeline',
-        tags: ['incident', 'post-mortem', 'timeline'],
+        tags: ['transformers', 'incident', 'post-mortem', 'timeline'],
         maintainer: 'platform',
     },
     schemas: {

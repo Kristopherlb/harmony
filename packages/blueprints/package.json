@@ -24,6 +24,7 @@
     "vitest": "^1.2.0"
   },
   "scripts": {
+    "test": "vitest run",
     "bundle-workflows": "npx tsx scripts/bundle-workflows.ts",
     "e2e": "pnpm run bundle-workflows && npx tsx scripts/run-e2e-propagation.ts",
     "e2e:dagger": "pnpm run bundle-workflows && ENABLE_DAGGER_E2E=1 npx tsx scripts/run-e2e.ts"

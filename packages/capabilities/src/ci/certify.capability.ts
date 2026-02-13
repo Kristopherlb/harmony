@@ -82,6 +82,7 @@ export const certifyCapability: Capability<
 > = {
     metadata: {
         id: 'golden.ci.certify',
+        domain: 'ci',
         version: '1.0.0',
         name: 'certify',
         description:

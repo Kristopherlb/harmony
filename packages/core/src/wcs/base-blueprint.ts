@@ -174,6 +174,8 @@ export abstract class BaseBlueprint<Input, Output, Config> {
        * or when you've already verified the flag state.
        */
       skipFlagCheck?: boolean;
+      /** Optional correlation metadata for UI mapping (e.g. Workbench node id). */
+      correlation?: { nodeId: string };
     }
   ): Promise<Out> {
     // Check capability feature flag unless explicitly skipped
@@ -203,6 +205,7 @@ export abstract class BaseBlueprint<Input, Output, Config> {
       input,
       config: options?.config,
       secretRefs: options?.secretRefs,
+      correlation: options?.correlation,
       runAs: this.securityContext.initiatorId,
       traceId: this.securityContext.traceId ?? ctx?.trace_id ?? wf.workflowInfo().workflowId,
       ctx,

@@ -38,7 +38,10 @@ function matchesQuery(e: Event, query: string): boolean {
 }
 
 export default function IncidentsPage(): JSX.Element {
-  const [query, setQuery] = React.useState("");
+  const [query, setQuery] = React.useState(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("q") ?? "";
+  });
 
   const streamQuery = useQuery<ActivityStreamResponse>({
     queryKey: ["/api/activity/stream?page=1&pageSize=100"],

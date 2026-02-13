@@ -1,0 +1,19 @@
+---
+description: Prefer root-cause, maintainable fixes over tactical workarounds
+alwaysApply: true
+---
+
+# Foundation Over Workarounds
+
+- Implement root-cause fixes at the correct architectural boundary first (domain/module invariant before route/UI patching).
+- Avoid one-off conditionals, special cases, or duplicated validation logic unless a shared abstraction is not yet possible.
+- If a quick patch is used temporarily, include a clear `TODO:` with owner/context and a near-term replacement plan in the same change.
+- Prefer shared modules, typed contracts, and deterministic tests that prevent regression rather than relying on manual discipline.
+- Optimize for long-term readability and maintenance cost, even when it requires extra upfront effort.
+
+Definition of done for behavioral changes:
+
+1. Failing test proves the bug/requirement.
+2. Minimal implementation passes.
+3. Refactor to the most durable boundary.
+4. Verify no duplicated workaround remains in adapters/routes/UI.

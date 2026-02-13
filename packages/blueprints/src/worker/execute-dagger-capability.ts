@@ -35,22 +35,30 @@ async function _executeDaggerCapability<In, Out>(
   let stdout = '';
   await connection(
     async () => {
+      const env =
+        (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env ?? {};
+      const token = env.BAO_TOKEN ?? env.VAULT_TOKEN;
+      const roleId = env.BAO_ROLE_ID;
+      const secretId = env.BAO_SECRET_ID;
+
       const openBao = {
         address:
-          (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env
-            ?.BAO_ADDR ??
-          (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env
-            ?.VAULT_ADDR ??
+          env.BAO_ADDR ??
+          env.VAULT_ADDR ??
           'http://localhost:8200',
-        token:
-          (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env
-            ?.BAO_TOKEN ??
-          (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env
-            ?.VAULT_TOKEN ??
-          'root',
         mount:
-          (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env
-            ?.BAO_KV_MOUNT ?? 'secret',
+          env.BAO_KV_MOUNT ?? 'secret',
+        auth: token
+          ? { token }
+          : roleId && secretId
+            ? {
+                approle: {
+                  mount: env.BAO_AUTH_MOUNT ?? 'approle',
+                  roleId,
+                  secretId,
+                },
+              }
+            : { token: 'root' }, // local dev default
       };
 
       const resolvedSecretRefs = await resolveSecretRefs({

@@ -29,6 +29,7 @@ export type ModelSigningOutput = z.infer<typeof outputSchema>;
 export const modelSigningCapability: Capability<ModelSigningInput, ModelSigningOutput, void, void> = {
     metadata: {
         id: 'golden.security.model-signing',
+        domain: 'security',
         version: '1.0.0',
         name: 'modelSigning',
         description: 'Sign and verify ML models using Sigstore infrastructure (Cosign).',

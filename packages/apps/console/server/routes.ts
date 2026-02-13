@@ -15,6 +15,7 @@ import { createSqlRouter, type SqlRouterDeps } from "./sql/http/sql-router";
 import { createServicesRouter, type ServicesRouterDeps } from "./services/http/services-router";
 import { createUsersRouter, type UsersRouterDeps } from "./users/http/users-router";
 import { workflowsRouter } from "./http/workflows-router";
+import { githubWebhookRouter } from "./http/github-webhook-router";
 import { createChatRouter } from "./routers/chat-router";
 import { createMcpToolsRouter } from "./routers/mcp-tools-router";
 import { createWorkbenchRouter } from "./routers/workbench-router";
@@ -159,7 +160,7 @@ export async function registerRoutes(
   app.use("/api/mcp", createMcpToolsRouter({ mcpToolService }));
 
   // Workbench session launcher proxy (Swagger/GraphiQL/JQL launch URLs)
-  app.use("/api/workbench", createWorkbenchRouter());
+  app.use("/api/workbench", createWorkbenchRouter({ mcpToolService }));
 
   // Workflow template catalog (library UX)
   app.use("/api/templates", createTemplatesRouter());
@@ -173,6 +174,9 @@ export async function registerRoutes(
 
   // Workflows router (Temporal)
   app.use("/api/workflows", workflowsRouter);
+
+  // GitHub webhook ingress (Engine MVP): validate signature + start release blueprint idempotently.
+  app.use("/api/webhooks/github", githubWebhookRouter);
 
   // Runbooks (repo-local markdown)
   app.use("/api/runbooks", createRunbooksRouter());

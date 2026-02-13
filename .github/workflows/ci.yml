@@ -62,3 +62,43 @@ jobs:
       - name: Fail if tool-catalog.json drifted
         run: git diff --exit-code -- packages/tools/mcp-server/src/manifest/tool-catalog.json
 
+  console-interop-guardrail:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "9"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Enforce Console interop guardrail
+        run: pnpm nx run console:lint-interop
+
+  retrospective-docs-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run retrospective script unit tests
+        run: node --test tools/scripts/scaffold-improvement-entries.test.mjs tools/scripts/check-retro-reflection-section.test.mjs
+
+      - name: Validate Reflection-to-Action in changed retros
+        run: node tools/scripts/check-retro-reflection-section.mjs

@@ -24,6 +24,13 @@ export interface ToolManifestEntry {
   allowOutbound?: string[];
   isIdempotent?: boolean;
   costFactor?: 'LOW' | 'MEDIUM' | 'HIGH';
+  ai_hints?: {
+    example_input?: unknown;
+    example_output?: unknown;
+    usage_notes?: string;
+    constraints?: string[];
+    negative_examples?: string[];
+  };
 }
 
 export interface ToolManifest {
@@ -81,6 +88,41 @@ function normalizeTags(input: unknown, domain: string): string[] | undefined {
   return merged.length > 0 ? merged : undefined;
 }
 
+function normalizeHintStrings(input: unknown): string[] | undefined {
+  if (!Array.isArray(input)) return undefined;
+  const values = input.filter((x): x is string => typeof x === 'string');
+  const unique = uniqStrings(values);
+  return unique.length > 0 ? unique : undefined;
+}
+
+function normalizeAiHints(input: unknown): ToolManifestEntry['ai_hints'] | undefined {
+  if (!input || typeof input !== 'object') return undefined;
+  const hints = input as {
+    exampleInput?: unknown;
+    exampleOutput?: unknown;
+    usageNotes?: unknown;
+    constraints?: unknown;
+    negativeExamples?: unknown;
+  };
+  const normalized: ToolManifestEntry['ai_hints'] = {
+    example_input: hints.exampleInput,
+    example_output: hints.exampleOutput,
+    usage_notes: typeof hints.usageNotes === 'string' ? hints.usageNotes : undefined,
+    constraints: normalizeHintStrings(hints.constraints),
+    negative_examples: normalizeHintStrings(hints.negativeExamples),
+  };
+  if (
+    normalized.example_input === undefined &&
+    normalized.example_output === undefined &&
+    normalized.usage_notes === undefined &&
+    normalized.constraints === undefined &&
+    normalized.negative_examples === undefined
+  ) {
+    return undefined;
+  }
+  return normalized;
+}
+
 export function generateToolManifestFromCapabilities(input: {
   registry: CapabilityRegistry;
   generated_at: string;
@@ -125,6 +167,7 @@ export function generateToolManifestFromCapabilities(input: {
       allowOutbound: cap.security.networkAccess.allowOutbound,
       isIdempotent: cap.operations.isIdempotent,
       costFactor: cap.operations.costFactor,
+      ai_hints: normalizeAiHints((cap as any).aiHints),
     });
   }
 

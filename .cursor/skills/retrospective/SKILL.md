@@ -47,6 +47,52 @@ This is not optional: a retro that doesn’t tighten the plan will allow the sam
 
 ---
 
+## Early Refactor Opportunity Loop (Mandatory)
+
+Use this loop to identify and execute high-leverage refactors **as early as possible**, not just at the end.
+
+### When to run it
+
+- Right after initial context gathering (before major implementation)
+- After the first failing test is understood
+- After any unexpected test/debug cycle (>1 extra loop)
+- During retrospective write-up (to capture what should be standardized)
+
+### The loop
+
+1. **Name the friction concretely**
+   - What repeated or fragile step caused avoidable delay?
+   - Is this a process gap, test harness gap, artifact drift, or code boundary issue?
+
+2. **Ask the three mandatory reflection prompts**
+   - “Is there anything you know now that if you knew when you started you would do differently?”
+   - “Any decisions you would change?”
+   - “Any of that actionable that you would do now given the opportunity (refactor process/function/implementation)?”
+
+3. **Pick one “Do Now” item**
+   - Must be implementable in-session in ~15-90 minutes.
+   - Prefer improvements that reduce repeated work (test targets, helpers, guardrails, extraction of unstable logic).
+   - If no safe “Do Now” exists, document a single highest-value follow-up with owner + effort.
+
+4. **Implement + validate immediately (when safe)**
+   - Add/adjust tests first when behavior changes.
+   - Validate with the narrowest fast test loop.
+   - Update docs/skill/process notes if it changes team workflow.
+
+5. **Record institutional memory**
+   - Add/augment pattern in `retrospectives/PATTERNS.md` if recurring.
+   - Add improvement entry in `retrospectives/IMPROVEMENTS.md` with status.
+   - Include “what changed because of this reflection” in the retrospective.
+
+### High-signal “Do Now” examples
+
+- Add a focused fast test script for the hot path under active iteration.
+- Extract brittle logic into a dedicated module with table-driven tests.
+- Add an actionable failure message for deterministic artifact drift (with exact regen command).
+- Add a tiny test helper to eliminate repeated async timing flake.
+
+---
+
 ## Checkpoint (Mid-Project)
 
 Use checkpoints to save state during long-running work. This prevents knowledge loss between sessions.
@@ -81,6 +127,7 @@ YYYY-MM-DD-<project-name>-checkpoint.md
 - **File created**: `retrospectives/checkpoints/YYYY-MM-DD-<project>-checkpoint.md`
 - **If plan editing is not allowed**: include “Proposed plan updates” as copy/paste blocks.
 - **If you found repeated friction**: add/update an entry in `retrospectives/PATTERNS.md`.
+- **Include reflection prompts**: explicitly answer the 3 mandatory reflection questions from the Early Refactor Opportunity Loop.
 
 ### Example
 
@@ -129,6 +176,18 @@ Prefer repo utilities and existing scripts over one-off ad-hoc commands:
 
 ```bash
 bash .cursor/skills/retrospective/scripts/analyze-codebase.sh packages
+```
+
+- Scaffold `IMPROVEMENTS.md` rows directly from a retrospective:
+
+```bash
+node tools/scripts/scaffold-improvement-entries.mjs --retro <retro-path> --source <SOURCE-ID> --start-id <N>
+```
+
+- Validate changed retros include the required Reflection-to-Action section:
+
+```bash
+node tools/scripts/check-retro-reflection-section.mjs
 ```
 
 - If Nx output is too terse (known repo pattern), prefer the debug helpers:
@@ -199,6 +258,7 @@ Use the [retrospective template](file:///Users/kristopherbowles/code/harmony/.cu
 5. **Key Takeaway** — Single-sentence summary
 6. **Plan Alignment** — What to change in the plan so the next run is easier
 7. **Improvements / Capabilities** — Tools/skills/generators/capabilities to reduce future friction
+8. **Reflection-to-Action** — Explicit answers to the 3 reflection prompts + one “Do Now” action taken (or deferred with owner/effort)
 
 ### After Creating a Retrospective
 
@@ -207,6 +267,7 @@ Use the [retrospective template](file:///Users/kristopherbowles/code/harmony/.cu
 3. Add recommendations to `retrospectives/IMPROVEMENTS.md` with IDs (IMP-XXX) and status
 4. If plan editing is allowed, update the plan; otherwise include copy/paste-ready plan edits
 5. Prefer a small number of high-impact recommendations over a long list of vague ones
+6. If a “Do Now” refactor/process improvement was identified, implement it immediately when safe and validate with scoped tests
 
 ---
 

@@ -80,6 +80,7 @@ export const autoFeatureFlagCapability: Capability<
 > = {
     metadata: {
         id: 'golden.flags.auto-feature-flag',
+        domain: 'flags',
         version: '1.0.0',
         name: 'autoFeatureFlag',
         description:

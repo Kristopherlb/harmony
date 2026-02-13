@@ -92,6 +92,7 @@ export const grypeCapability: Capability<
 > = {
     metadata: {
         id: 'golden.security.grype',
+        domain: 'security',
         version: '1.0.0',
         name: 'grype',
         description:

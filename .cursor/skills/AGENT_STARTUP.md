@@ -23,6 +23,7 @@ Before diving into work:
 2.  **Shared Interfaces**: Be careful with `RetryPolicy` and other config objects. Ensure you implement the *complete* shape (e.g., missing `backoffCoefficient` breaks builds).
 3.  **Generator Options**: When creating generators, use CLI-friendly options (repeatable `--fields`) instead of complex, brittle JSON parsing.
 4.  **Workbench Stale State**: If you add tools but don't see them, the Workbench tool list might be stale. Restart the process before debugging "missing" tools.
+5.  **MCP in Harmony**: When the workspace is this repo, Cursor runs the Harmony MCP server via `tools/scripts/run-harmony-mcp.mjs` (build then stdio). Tools are available automatically; running capabilities/blueprints requires Temporal + worker (`pnpm nx run harmony:dev-up` and `harmony:dev-worker`). See `docs/workbench/workbench-operator-command-cheatsheet.md` §0.
 
 ---
 

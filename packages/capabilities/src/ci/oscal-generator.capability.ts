@@ -72,6 +72,7 @@ export const oscalGeneratorCapability: Capability<
 > = {
     metadata: {
         id: 'golden.ci.oscal-generator',
+        domain: 'ci',
         version: '1.0.0',
         name: 'oscalGenerator',
         description:

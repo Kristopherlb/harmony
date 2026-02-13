@@ -47,6 +47,7 @@ export const openbaoCapability: Capability<
 > = {
     metadata: {
         id: 'golden.auth.openbao',
+        domain: 'auth',
         version: '1.0.0',
         name: 'openbao',
         description:
